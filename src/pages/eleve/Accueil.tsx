@@ -13,6 +13,8 @@ const BELT_COLORS: Record<Belt, string> = {
 export default function Accueil() {
   const navigate = useNavigate()
   const [name, setName] = useState('')
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+  const [club, setClub] = useState('')
   const [belt, setBelt] = useState<Belt | null>(null)
   const [loading, setLoading] = useState(true)
   const [pctGrade, setPctGrade] = useState(0)
@@ -34,6 +36,8 @@ export default function Accueil() {
       if (!j) { setLoading(false); return }
 
       setName(j.full_name ?? '')
+      setPhotoUrl(j.photo_url ?? null)
+      setClub(j.club ?? '')
       setBelt(j.belt ?? null)
 
       // Dossier
@@ -101,11 +105,23 @@ export default function Accueil() {
   return (
     <div className="max-w-2xl mx-auto">
       {/* Greeting */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">
-          {firstName ? `Bonjour, ${firstName} 👋` : 'Bienvenue sur Hazumi'}
-        </h1>
-        <p className="text-[#666666] text-sm mt-1">Voici un résumé de ta progression.</p>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+          {photoUrl ? (
+            <img src={photoUrl} alt={name} className="w-14 h-14 rounded-full object-cover border-2 border-[#E5E5E5]" />
+          ) : (
+            <div className="w-14 h-14 rounded-full bg-[#F0F0F0] border-2 border-[#E5E5E5] flex items-center justify-center text-[#CCCCCC] text-lg font-bold">
+              {firstName ? firstName[0].toUpperCase() : '?'}
+            </div>
+          )}
+          <div>
+            <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">
+              {firstName ? `Bonjour, ${firstName}` : 'Bienvenue sur Hazumi'}
+            </h1>
+            <p className="text-[#999999] text-sm mt-0.5">Voici un résumé de ta progression.</p>
+          </div>
+        </div>
+        <img src="/logo.png" alt={club || 'Club'} title={club || 'Club'} className="h-12 w-12 object-contain opacity-80" />
       </div>
 
       <div className="space-y-4">
