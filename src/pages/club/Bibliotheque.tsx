@@ -38,6 +38,7 @@ export default function Bibliotheque() {
   const [urlError, setUrlError] = useState<string | null>(null)
   const [filterBelt, setFilterBelt] = useState('')
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [editingVideo, setEditingVideo] = useState<Video | null>(null)
 
   async function load() {
     const { data } = await supabase.from('videos').select('*').order('created_at', { ascending: false })
@@ -51,19 +52,46 @@ export default function Bibliotheque() {
     try { new URL(url); return true } catch { return false }
   }
 
+  function openAdd() {
+    setEditingVideo(null)
+    setTitle(''); setDescription(''); setBelt(''); setTechniqueKey(''); setVideoUrl(''); setUrlError(null)
+    setShowForm(true)
+  }
+
+  function openEdit(video: Video) {
+    setEditingVideo(video)
+    setTitle(video.title)
+    setDescription(video.description ?? '')
+    setBelt(video.belt ?? '')
+    setTechniqueKey(video.technique_key ?? '')
+    setVideoUrl(video.video_url)
+    setUrlError(null)
+    setShowForm(true)
+  }
+
   async function handleSave() {
     if (!title.trim() || !videoUrl.trim()) return
     if (!validateUrl(videoUrl.trim())) { setUrlError('URL invalide — vérifiez le lien.'); return }
     setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('videos').insert({
-      title: title.trim(),
-      description: description.trim() || null,
-      belt: belt || null,
-      technique_key: techniqueKey || null,
-      video_url: videoUrl.trim(),
-      uploaded_by: user?.id,
-    })
+    if (editingVideo) {
+      await supabase.from('videos').update({
+        title: title.trim(),
+        description: description.trim() || null,
+        belt: belt || null,
+        technique_key: techniqueKey || null,
+        video_url: videoUrl.trim(),
+      }).eq('id', editingVideo.id)
+    } else {
+      const { data: { user } } = await supabase.auth.getUser()
+      await supabase.from('videos').insert({
+        title: title.trim(),
+        description: description.trim() || null,
+        belt: belt || null,
+        technique_key: techniqueKey || null,
+        video_url: videoUrl.trim(),
+        uploaded_by: user?.id,
+      })
+    }
     setTitle(''); setDescription(''); setBelt(''); setTechniqueKey(''); setVideoUrl(''); setUrlError(null)
     setShowForm(false)
     setSaving(false)
@@ -89,7 +117,7 @@ export default function Bibliotheque() {
           <p className="text-[#999999] text-sm mt-0.5">{videos.length} vidéo{videos.length !== 1 ? 's' : ''} disponible{videos.length !== 1 ? 's' : ''}</p>
         </div>
         <button
-          onClick={() => setShowForm(true)}
+          onClick={openAdd}
           className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors flex items-center gap-2"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,9 +195,14 @@ export default function Bibliotheque() {
                   </div>
                   <div className="mt-3 pt-3 border-t border-[#F5F5F5] flex items-center justify-between">
                     <span className="text-xs text-[#CCCCCC]">{new Date(video.created_at).toLocaleDateString('fr-FR')}</span>
-                    <button onClick={() => setDeleteId(video.id)} className="text-xs text-[#CCCCCC] hover:text-[#C41230] transition-colors">
-                      Supprimer
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => openEdit(video)} className="text-xs text-[#999999] hover:text-[#0A0A0A] transition-colors">
+                        Modifier
+                      </button>
+                      <button onClick={() => setDeleteId(video.id)} className="text-xs text-[#CCCCCC] hover:text-[#C41230] transition-colors">
+                        Supprimer
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -183,7 +216,7 @@ export default function Bibliotheque() {
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/60" onClick={() => !saving && setShowForm(false)} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold text-[#0A0A0A] mb-5">Ajouter une vidéo</h2>
+            <h2 className="text-lg font-bold text-[#0A0A0A] mb-5">{editingVideo ? 'Modifier la vidéo' : 'Ajouter une vidéo'}</h2>
 
             <div className="space-y-4">
               <div>
@@ -274,7 +307,7 @@ export default function Bibliotheque() {
                 disabled={!title.trim() || !videoUrl.trim() || saving}
                 className="flex-1 bg-[#C41230] hover:bg-[#9B0E25] text-white text-sm py-2.5 rounded-lg transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
               >
-                {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Enregistrement…</> : 'Publier'}
+                {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Enregistrement…</> : editingVideo ? 'Enregistrer' : 'Publier'}
               </button>
             </div>
           </div>
