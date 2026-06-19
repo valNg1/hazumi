@@ -86,7 +86,8 @@ export default function Entrainements() {
   const upcoming = useMemo(() => seances.filter(s => s.date >= today), [seances, today])
 
   const totalMinPast = past.reduce((sum, s) => sum + s.duree_minutes, 0)
-  const totalMinUpcoming = upcoming.reduce((sum, s) => sum + s.duree_minutes, 0)
+  const confirmed = useMemo(() => upcoming.filter(s => confirmedIds.has(s.id)), [upcoming, confirmedIds])
+  const pctConfirmed = upcoming.length > 0 ? Math.round((confirmed.length / upcoming.length) * 100) : 0
 
   function navigate(dir: 1 | -1) {
     const d = new Date(cursor)
@@ -143,9 +144,9 @@ export default function Entrainements() {
       {/* Recap panel */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
         <RecapCard label="Séances passées" value={String(past.length)} sub={fmtDuration(totalMinPast)} />
-        <RecapCard label="Heures passées" value={fmtDuration(totalMinPast)} sub={`${past.length} séance${past.length !== 1 ? 's' : ''}`} />
-        <RecapCard label="Séances à venir" value={String(upcoming.length)} sub={fmtDuration(totalMinUpcoming)} accent />
-        <RecapCard label="Heures à venir" value={fmtDuration(totalMinUpcoming)} sub={`${upcoming.length} séance${upcoming.length !== 1 ? 's' : ''}`} accent />
+        <RecapCard label="Séances à venir" value={String(upcoming.length)} sub={`${upcoming.length} séance${upcoming.length !== 1 ? 's' : ''} planifiée${upcoming.length !== 1 ? 's' : ''}`} accent />
+        <RecapCard label="Séances confirmées" value={String(confirmed.length)} sub={`sur ${upcoming.length} à venir`} accent />
+        <RecapCard label="Taux de présence" value={`${pctConfirmed}%`} sub={`${confirmed.length} confirmée${confirmed.length !== 1 ? 's' : ''}`} accent />
       </div>
 
       {/* View tabs + navigation */}

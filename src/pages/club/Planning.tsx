@@ -337,11 +337,30 @@ function CoursCard({ cours, onEdit, onDelete, onGenerate }: { cours: Cours; onEd
 
 function GenerateModal({ cours, onClose, onSaveBatch }: { cours: Cours; onClose: () => void; onSaveBatch: (rows: SeanceFormData[]) => Promise<void> }) {
   const now = new Date()
-  const defaultFin = `${now.getMonth() < 6 ? now.getFullYear() : now.getFullYear() + 1}-06-30`
-  const [dateDebut, setDateDebut] = useState(now.toISOString().slice(0, 10))
-  const [dateFin, setDateFin] = useState(defaultFin)
+  const y = now.getFullYear()
+  const fallbackDebut = `${y}-09-01`
+  const fallbackFin = `${y + 1}-06-30`
+  const [dateDebut, setDateDebut] = useState(fallbackDebut)
+  const [dateFin, setDateFin] = useState(fallbackFin)
   const [skipVacances, setSkipVacances] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [loadingDates, setLoadingDates] = useState(true)
+
+  useEffect(() => {
+    async function loadExistingRange() {
+      const { data } = await supabase
+        .from('seances')
+        .select('date')
+        .eq('cours_id', cours.id)
+        .order('date', { ascending: true })
+      if (data && data.length > 0) {
+        setDateDebut(data[0].date)
+        setDateFin(data[data.length - 1].date)
+      }
+      setLoadingDates(false)
+    }
+    loadExistingRange()
+  }, [cours.id])
 
   const jourIdx = JOURS.indexOf(cours.jour)
   const [h1, m1] = cours.heure_debut.split(':').map(Number)
@@ -422,7 +441,7 @@ function GenerateModal({ cours, onClose, onSaveBatch }: { cours: Cours; onClose:
             )}
           </div>
         )}
-        <ModalActions onClose={onClose} saving={saving} isEdit={false} label={preview.length > 0 ? `Créer ${preview.length} séances` : 'Générer'} />
+        <ModalActions onClose={onClose} saving={saving || loadingDates} isEdit={false} label={loadingDates ? 'Chargement…' : preview.length > 0 ? `Créer ${preview.length} séances` : 'Générer'} />
       </form>
     </Modal>
   )
@@ -517,8 +536,8 @@ function SeanceModal({ initial, coursList, onSave, onSaveBatch, onClose }: {
   const defaultDateFin = (() => {
     const now = new Date()
     // Fin de saison = 30 juin de l'année prochaine (ou cette année si on est avant juillet)
-    const year = now.getMonth() < 6 ? now.getFullYear() : now.getFullYear() + 1
-    return `${year}-06-30`
+    const y2 = now.getFullYear()
+    return `${y2 + 1}-06-30`
   })()
 
   const [rec, setRec] = useState<RecurringOpts>({

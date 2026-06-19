@@ -23,6 +23,9 @@ export default function Accueil() {
   const [clubLogo, setClubLogo] = useState<string | null>(null)
   const [playlistCount, setPlaylistCount] = useState(0)
   const [entrainementCount, setEntrainementCount] = useState(0)
+  const [confirmedCount, setConfirmedCount] = useState(0)
+  const [totalUpcoming, setTotalUpcoming] = useState(0)
+  const [confirmedMinutes, setConfirmedMinutes] = useState(0)
   const [coursTotal, setCoursTotal] = useState(0)
   const [coursVus, setCoursVus] = useState(0)
   const [coursNouveaux, setCoursNouveaux] = useState(0)
@@ -68,22 +71,26 @@ export default function Accueil() {
       const { count: plCount } = await supabase.from('playlists').select('*', { count: 'exact', head: true }).eq('judoka_id', j.id)
       setPlaylistCount(plCount ?? 0)
 
-      // Entraînements : présences confirmées sur séances à venir (7 jours)
+      // Entraînements
       const today = new Date()
       const todayStr = today.toISOString().slice(0, 10)
       const in7 = new Date(today); in7.setDate(today.getDate() + 7)
       const in7Str = in7.toISOString().slice(0, 10)
-      const { data: presencesData } = await supabase
-        .from('presences')
-        .select('seances(date, duree_minutes)')
-        .eq('judoka_id', j.id)
+      const [{ data: allSeances }, { data: presencesData }] = await Promise.all([
+        supabase.from('seances').select('id, date, duree_minutes').gte('date', todayStr),
+        supabase.from('presences').select('seances(date, duree_minutes)').eq('judoka_id', j.id),
+      ])
       type SeanceRef = { date: string; duree_minutes: number }
       const allPresences = (presencesData ?? []).map((p: { seances: SeanceRef | SeanceRef[] | null }) => {
         const s = p.seances
         return Array.isArray(s) ? s[0] : s
       }).filter(Boolean) as SeanceRef[]
       const upcomingPresences = allPresences.filter(s => s.date >= todayStr && s.date <= in7Str)
+      const futureConfirmed = allPresences.filter(s => s.date >= todayStr)
       setEntrainementCount(upcomingPresences.length)
+      setTotalUpcoming((allSeances ?? []).length)
+      setConfirmedCount(futureConfirmed.length)
+      setConfirmedMinutes(futureConfirmed.reduce((sum, s) => sum + s.duree_minutes, 0))
 
       // Cours stats
       const sevenDaysAgo = new Date(today); sevenDaysAgo.setDate(today.getDate() - 7)
@@ -202,6 +209,22 @@ export default function Accueil() {
             </div>
             <p className="text-3xl font-bold text-[#0A0A0A]">{entrainementCount}</p>
             <p className="text-xs text-[#999999] mt-1">cette semaine</p>
+            <div className="mt-2 pt-2 border-t border-[#F5F5F5] space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-[#999999]">Confirmées</span>
+                <span className="text-[#0A0A0A] font-medium">{confirmedCount}/{totalUpcoming}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-[#999999]">Taux</span>
+                <span className="text-[#0A0A0A] font-medium">{totalUpcoming > 0 ? Math.round((confirmedCount / totalUpcoming) * 100) : 0}%</span>
+              </div>
+              {confirmedMinutes > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-[#999999]">Heures</span>
+                  <span className="text-[#C41230] font-semibold">{Math.floor(confirmedMinutes / 60)}h{String(confirmedMinutes % 60).padStart(2, '0')}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Mes cours */}
