@@ -2,6 +2,8 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { signOut } from '../lib/auth'
 import { clearSpace, getSpace } from '../lib/space'
+import { useClubIdentity } from '../lib/useClubIdentity'
+import Footer from './Footer'
 
 const NAV: Record<'eleve' | 'club', { to: string; label: string }[]> = {
   eleve: [
@@ -29,6 +31,7 @@ export default function Layout() {
   const space = getSpace() as 'eleve' | 'club'
   const [menuOpen, setMenuOpen] = useState(false)
   const navItems = NAV[space] ?? []
+  const { logo, clubNom } = useClubIdentity()
 
   async function handleSignOut() {
     clearSpace()
@@ -45,8 +48,10 @@ export default function Layout() {
     <div className="min-h-screen bg-[#F5F5F5] flex flex-col">
       <header className="bg-[#0A0A0A] px-4 sm:px-6 flex items-stretch sticky top-0 z-40">
         <div className="flex items-center gap-2 sm:gap-3 py-3 mr-4 sm:mr-8 flex-shrink-0">
-          <img src="/logo.png" alt="Hazumi" className="h-6 w-6 sm:h-7 sm:w-7 object-contain" />
-          <span className="text-white font-bold tracking-widest uppercase text-xs hidden sm:block">Hazumi</span>
+          <img src={logo} alt={clubNom ?? 'Hazumi'} className="h-6 w-6 sm:h-7 sm:w-7 object-contain rounded" />
+          {clubNom && (
+            <span className="text-white font-bold tracking-widest uppercase text-xs hidden sm:block">{clubNom}</span>
+          )}
         </div>
 
         <nav className="hidden lg:flex items-stretch gap-0.5 flex-1 overflow-x-auto">
@@ -121,6 +126,8 @@ export default function Layout() {
       <main className="flex-1 px-4 sm:px-6 py-6 sm:py-8 max-w-6xl mx-auto w-full">
         <Outlet />
       </main>
+
+      <Footer />
     </div>
   )
 }

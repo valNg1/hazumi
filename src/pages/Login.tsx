@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { signIn, signUp } from '../lib/auth'
-import { supabase } from '../lib/supabase'
+import { useClubIdentity } from '../lib/useClubIdentity'
+import Footer from '../components/Footer'
 
 type Mode = 'login' | 'signup'
 
@@ -13,15 +14,7 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [clubLogo, setClubLogo] = useState<string | null>(null)
-  const [clubNom, setClubNom] = useState<string | null>(null)
-
-  useEffect(() => {
-    supabase.from('clubs').select('nom, logo_url').limit(1).single()
-      .then(({ data }) => {
-        if (data) { setClubLogo(data.logo_url ?? null); setClubNom(data.nom ?? null) }
-      })
-  }, [])
+  const { logo, clubNom } = useClubIdentity()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -61,7 +54,7 @@ export default function Login() {
         <div className="w-full max-w-sm">
           <div className="flex flex-col items-center mb-10">
             <img
-              src={clubLogo ?? '/logo.png'}
+              src={logo}
               alt={clubNom ?? 'Hazumi'}
               className="h-20 w-20 object-contain mb-4"
             />
@@ -136,14 +129,7 @@ export default function Login() {
         </div>
       </div>
 
-      <footer className="flex flex-col items-center text-[#444444] text-xs leading-relaxed mt-8">
-        <div className="flex items-center gap-2 mb-2">
-          <img src="/logo.png" alt="Hazumi" className="h-5 w-5 object-contain opacity-40" />
-          <p>Propulsé par <span className="text-[#666666]">Hazumi</span> — L'école du Ippon</p>
-        </div>
-        <p>Groupe DAKOTAlab · 59, rue de Ponthieu · 75008 Paris</p>
-        <p className="mt-0.5">SIREN 951 717 925</p>
-      </footer>
+      <Footer dark />
     </div>
   )
 }
