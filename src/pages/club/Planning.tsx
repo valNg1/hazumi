@@ -121,18 +121,42 @@ export default function Planning() {
   async function handleSaveCours(form: CoursFormData) {
     if (selectedCours) {
       await supabase.from('cours').update(form).eq('id', selectedCours.id)
+
+      // Propager sur les séances futures liées
+      const today = new Date().toISOString().slice(0, 10)
+      const { data: linked } = await supabase.from('seances').select('id').eq('cours_id', selectedCours.id).gte('date', today)
+      if (linked && linked.length > 0) {
+        const [h1, m1] = form.heure_debut.split(':').map(Number)
+        const [h2, m2] = form.heure_fin.split(':').map(Number)
+        const duree = Math.max((h2 * 60 + m2) - (h1 * 60 + m1), 30)
+        await supabase.from('seances').update({
+          titre: form.titre,
+          heure_debut: form.heure_debut,
+          heure_fin: form.heure_fin,
+          duree_minutes: duree,
+          categorie: form.categorie,
+          lieu: form.lieu,
+          intervenant: form.intervenant,
+        }).eq('cours_id', selectedCours.id).gte('date', today)
+      }
     } else {
       await supabase.from('cours').insert(form)
     }
-    await loadCours()
+    await Promise.all([loadCours(), loadSeances()])
     setShowCoursModal(false)
     setSelectedCours(null)
   }
 
   async function handleDeleteCours(id: string) {
-    if (!confirm('Supprimer ce cours ?')) return
+    const today = new Date().toISOString().slice(0, 10)
+    const { count } = await supabase.from('seances').select('*', { count: 'exact', head: true }).eq('cours_id', id).gte('date', today)
+    const msg = count && count > 0
+      ? `Supprimer ce cours et ses ${count} séance${count !== 1 ? 's' : ''} future${count !== 1 ? 's' : ''} associée${count !== 1 ? 's' : ''} ?`
+      : 'Supprimer ce cours ?'
+    if (!confirm(msg)) return
+    if (count && count > 0) await supabase.from('seances').delete().eq('cours_id', id).gte('date', today)
     await supabase.from('cours').delete().eq('id', id)
-    await loadCours()
+    await Promise.all([loadCours(), loadSeances()])
   }
 
   async function handleSaveSeance(form: SeanceFormData) {
