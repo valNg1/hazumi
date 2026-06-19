@@ -58,9 +58,11 @@ export default function Accueil() {
         setPctGrade(t > 0 ? Math.round((a / t) * 100) : 0)
       }
 
-      // Logo club
-      const { data: clubData } = await supabase.from('clubs').select('logo_url').limit(1).single()
-      setClubLogo(clubData?.logo_url ?? null)
+      // Logo club (table peut ne pas encore exister)
+      try {
+        const { data: clubData } = await supabase.from('clubs').select('logo_url').limit(1).single()
+        setClubLogo(clubData?.logo_url ?? null)
+      } catch { /* table absente, on ignore */ }
 
       // Playlists
       const { count: plCount } = await supabase.from('playlists').select('*', { count: 'exact', head: true }).eq('judoka_id', j.id)
