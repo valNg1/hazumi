@@ -33,7 +33,7 @@ const EMPTY: ProfilData = {
 }
 
 export default function Profil() {
-  const [judokaId, setJudokaId] = useState<string | null>(null)
+  const [_judokaId, setJudokaId] = useState<string | null>(null)
   const [data, setData] = useState<ProfilData>(EMPTY)
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)

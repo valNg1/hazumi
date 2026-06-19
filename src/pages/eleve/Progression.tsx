@@ -4,17 +4,11 @@ import { supabase } from '../../lib/supabase'
 import { CURRICULUM, getCategorieLabel, getBeltIndex } from '../../lib/curriculum'
 import type { Belt } from '../../types'
 import type { TechniqueStatus } from '../../lib/curriculum'
-
 const BELT_COLORS: Record<Belt, string> = {
   blanche: '#FFFFFF', jaune: '#FFD700', orange: '#FF8C00',
   verte: '#228B22', bleue: '#1565C0', marron: '#6D3B1E', noire: '#0A0A0A',
 }
 
-const STATUS_LABEL: Record<TechniqueStatus, { label: string; color: string; bg: string }> = {
-  a_travailler: { label: 'À travailler', color: 'text-[#CCCCCC]', bg: 'bg-[#F5F5F5]' },
-  en_cours: { label: 'En cours', color: 'text-amber-600', bg: 'bg-amber-50' },
-  acquis: { label: 'Acquis', color: 'text-green-600', bg: 'bg-green-50' },
-}
 
 const ENCOURAGEMENTS = [
   'Technique acquise ! Osae-komi ! 🎯',

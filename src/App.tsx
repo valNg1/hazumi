@@ -20,7 +20,7 @@ import Competitions from './pages/club/Competitions'
 import Bureau from './pages/club/Bureau'
 import Bibliotheque from './pages/club/Bibliotheque'
 
-function DefaultRedirect({ session }: { session: Session }) {
+function DefaultRedirect({ session: _session }: { session: Session }) {
   const space = getSpace()
   if (!space) return <Navigate to="/espace" />
   if (space === 'eleve') return <Navigate to="/eleve/accueil" />
