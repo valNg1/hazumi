@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { supabase } from '../../lib/supabase'
 import { CURRICULUM, getBeltIndex } from '../../lib/curriculum'
 import type { Belt } from '../../types'
@@ -26,6 +27,7 @@ export default function Accueil() {
   const [confirmedCount, setConfirmedCount] = useState(0)
   const [totalUpcoming, setTotalUpcoming] = useState(0)
   const [confirmedMinutes, setConfirmedMinutes] = useState(0)
+  const [hoursChart, setHoursChart] = useState<{ mois: string; heures: number; cumul: number }[]>([])
   const [coursTotal, setCoursTotal] = useState(0)
   const [coursVus, setCoursVus] = useState(0)
   const [coursNouveaux, setCoursNouveaux] = useState(0)
@@ -76,6 +78,10 @@ export default function Accueil() {
       const todayStr = today.toISOString().slice(0, 10)
       const in7 = new Date(today); in7.setDate(today.getDate() + 7)
       const in7Str = in7.toISOString().slice(0, 10)
+      // Année scolaire courante : sept Y → juin Y+1
+      const schoolY = today.getMonth() >= 8 ? today.getFullYear() : today.getFullYear() - 1
+      const schoolStart = `${schoolY}-09-01`
+      const schoolEnd = `${schoolY + 1}-06-30`
       const [{ data: allSeances }, { data: presencesData }] = await Promise.all([
         supabase.from('seances').select('id, date, duree_minutes').gte('date', todayStr),
         supabase.from('presences').select('seances(date, duree_minutes)').eq('judoka_id', j.id),
@@ -91,6 +97,26 @@ export default function Accueil() {
       setTotalUpcoming((allSeances ?? []).length)
       setConfirmedCount(futureConfirmed.length)
       setConfirmedMinutes(futureConfirmed.reduce((sum, s) => sum + s.duree_minutes, 0))
+
+      // Heures cumulées par mois sur l'année scolaire
+      const schoolPresences = allPresences.filter(s => s.date >= schoolStart && s.date <= schoolEnd)
+      const MOIS = ['Sep', 'Oct', 'Nov', 'Déc', 'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin']
+      const monthMinutes: Record<string, number> = {}
+      for (const s of schoolPresences) {
+        const [y, m] = s.date.split('-').map(Number)
+        const key = `${y}-${String(m).padStart(2, '0')}`
+        monthMinutes[key] = (monthMinutes[key] ?? 0) + s.duree_minutes
+      }
+      let cumul = 0
+      const chart = MOIS.map((label, i) => {
+        const monthNum = i >= 4 ? i - 3 : i + 9
+        const yearNum = monthNum >= 9 ? schoolY : schoolY + 1
+        const key = `${yearNum}-${String(monthNum).padStart(2, '0')}`
+        const mins = monthMinutes[key] ?? 0
+        cumul += mins
+        return { mois: label, heures: Math.round((mins / 60) * 10) / 10, cumul: Math.round((cumul / 60) * 10) / 10 }
+      })
+      setHoursChart(chart)
 
       // Cours stats
       const sevenDaysAgo = new Date(today); sevenDaysAgo.setDate(today.getDate() - 7)
@@ -257,6 +283,34 @@ export default function Accueil() {
             </div>
           </div>
         </div>
+
+        {/* Graph heures cumulées */}
+        {hoursChart.some(d => d.cumul > 0) && (
+          <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs uppercase tracking-widest text-[#999999]">Heures d'entraînement — année scolaire</span>
+              <span className="text-sm font-bold text-[#C41230]">{hoursChart[hoursChart.length - 1]?.cumul ?? 0}h cumulées</span>
+            </div>
+            <ResponsiveContainer width="100%" height={120}>
+              <AreaChart data={hoursChart} margin={{ top: 4, right: 0, left: -28, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="hGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#C41230" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="#C41230" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="mois" tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ fontSize: 11, border: '1px solid #E5E5E5', borderRadius: 8, boxShadow: 'none' }}
+                  formatter={(v: unknown, name: unknown) => [`${v}h`, name === 'cumul' ? 'Cumulé' : 'Ce mois']}
+                  labelStyle={{ color: '#666', fontWeight: 600 }}
+                />
+                <Area type="monotone" dataKey="cumul" stroke="#C41230" strokeWidth={2} fill="url(#hGrad)" dot={false} activeDot={{ r: 4, fill: '#C41230' }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
 
         {/* Dossier d'inscription — secondaire */}
         <div
