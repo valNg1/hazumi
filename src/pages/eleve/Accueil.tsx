@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { supabase } from '../../lib/supabase'
 import { CURRICULUM, getBeltIndex } from '../../lib/curriculum'
 import type { Belt } from '../../types'
@@ -13,35 +13,38 @@ function buildChartData(raw: RawData, view: ChartView): { label: string; possibl
   const { seancesList, confirmedList, schoolY } = raw
   const toH = (min: number) => Math.round((min / 60) * 10) / 10
 
+  const periods: { label: string; keys: string[] }[] = []
+
   if (view === 'mois') {
-    const MONTHS = [9,10,11,12,1,2,3,4,5,6]
-    return MONTHS.map(m => {
+    for (const m of [9,10,11,12,1,2,3,4,5,6]) {
       const y = m >= 9 ? schoolY : schoolY + 1
       const key = `${y}-${String(m).padStart(2,'0')}`
       const label = new Date(y, m - 1, 1).toLocaleDateString('fr-FR', { month: 'short' }).replace('.','')
-      const possible = seancesList.filter(s => s.date.startsWith(key)).reduce((a,s) => a + s.duree_minutes, 0)
-      const realise = confirmedList.filter(s => s.date.startsWith(key)).reduce((a,s) => a + s.duree_minutes, 0)
-      return { label, possible: toH(possible), realise: toH(realise) }
-    })
-  }
-  if (view === 'trimestre') {
+      periods.push({ label, keys: [key] })
+    }
+  } else if (view === 'trimestre') {
     const TRIMS = [
-      { label: 'T1 Sep–Nov', months: [9,10,11], y1: schoolY },
-      { label: 'T2 Déc–Fév', months: [12,1,2], y1: schoolY },
-      { label: 'T3 Mar–Mai', months: [3,4,5], y1: schoolY + 1 },
-      { label: 'T4 Jun', months: [6], y1: schoolY + 1 },
+      { label: 'T1 Sep–Nov', months: [9,10,11] },
+      { label: 'T2 Déc–Fév', months: [12,1,2] },
+      { label: 'T3 Mar–Mai', months: [3,4,5] },
+      { label: 'T4 Jun', months: [6] },
     ]
-    return TRIMS.map(({ label, months, y1 }) => {
-      const keys = months.map(m => `${m >= 9 ? y1 : y1 + 1}-${String(m).padStart(2,'0')}`)
-      const possible = seancesList.filter(s => keys.some(k => s.date.startsWith(k))).reduce((a,s) => a + s.duree_minutes, 0)
-      const realise = confirmedList.filter(s => keys.some(k => s.date.startsWith(k))).reduce((a,s) => a + s.duree_minutes, 0)
-      return { label, possible: toH(possible), realise: toH(realise) }
-    })
+    for (const { label, months } of TRIMS) {
+      const keys = months.map(m => `${m >= 9 ? schoolY : schoolY + 1}-${String(m).padStart(2,'0')}`)
+      periods.push({ label, keys })
+    }
+  } else {
+    periods.push({ label: `${schoolY}–${schoolY+1}`, keys: [] })
   }
-  // annee
-  const possible = seancesList.reduce((a,s) => a + s.duree_minutes, 0)
-  const realise = confirmedList.reduce((a,s) => a + s.duree_minutes, 0)
-  return [{ label: `${schoolY}–${schoolY+1}`, possible: toH(possible), realise: toH(realise) }]
+
+  let cumulPossible = 0
+  let cumulRealise = 0
+  return periods.map(({ label, keys }) => {
+    const matchP = (s: { date: string }) => keys.length === 0 || keys.some(k => s.date.startsWith(k))
+    cumulPossible += seancesList.filter(matchP).reduce((a,s) => a + s.duree_minutes, 0)
+    cumulRealise += confirmedList.filter(matchP).reduce((a,s) => a + s.duree_minutes, 0)
+    return { label, possible: toH(cumulPossible), realise: toH(cumulRealise) }
+  })
 }
 
 const BELT_COLORS: Record<Belt, string> = {
@@ -326,7 +329,17 @@ export default function Accueil() {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={150}>
-            <BarChart data={chartData} margin={{ top: 4, right: 0, left: -20, bottom: 0 }} barCategoryGap="30%">
+            <AreaChart data={chartData} margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="gPossible" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#CCCCCC" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#CCCCCC" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="gRealise" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#C41230" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#C41230" stopOpacity={0} />
+                </linearGradient>
+              </defs>
               <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} unit="h" />
               <Tooltip
@@ -334,10 +347,10 @@ export default function Accueil() {
                 formatter={(v: unknown, name: unknown) => [`${v}h`, name === 'possible' ? 'Possible' : 'Réalisé']}
                 labelStyle={{ color: '#333', fontWeight: 600 }}
               />
-              <Legend formatter={(v) => v === 'possible' ? 'Possible' : 'Réalisé'} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
-              <Bar dataKey="possible" fill="#E5E5E5" radius={[3,3,0,0]} />
-              <Bar dataKey="realise" fill="#C41230" radius={[3,3,0,0]} />
-            </BarChart>
+              <Legend formatter={(v) => v === 'possible' ? 'Possible' : 'Réalisé'} wrapperStyle={{ fontSize: 11, paddingTop: 4 }} />
+              <Area type="monotone" dataKey="possible" stroke="#CCCCCC" strokeWidth={1.5} fill="url(#gPossible)" dot={false} />
+              <Area type="monotone" dataKey="realise" stroke="#C41230" strokeWidth={2} fill="url(#gRealise)" dot={false} activeDot={{ r: 4, fill: '#C41230' }} />
+            </AreaChart>
           </ResponsiveContainer>
         </div>
 
