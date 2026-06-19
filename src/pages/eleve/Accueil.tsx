@@ -57,17 +57,18 @@ export default function Accueil() {
       const { count: plCount } = await supabase.from('playlists').select('*', { count: 'exact', head: true }).eq('judoka_id', j.id)
       setPlaylistCount(plCount ?? 0)
 
-      // Entraînements semaine à venir
+      // Entraînements : présences confirmées sur séances à venir (7 jours)
       const today = new Date()
       const todayStr = today.toISOString().slice(0, 10)
       const in7 = new Date(today); in7.setDate(today.getDate() + 7)
       const in7Str = in7.toISOString().slice(0, 10)
-      const { count: entCount } = await supabase.from('entrainements')
-        .select('*', { count: 'exact', head: true })
+      const { data: presencesData } = await supabase
+        .from('presences')
+        .select('seances(date, duree_minutes)')
         .eq('judoka_id', j.id)
-        .gte('date', todayStr)
-        .lte('date', in7Str)
-      setEntrainementCount(entCount ?? 0)
+      const allPresences = (presencesData ?? []).map((p: { seances: { date: string; duree_minutes: number } | null }) => p.seances).filter(Boolean) as { date: string; duree_minutes: number }[]
+      const upcomingPresences = allPresences.filter(s => s.date >= todayStr && s.date <= in7Str)
+      setEntrainementCount(upcomingPresences.length)
 
       // Cours stats
       const sevenDaysAgo = new Date(today); sevenDaysAgo.setDate(today.getDate() - 7)
