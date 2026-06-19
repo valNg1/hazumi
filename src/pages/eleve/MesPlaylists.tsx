@@ -7,6 +7,7 @@ interface Playlist {
   name: string
   created_at: string
   item_count?: number
+  cover_thumbs?: (string | null)[]
 }
 
 interface PlaylistItem {
@@ -33,6 +34,35 @@ const SOURCE_BADGE: Record<string, string> = {
   vimeo: 'bg-blue-50 text-blue-500',
   gdrive: 'bg-green-50 text-green-600',
   direct: 'bg-[#F5F5F5] text-[#999999]',
+}
+
+function PlaylistCover({ thumbs, name }: { thumbs: (string | null)[], name: string }) {
+  const filled = thumbs.filter(Boolean)
+  if (filled.length === 0) {
+    return (
+      <div className="w-full aspect-square bg-gradient-to-br from-[#1a1a1a] to-[#C41230] flex items-center justify-center">
+        <svg className="w-12 h-12 text-white/40" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="12" cy="3.5" r="1.5" />
+          <path d="M9 7.5c0-.3.2-.5.5-.5h5c.3 0 .5.2.5.5v.1L16.5 11H14l-.5-2h-3L10 11H7.5L9 7.6V7.5z" />
+          <path d="M7.5 11l-2 5h2l1-2.5 1.5 1.5v4h2v-4.5l-1.8-1.8L11 11H7.5z" />
+          <path d="M16.5 11l2 5h-2l-1-2.5-1.5 1.5v4h-2v-4.5l1.8-1.8L13 11h3.5z" />
+        </svg>
+      </div>
+    )
+  }
+  if (filled.length === 1) {
+    return <img src={filled[0]!} alt={name} className="w-full aspect-square object-cover" />
+  }
+  const slots = [thumbs[0], thumbs[1], thumbs[2], thumbs[3]]
+  return (
+    <div className="w-full aspect-square grid grid-cols-2 grid-rows-2">
+      {slots.map((t, i) => (
+        <div key={i} className="overflow-hidden bg-[#1a1a1a]">
+          {t ? <img src={t} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-[#222]" />}
+        </div>
+      ))}
+    </div>
+  )
 }
 
 export default function MesPlaylists() {
@@ -79,11 +109,23 @@ export default function MesPlaylists() {
       .eq('judoka_id', jid)
       .order('created_at', { ascending: false })
     if (!data) return
-    const withCounts = await Promise.all(data.map(async p => {
-      const { count } = await supabase.from('playlist_items').select('*', { count: 'exact', head: true }).eq('playlist_id', p.id)
-      return { ...p, item_count: count ?? 0 }
+    const withMeta = await Promise.all(data.map(async p => {
+      const [{ count }, { data: firstItems }] = await Promise.all([
+        supabase.from('playlist_items').select('*', { count: 'exact', head: true }).eq('playlist_id', p.id),
+        supabase.from('playlist_items').select('video_id, external_url').eq('playlist_id', p.id).order('position').limit(4),
+      ])
+      const thumbs: (string | null)[] = await Promise.all(
+        (firstItems ?? []).map(async item => {
+          if (item.video_id) {
+            const { data: vid } = await supabase.from('videos').select('video_url').eq('id', item.video_id).single()
+            return vid ? getThumbnailUrl(vid.video_url) : null
+          }
+          return item.external_url ? getThumbnailUrl(item.external_url) : null
+        })
+      )
+      return { ...p, item_count: count ?? 0, cover_thumbs: thumbs }
     }))
-    setPlaylists(withCounts)
+    setPlaylists(withMeta)
   }
 
   async function loadItems(playlistId: string) {
@@ -114,11 +156,11 @@ export default function MesPlaylists() {
   async function createPlaylist() {
     if (!newName.trim() || !judokaId) return
     setSaving(true)
-    const { data } = await supabase.from('playlists').insert({ judoka_id: judokaId, name: newName.trim() }).select().single()
+    await supabase.from('playlists').insert({ judoka_id: judokaId, name: newName.trim() })
     setSaving(false)
     setNewName('')
     setShowNewPlaylist(false)
-    if (data) await loadPlaylists(judokaId)
+    await loadPlaylists(judokaId)
   }
 
   async function deletePlaylist(id: string) {
@@ -157,11 +199,7 @@ export default function MesPlaylists() {
     if (!openPlaylist) return
     setAddingItem(true)
     const maxPos = items.length > 0 ? Math.max(...items.map(i => i.position)) + 1 : 0
-    await supabase.from('playlist_items').insert({
-      playlist_id: openPlaylist.id,
-      video_id: video.id,
-      position: maxPos,
-    })
+    await supabase.from('playlist_items').insert({ playlist_id: openPlaylist.id, video_id: video.id, position: maxPos })
     setShowAddModal(false)
     await loadItems(openPlaylist.id)
     if (judokaId) await loadPlaylists(judokaId)
@@ -173,12 +211,7 @@ export default function MesPlaylists() {
     try { new URL(extUrl.trim()) } catch { setExtUrlError('URL invalide'); return }
     setAddingItem(true)
     const maxPos = items.length > 0 ? Math.max(...items.map(i => i.position)) + 1 : 0
-    await supabase.from('playlist_items').insert({
-      playlist_id: openPlaylist.id,
-      external_url: extUrl.trim(),
-      external_title: extTitle.trim(),
-      position: maxPos,
-    })
+    await supabase.from('playlist_items').insert({ playlist_id: openPlaylist.id, external_url: extUrl.trim(), external_title: extTitle.trim(), position: maxPos })
     setShowAddModal(false)
     setExtUrl('')
     setExtTitle('')
@@ -194,27 +227,17 @@ export default function MesPlaylists() {
     if (playingItem?.id === item.id) setPlayingItem(null)
   }
 
-  function getItemUrl(item: PlaylistItem): string {
-    return item.video?.video_url ?? item.external_url ?? ''
-  }
-
-  function getItemTitle(item: PlaylistItem): string {
-    return item.video?.title ?? item.external_title ?? ''
-  }
+  function getItemUrl(item: PlaylistItem): string { return item.video?.video_url ?? item.external_url ?? '' }
+  function getItemTitle(item: PlaylistItem): string { return item.video?.title ?? item.external_title ?? '' }
 
   const filteredClub = searchClub.trim()
     ? clubVideos.filter(v => v.title.toLowerCase().includes(searchClub.toLowerCase()))
     : clubVideos
 
   if (loading) return <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
+  if (!judokaId) return <div className="text-center py-16"><p className="text-[#666666] text-sm">Complétez votre profil pour accéder aux playlists.</p></div>
 
-  if (!judokaId) return (
-    <div className="text-center py-16">
-      <p className="text-[#666666] text-sm">Complétez votre profil pour accéder aux playlists.</p>
-    </div>
-  )
-
-  // Vue playlist ouverte
+  // ── Vue playlist ouverte ──────────────────────────────────────────────────
   if (openPlaylist) {
     const url = playingItem ? getItemUrl(playingItem) : null
     const embedUrl = url ? getEmbedUrl(url) : null
@@ -222,10 +245,8 @@ export default function MesPlaylists() {
 
     return (
       <div>
-        <button
-          onClick={() => { setOpenPlaylist(null); setPlayingItem(null) }}
-          className="flex items-center gap-2 text-sm text-[#999999] hover:text-[#0A0A0A] mb-5 transition-colors"
-        >
+        <button onClick={() => { setOpenPlaylist(null); setPlayingItem(null) }}
+          className="flex items-center gap-2 text-sm text-[#999999] hover:text-[#0A0A0A] mb-5 transition-colors">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -233,25 +254,18 @@ export default function MesPlaylists() {
         </button>
 
         <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold text-[#0A0A0A]">{openPlaylist.name}</h2>
-            <button
-              onClick={() => { setEditingPlaylist(openPlaylist); setEditName(openPlaylist.name) }}
-              className="text-[#CCCCCC] hover:text-[#666666] transition-colors"
-              title="Renommer"
-            >
+            <button onClick={() => { setEditingPlaylist(openPlaylist); setEditName(openPlaylist.name) }}
+              className="text-[#CCCCCC] hover:text-[#666666] transition-colors" title="Renommer">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
             </button>
+            <span className="text-xs text-[#999999]">· {items.length} vidéo{items.length !== 1 ? 's' : ''}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <p className="text-xs text-[#999999]">{items.length} vidéo{items.length !== 1 ? 's' : ''}</p>
-          </div>
-          <button
-            onClick={openAddModal}
-            className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors flex items-center gap-2"
-          >
+          <button onClick={openAddModal}
+            className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors flex items-center gap-2">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
@@ -262,16 +276,10 @@ export default function MesPlaylists() {
         {/* Lecteur */}
         {playingItem && url && (
           <div className="mb-5 bg-[#0A0A0A] rounded-xl overflow-hidden aspect-video">
-            {videoType === 'direct' ? (
-              <video src={url} className="w-full h-full" controls autoPlay />
-            ) : (
-              <iframe
-                src={embedUrl ?? ''}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            )}
+            {videoType === 'direct'
+              ? <video src={url} className="w-full h-full" controls autoPlay />
+              : <iframe src={embedUrl ?? ''} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+            }
           </div>
         )}
 
@@ -283,53 +291,47 @@ export default function MesPlaylists() {
             <button onClick={openAddModal} className="text-xs text-[#C41230] hover:underline">Ajouter une première vidéo</button>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {items.map((item, idx) => {
               const itemUrl = getItemUrl(item)
               const type = itemUrl ? detectVideoType(itemUrl) : 'direct'
               const isPlaying = playingItem?.id === item.id
               const thumb = itemUrl ? getThumbnailUrl(itemUrl) : null
               return (
-                <div
-                  key={item.id}
-                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer group ${isPlaying ? 'border-[#C41230] bg-[#FFF5F7]' : 'border-[#E5E5E5] bg-white hover:border-[#CCCCCC]'}`}
+                <div key={item.id}
+                  className={`group cursor-pointer rounded-xl overflow-hidden border transition-all ${isPlaying ? 'border-[#C41230] shadow-lg shadow-red-100' : 'border-[#E5E5E5] hover:border-[#C41230]'}`}
                   onClick={() => setPlayingItem(isPlaying ? null : item)}
                 >
-                  <span className="text-xs text-[#CCCCCC] w-5 text-center flex-shrink-0">{idx + 1}</span>
-                  <div className="relative w-16 h-10 rounded-lg overflow-hidden bg-[#0A0A0A] flex-shrink-0 flex items-center justify-center">
-                    {thumb ? (
-                      <img src={thumb} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-[#F0F0F0] flex items-center justify-center">
-                        <svg className="w-4 h-4 text-[#CCCCCC]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                      </div>
-                    )}
-                    <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} bg-black/40`}>
-                      {isPlaying ? (
-                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                          <rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" />
-                        </svg>
-                      ) : (
-                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                      )}
+                  {/* Thumbnail */}
+                  <div className="relative aspect-video bg-[#0A0A0A]">
+                    {thumb
+                      ? <img src={thumb} alt="" className="w-full h-full object-cover" />
+                      : <div className="w-full h-full bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center">
+                          <svg className="w-8 h-8 text-white/20" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                        </div>
+                    }
+                    <div className={`absolute inset-0 flex items-center justify-center bg-black/50 transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                      {isPlaying
+                        ? <svg className="w-10 h-10 text-white drop-shadow" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
+                        : <svg className="w-10 h-10 text-white drop-shadow" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                      }
                     </div>
+                    <span className="absolute top-2 left-2 text-xs bg-black/60 text-white px-1.5 py-0.5 rounded font-mono">{idx + 1}</span>
+                    {isPlaying && <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#C41230] animate-pulse" />}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate ${isPlaying ? 'text-[#C41230]' : 'text-[#0A0A0A]'}`}>
-                      {getItemTitle(item)}
-                    </p>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${SOURCE_BADGE[type]}`}>
-                      {getVideoLabel(itemUrl)}
-                    </span>
+                  {/* Info */}
+                  <div className="p-3 bg-white flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className={`text-sm font-semibold truncate ${isPlaying ? 'text-[#C41230]' : 'text-[#0A0A0A]'}`}>{getItemTitle(item)}</p>
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${SOURCE_BADGE[type]}`}>{getVideoLabel(itemUrl)}</span>
+                    </div>
+                    <button onClick={e => { e.stopPropagation(); removeItem(item) }}
+                      className="opacity-0 group-hover:opacity-100 text-[#CCCCCC] hover:text-[#C41230] transition-all flex-shrink-0 p-0.5">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
                   </div>
-                  <button
-                    onClick={e => { e.stopPropagation(); removeItem(item) }}
-                    className="opacity-0 group-hover:opacity-100 text-[#CCCCCC] hover:text-[#C41230] transition-all p-1"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
                 </div>
               )
             })}
@@ -342,95 +344,95 @@ export default function MesPlaylists() {
             <div className="absolute inset-0 bg-black/60" onClick={() => !addingItem && setShowAddModal(false)} />
             <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[85vh] flex flex-col">
               <h2 className="text-lg font-bold text-[#0A0A0A] mb-4">Ajouter une vidéo</h2>
-
-              {/* Toggle source */}
               <div className="flex gap-1 bg-[#F5F5F5] p-1 rounded-lg mb-4 flex-shrink-0">
-                <button
-                  onClick={() => setAddMode('club')}
-                  className={`flex-1 py-2 text-xs rounded-md transition-all ${addMode === 'club' ? 'bg-white text-[#0A0A0A] shadow-sm font-semibold' : 'text-[#999999]'}`}
-                >
+                <button onClick={() => setAddMode('club')}
+                  className={`flex-1 py-2 text-xs rounded-md transition-all ${addMode === 'club' ? 'bg-white text-[#0A0A0A] shadow-sm font-semibold' : 'text-[#999999]'}`}>
                   Bibliothèque du club
                 </button>
-                <button
-                  onClick={() => setAddMode('externe')}
-                  className={`flex-1 py-2 text-xs rounded-md transition-all ${addMode === 'externe' ? 'bg-white text-[#0A0A0A] shadow-sm font-semibold' : 'text-[#999999]'}`}
-                >
+                <button onClick={() => setAddMode('externe')}
+                  className={`flex-1 py-2 text-xs rounded-md transition-all ${addMode === 'externe' ? 'bg-white text-[#0A0A0A] shadow-sm font-semibold' : 'text-[#999999]'}`}>
                   Ma vidéo (URL)
                 </button>
               </div>
 
               {addMode === 'club' ? (
                 <div className="flex flex-col flex-1 overflow-hidden">
-                  <input
-                    type="text"
-                    value={searchClub}
-                    onChange={e => setSearchClub(e.target.value)}
+                  <input type="text" value={searchClub} onChange={e => setSearchClub(e.target.value)}
                     placeholder="Rechercher une vidéo…"
-                    className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#C41230] mb-3 flex-shrink-0"
-                  />
+                    className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#C41230] mb-3 flex-shrink-0" />
                   <div className="overflow-y-auto flex-1 space-y-2 pr-1">
-                    {filteredClub.length === 0 ? (
-                      <p className="text-center text-[#CCCCCC] text-sm py-8">Aucune vidéo dans la bibliothèque du club.</p>
-                    ) : filteredClub.map(v => (
-                      <button
-                        key={v.id}
-                        onClick={() => addClubVideo(v)}
-                        disabled={addingItem}
-                        className="w-full text-left flex items-center gap-3 p-3 rounded-lg border border-[#E5E5E5] hover:border-[#C41230] hover:bg-[#FFF5F7] transition-all disabled:opacity-50"
-                      >
-                        <div className="w-8 h-8 bg-[#F5F5F5] rounded-lg flex items-center justify-center flex-shrink-0">
-                          <svg className="w-4 h-4 text-[#999999]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-[#0A0A0A] truncate">{v.title}</p>
-                          <span className={`text-xs px-1.5 py-0.5 rounded-full ${SOURCE_BADGE[detectVideoType(v.video_url)]}`}>
-                            {getVideoLabel(v.video_url)}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
+                    {filteredClub.length === 0
+                      ? <p className="text-center text-[#CCCCCC] text-sm py-8">Aucune vidéo dans la bibliothèque du club.</p>
+                      : filteredClub.map(v => {
+                          const thumb = getThumbnailUrl(v.video_url)
+                          return (
+                            <button key={v.id} onClick={() => addClubVideo(v)} disabled={addingItem}
+                              className="w-full text-left flex items-center gap-3 p-2 rounded-lg border border-[#E5E5E5] hover:border-[#C41230] hover:bg-[#FFF5F7] transition-all disabled:opacity-50">
+                              <div className="w-20 h-12 rounded-lg overflow-hidden bg-[#0A0A0A] flex-shrink-0">
+                                {thumb
+                                  ? <img src={thumb} alt="" className="w-full h-full object-cover" />
+                                  : <div className="w-full h-full bg-[#222] flex items-center justify-center">
+                                      <svg className="w-4 h-4 text-white/30" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                                    </div>
+                                }
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-[#0A0A0A] truncate">{v.title}</p>
+                                <span className={`text-xs px-1.5 py-0.5 rounded-full ${SOURCE_BADGE[detectVideoType(v.video_url)]}`}>{getVideoLabel(v.video_url)}</span>
+                              </div>
+                            </button>
+                          )
+                        })
+                    }
                   </div>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div>
                     <label className="block text-xs uppercase tracking-widest text-[#999999] mb-1.5">Titre *</label>
-                    <input
-                      type="text"
-                      value={extTitle}
-                      onChange={e => setExtTitle(e.target.value)}
+                    <input type="text" value={extTitle} onChange={e => setExtTitle(e.target.value)}
                       placeholder="Ex : O-goshi — ma version"
-                      className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#C41230]"
-                    />
+                      className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#C41230]" />
                   </div>
                   <div>
                     <label className="block text-xs uppercase tracking-widest text-[#999999] mb-1.5">Lien vidéo *</label>
-                    <input
-                      type="url"
-                      value={extUrl}
-                      onChange={e => { setExtUrl(e.target.value); setExtUrlError(null) }}
+                    <input type="url" value={extUrl} onChange={e => { setExtUrl(e.target.value); setExtUrlError(null) }}
                       placeholder="https://youtube.com/… ou https://drive.google.com/…"
-                      className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none transition-colors ${extUrlError ? 'border-[#C41230]' : 'border-[#E5E5E5] focus:border-[#C41230]'}`}
-                    />
+                      className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none transition-colors ${extUrlError ? 'border-[#C41230]' : 'border-[#E5E5E5] focus:border-[#C41230]'}`} />
                     {extUrlError && <p className="text-xs text-[#C41230] mt-1">{extUrlError}</p>}
                     <p className="text-xs text-[#CCCCCC] mt-1">YouTube, Vimeo, Google Drive, NAS, lien direct…</p>
                   </div>
-                  <button
-                    onClick={addExternalVideo}
-                    disabled={!extTitle.trim() || !extUrl.trim() || addingItem}
-                    className="w-full bg-[#C41230] hover:bg-[#9B0E25] text-white text-sm py-2.5 rounded-lg transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
-                  >
+                  <button onClick={addExternalVideo} disabled={!extTitle.trim() || !extUrl.trim() || addingItem}
+                    className="w-full bg-[#C41230] hover:bg-[#9B0E25] text-white text-sm py-2.5 rounded-lg transition-colors disabled:opacity-40 flex items-center justify-center gap-2">
                     {addingItem ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Ajout…</> : 'Ajouter à la playlist'}
                   </button>
                 </div>
               )}
 
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="mt-4 w-full border border-[#E5E5E5] text-[#666666] text-sm py-2.5 rounded-lg hover:bg-[#F5F5F5] flex-shrink-0"
-              >
+              <button onClick={() => setShowAddModal(false)}
+                className="mt-4 w-full border border-[#E5E5E5] text-[#666666] text-sm py-2.5 rounded-lg hover:bg-[#F5F5F5] flex-shrink-0">
                 Fermer
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Modal renommage */}
+        {editingPlaylist && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <div className="absolute inset-0 bg-black/60" onClick={() => !editSaving && setEditingPlaylist(null)} />
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+              <h2 className="text-lg font-bold text-[#0A0A0A] mb-4">Renommer la playlist</h2>
+              <input type="text" value={editName} onChange={e => setEditName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && renamePlaylist()} autoFocus
+                className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#C41230] mb-5" />
+              <div className="flex gap-3">
+                <button onClick={() => setEditingPlaylist(null)} className="flex-1 border border-[#E5E5E5] text-[#666666] text-sm py-2.5 rounded-lg">Annuler</button>
+                <button onClick={renamePlaylist} disabled={!editName.trim() || editSaving}
+                  className="flex-1 bg-[#C41230] hover:bg-[#9B0E25] text-white text-sm py-2.5 rounded-lg disabled:opacity-40">
+                  {editSaving ? 'Enregistrement…' : 'Enregistrer'}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -438,17 +440,13 @@ export default function MesPlaylists() {
     )
   }
 
-  // Vue liste des playlists
+  // ── Vue liste des playlists ───────────────────────────────────────────────
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <p className="text-[#999999] text-sm">{playlists.length} playlist{playlists.length !== 1 ? 's' : ''}</p>
-        </div>
-        <button
-          onClick={() => setShowNewPlaylist(true)}
-          className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors flex items-center gap-2"
-        >
+        <p className="text-[#999999] text-sm">{playlists.length} playlist{playlists.length !== 1 ? 's' : ''}</p>
+        <button onClick={() => setShowNewPlaylist(true)}
+          className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors flex items-center gap-2">
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -470,52 +468,39 @@ export default function MesPlaylists() {
           <p className="text-[#CCCCCC] text-xs">Créez votre première playlist pour organiser vos vidéos.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {playlists.map(p => (
-            <div
-              key={p.id}
-              className="bg-white border border-[#E5E5E5] rounded-xl p-5 hover:border-[#CCCCCC] transition-all cursor-pointer group"
-              onClick={() => openPlaylistView(p)}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="w-10 h-10 bg-[#F5F5F5] rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-[#FFF5F7] transition-colors">
-                    <svg className="w-6 h-6 text-[#CCCCCC] group-hover:text-[#C41230] transition-colors" viewBox="0 0 24 24" fill="currentColor">
-                      <circle cx="12" cy="3.5" r="1.5" />
-                      <path d="M9 7.5c0-.3.2-.5.5-.5h5c.3 0 .5.2.5.5v.1L16.5 11H14l-.5-2h-3L10 11H7.5L9 7.6V7.5z" />
-                      <path d="M7.5 11l-2 5h2l1-2.5 1.5 1.5v4h2v-4.5l-1.8-1.8L11 11H7.5z" />
-                      <path d="M16.5 11l2 5h-2l-1-2.5-1.5 1.5v4h-2v-4.5l1.8-1.8L13 11h3.5z" />
-                    </svg>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-semibold text-[#0A0A0A] truncate">{p.name}</p>
-                    <p className="text-xs text-[#999999]">{p.item_count} vidéo{(p.item_count ?? 0) !== 1 ? 's' : ''}</p>
+            <div key={p.id} className="group cursor-pointer" onClick={() => openPlaylistView(p)}>
+              {/* Cover */}
+              <div className="rounded-xl overflow-hidden relative shadow-sm group-hover:shadow-md transition-shadow">
+                <PlaylistCover thumbs={p.cover_thumbs ?? []} name={p.name} />
+                {/* Overlay play */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 shadow-lg">
+                    <svg className="w-5 h-5 text-[#0A0A0A] ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
                   </div>
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0">
-                  <button
-                    onClick={e => { e.stopPropagation(); setEditingPlaylist(p); setEditName(p.name) }}
-                    className="text-[#CCCCCC] hover:text-[#666666] transition-colors p-1"
-                    title="Renommer"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {/* Actions */}
+                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                  <button onClick={e => { e.stopPropagation(); setEditingPlaylist(p); setEditName(p.name) }}
+                    className="w-7 h-7 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                   </button>
-                  <button
-                    onClick={e => { e.stopPropagation(); setDeletePlaylistId(p.id) }}
-                    className="text-[#CCCCCC] hover:text-[#C41230] transition-colors p-1"
-                    title="Supprimer"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <button onClick={e => { e.stopPropagation(); setDeletePlaylistId(p.id) }}
+                    className="w-7 h-7 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-[#C41230]">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                   </button>
                 </div>
               </div>
-              <p className="text-xs text-[#CCCCCC] mt-3">
-                Créée le {new Date(p.created_at).toLocaleDateString('fr-FR')}
-              </p>
+              {/* Infos sous la cover */}
+              <div className="mt-2 px-0.5">
+                <p className="font-semibold text-[#0A0A0A] text-sm truncate">{p.name}</p>
+                <p className="text-xs text-[#999999]">{p.item_count} vidéo{(p.item_count ?? 0) !== 1 ? 's' : ''}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -527,22 +512,14 @@ export default function MesPlaylists() {
           <div className="absolute inset-0 bg-black/60" onClick={() => !saving && setShowNewPlaylist(false)} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <h2 className="text-lg font-bold text-[#0A0A0A] mb-4">Nouvelle playlist</h2>
-            <input
-              type="text"
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
+            <input type="text" value={newName} onChange={e => setNewName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && createPlaylist()}
-              placeholder="Ex : Uchi-mata — perfectionnement"
-              autoFocus
-              className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#C41230] mb-5"
-            />
+              placeholder="Ex : Uchi-mata — perfectionnement" autoFocus
+              className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#C41230] mb-5" />
             <div className="flex gap-3">
               <button onClick={() => setShowNewPlaylist(false)} className="flex-1 border border-[#E5E5E5] text-[#666666] text-sm py-2.5 rounded-lg">Annuler</button>
-              <button
-                onClick={createPlaylist}
-                disabled={!newName.trim() || saving}
-                className="flex-1 bg-[#C41230] hover:bg-[#9B0E25] text-white text-sm py-2.5 rounded-lg disabled:opacity-40"
-              >
+              <button onClick={createPlaylist} disabled={!newName.trim() || saving}
+                className="flex-1 bg-[#C41230] hover:bg-[#9B0E25] text-white text-sm py-2.5 rounded-lg disabled:opacity-40">
                 {saving ? 'Création…' : 'Créer'}
               </button>
             </div>
@@ -550,27 +527,19 @@ export default function MesPlaylists() {
         </div>
       )}
 
-      {/* Modal renommage playlist */}
+      {/* Modal renommage */}
       {editingPlaylist && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/60" onClick={() => !editSaving && setEditingPlaylist(null)} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <h2 className="text-lg font-bold text-[#0A0A0A] mb-4">Renommer la playlist</h2>
-            <input
-              type="text"
-              value={editName}
-              onChange={e => setEditName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && renamePlaylist()}
-              autoFocus
-              className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#C41230] mb-5"
-            />
+            <input type="text" value={editName} onChange={e => setEditName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && renamePlaylist()} autoFocus
+              className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#C41230] mb-5" />
             <div className="flex gap-3">
               <button onClick={() => setEditingPlaylist(null)} className="flex-1 border border-[#E5E5E5] text-[#666666] text-sm py-2.5 rounded-lg">Annuler</button>
-              <button
-                onClick={renamePlaylist}
-                disabled={!editName.trim() || editSaving}
-                className="flex-1 bg-[#C41230] hover:bg-[#9B0E25] text-white text-sm py-2.5 rounded-lg disabled:opacity-40"
-              >
+              <button onClick={renamePlaylist} disabled={!editName.trim() || editSaving}
+                className="flex-1 bg-[#C41230] hover:bg-[#9B0E25] text-white text-sm py-2.5 rounded-lg disabled:opacity-40">
                 {editSaving ? 'Enregistrement…' : 'Enregistrer'}
               </button>
             </div>
@@ -578,7 +547,7 @@ export default function MesPlaylists() {
         </div>
       )}
 
-      {/* Confirmation suppression playlist */}
+      {/* Confirmation suppression */}
       {deletePlaylistId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/60" onClick={() => setDeletePlaylistId(null)} />
