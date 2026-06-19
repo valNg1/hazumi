@@ -39,6 +39,7 @@ export default function Bibliotheque() {
   const [filterBelt, setFilterBelt] = useState('')
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [editingVideo, setEditingVideo] = useState<Video | null>(null)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
 
   async function load() {
     const { data } = await supabase.from('videos').select('*').order('created_at', { ascending: false })
@@ -116,15 +117,33 @@ export default function Bibliotheque() {
           <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Bibliothèque vidéo</h1>
           <p className="text-[#999999] text-sm mt-0.5">{videos.length} vidéo{videos.length !== 1 ? 's' : ''} disponible{videos.length !== 1 ? 's' : ''}</p>
         </div>
-        <button
-          onClick={openAdd}
-          className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors flex items-center gap-2"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Ajouter une vidéo
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex border border-[#E5E5E5] rounded-lg overflow-hidden">
+            <button onClick={() => setViewMode('list')}
+              className={`px-3 py-2 transition-colors ${viewMode === 'list' ? 'bg-[#0A0A0A] text-white' : 'text-[#999999] hover:text-[#666666]'}`}
+              title="Vue liste">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+            </button>
+            <button onClick={() => setViewMode('grid')}
+              className={`px-3 py-2 transition-colors ${viewMode === 'grid' ? 'bg-[#0A0A0A] text-white' : 'text-[#999999] hover:text-[#666666]'}`}
+              title="Vue grille">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+              </svg>
+            </button>
+          </div>
+          <button
+            onClick={openAdd}
+            className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Ajouter
+          </button>
+        </div>
       </div>
 
       {/* Filtres ceinture */}
@@ -151,6 +170,47 @@ export default function Bibliotheque() {
         <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-[#CCCCCC] text-sm">Aucune vidéo{filterBelt ? ' pour cette ceinture' : ''}.</div>
+      ) : viewMode === 'list' ? (
+        <div className="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden">
+          {/* Header colonnes */}
+          <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-4 px-4 py-2 border-b border-[#F0F0F0] bg-[#FAFAFA]">
+            <span className="text-xs uppercase tracking-widest text-[#999999]">Titre</span>
+            <span className="text-xs uppercase tracking-widest text-[#999999]">Ceinture</span>
+            <span className="text-xs uppercase tracking-widest text-[#999999]">Source</span>
+            <span className="text-xs uppercase tracking-widest text-[#999999]">Date</span>
+          </div>
+          <div className="divide-y divide-[#F5F5F5]">
+            {filtered.map(video => {
+              const type = detectVideoType(video.video_url)
+              return (
+                <div key={video.id} className="grid grid-cols-[2fr_1fr_1fr_auto] gap-4 px-4 py-3 items-center hover:bg-[#FAFAFA] group transition-colors">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-[#0A0A0A] truncate">{video.title}</p>
+                    {video.description && <p className="text-xs text-[#CCCCCC] truncate mt-0.5">{video.description}</p>}
+                  </div>
+                  <div>
+                    {video.belt ? (
+                      <span className="flex items-center gap-1.5 text-xs text-[#666666]">
+                        <span className="w-2.5 h-2.5 rounded-full border border-[#CCCCCC] flex-shrink-0" style={{ backgroundColor: BELT_COLORS[video.belt] }} />
+                        {video.belt.replace('noire-', '').replace('noire', '1er Dan').replace(/^(\d)/, '$1e Dan')}
+                      </span>
+                    ) : <span className="text-xs text-[#CCCCCC]">—</span>}
+                  </div>
+                  <div>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SOURCE_BADGE[type]}`}>{getVideoLabel(video.video_url)}</span>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="text-xs text-[#CCCCCC]">{new Date(video.created_at).toLocaleDateString('fr-FR')}</span>
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => openEdit(video)} className="text-xs text-[#999999] hover:text-[#0A0A0A] transition-colors">Modifier</button>
+                      <button onClick={() => setDeleteId(video.id)} className="text-xs text-[#CCCCCC] hover:text-[#C41230] transition-colors">Supprimer</button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(video => {
@@ -162,24 +222,16 @@ export default function Bibliotheque() {
                   {type === 'direct' ? (
                     <video src={video.video_url} className="w-full h-full object-cover" controls preload="metadata" />
                   ) : (
-                    <iframe
-                      src={embedUrl}
-                      className="w-full h-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
+                    <iframe src={embedUrl} className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
                   )}
                 </div>
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <p className="font-semibold text-[#0A0A0A] text-sm leading-snug flex-1">{video.title}</p>
-                    <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${SOURCE_BADGE[type]}`}>
-                      {getVideoLabel(video.video_url)}
-                    </span>
+                    <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${SOURCE_BADGE[type]}`}>{getVideoLabel(video.video_url)}</span>
                   </div>
-                  {video.description && (
-                    <p className="text-xs text-[#999999] line-clamp-2 mb-2">{video.description}</p>
-                  )}
+                  {video.description && <p className="text-xs text-[#999999] line-clamp-2 mb-2">{video.description}</p>}
                   <div className="flex items-center gap-2 flex-wrap">
                     {video.belt && (
                       <span className="flex items-center gap-1 text-xs text-[#999999] bg-[#F5F5F5] px-2 py-0.5 rounded-full">
@@ -188,20 +240,14 @@ export default function Bibliotheque() {
                       </span>
                     )}
                     {video.technique_key && (
-                      <span className="text-xs text-[#999999] bg-[#F5F5F5] px-2 py-0.5 rounded-full">
-                        # {video.technique_key}
-                      </span>
+                      <span className="text-xs text-[#999999] bg-[#F5F5F5] px-2 py-0.5 rounded-full"># {video.technique_key}</span>
                     )}
                   </div>
                   <div className="mt-3 pt-3 border-t border-[#F5F5F5] flex items-center justify-between">
                     <span className="text-xs text-[#CCCCCC]">{new Date(video.created_at).toLocaleDateString('fr-FR')}</span>
                     <div className="flex items-center gap-3">
-                      <button onClick={() => openEdit(video)} className="text-xs text-[#999999] hover:text-[#0A0A0A] transition-colors">
-                        Modifier
-                      </button>
-                      <button onClick={() => setDeleteId(video.id)} className="text-xs text-[#CCCCCC] hover:text-[#C41230] transition-colors">
-                        Supprimer
-                      </button>
+                      <button onClick={() => openEdit(video)} className="text-xs text-[#999999] hover:text-[#0A0A0A] transition-colors">Modifier</button>
+                      <button onClick={() => setDeleteId(video.id)} className="text-xs text-[#CCCCCC] hover:text-[#C41230] transition-colors">Supprimer</button>
                     </div>
                   </div>
                 </div>
