@@ -9,7 +9,11 @@ const BELTS: { value: Belt; label: string; color: string }[] = [
   { value: 'verte', label: 'Verte', color: '#228B22' },
   { value: 'bleue', label: 'Bleue', color: '#1565C0' },
   { value: 'marron', label: 'Marron', color: '#6D3B1E' },
-  { value: 'noire', label: 'Noire', color: '#0A0A0A' },
+  { value: 'noire', label: 'Noire 1er Dan', color: '#0A0A0A' },
+  { value: 'noire-2', label: 'Noire 2e Dan', color: '#0A0A0A' },
+  { value: 'noire-3', label: 'Noire 3e Dan', color: '#0A0A0A' },
+  { value: 'noire-4', label: 'Noire 4e Dan', color: '#0A0A0A' },
+  { value: 'noire-5', label: 'Noire 5e Dan', color: '#0A0A0A' },
 ]
 
 interface ProfilData {
