@@ -40,6 +40,9 @@ export default function Bibliotheque() {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [editingVideo, setEditingVideo] = useState<Video | null>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
+  const [inlineEdit, setInlineEdit] = useState<Record<string, string> | null>(null)
+  const [inlineId, setInlineId] = useState<string | null>(null)
+  const [inlineSaving, setInlineSaving] = useState(false)
 
   async function load() {
     const { data } = await supabase.from('videos').select('*').order('created_at', { ascending: false })
@@ -51,6 +54,35 @@ export default function Bibliotheque() {
 
   function validateUrl(url: string): boolean {
     try { new URL(url); return true } catch { return false }
+  }
+
+  function startInline(video: Video) {
+    setInlineId(video.id)
+    setInlineEdit({
+      title: video.title,
+      description: video.description ?? '',
+      belt: video.belt ?? '',
+      technique_key: video.technique_key ?? '',
+      video_url: video.video_url,
+    })
+  }
+
+  function cancelInline() { setInlineId(null); setInlineEdit(null) }
+
+  async function saveInline() {
+    if (!inlineId || !inlineEdit) return
+    setInlineSaving(true)
+    await supabase.from('videos').update({
+      title: inlineEdit.title.trim(),
+      description: inlineEdit.description.trim() || null,
+      belt: inlineEdit.belt || null,
+      technique_key: inlineEdit.technique_key || null,
+      video_url: inlineEdit.video_url.trim(),
+    }).eq('id', inlineId)
+    setInlineId(null)
+    setInlineEdit(null)
+    setInlineSaving(false)
+    load()
   }
 
   function openAdd() {
@@ -180,10 +212,71 @@ export default function Bibliotheque() {
           </div>
           <div className="divide-y divide-[#F5F5F5]">
             {filtered.map(video => {
-              const type = detectVideoType(video.video_url)
+              const isEditing = inlineId === video.id
+              const type = detectVideoType(isEditing ? (inlineEdit?.video_url ?? video.video_url) : video.video_url)
+
+              if (isEditing && inlineEdit) {
+                return (
+                  <div key={video.id} className="bg-[#FAFAFA]">
+                    <div className="px-4 py-3" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '1rem', alignItems: 'start' }}>
+                      {/* Titre + description + URL */}
+                      <div className="space-y-1.5">
+                        <input
+                          autoFocus
+                          value={inlineEdit.title}
+                          onChange={e => setInlineEdit({ ...inlineEdit, title: e.target.value })}
+                          className="w-full text-sm font-medium border border-[#E5E5E5] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#C41230] bg-white"
+                          placeholder="Titre"
+                        />
+                        <input
+                          value={inlineEdit.description}
+                          onChange={e => setInlineEdit({ ...inlineEdit, description: e.target.value })}
+                          className="w-full text-xs border border-[#E5E5E5] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#C41230] bg-white text-[#666666]"
+                          placeholder="Description (optionnel)"
+                        />
+                        <input
+                          value={inlineEdit.video_url}
+                          onChange={e => setInlineEdit({ ...inlineEdit, video_url: e.target.value })}
+                          className="w-full text-xs border border-[#E5E5E5] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#C41230] bg-white text-[#999999]"
+                          placeholder="URL vidéo"
+                        />
+                      </div>
+                      {/* Ceinture */}
+                      <div>
+                        <select
+                          value={inlineEdit.belt}
+                          onChange={e => setInlineEdit({ ...inlineEdit, belt: e.target.value, technique_key: '' })}
+                          className="w-full text-xs border border-[#E5E5E5] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#C41230] bg-white"
+                        >
+                          <option value="">Toutes</option>
+                          {CURRICULUM.map(c => <option key={c.belt} value={c.belt}>{c.label}</option>)}
+                        </select>
+                      </div>
+                      {/* Source détectée */}
+                      <div className="pt-1">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SOURCE_BADGE[type]}`}>{getVideoLabel(inlineEdit.video_url || video.video_url)}</span>
+                      </div>
+                      {/* Actions */}
+                      <div className="flex flex-col gap-1.5 flex-shrink-0 items-end pt-0.5">
+                        <button
+                          onClick={saveInline}
+                          disabled={!inlineEdit.title.trim() || !inlineEdit.video_url.trim() || inlineSaving}
+                          className="text-xs bg-[#C41230] hover:bg-[#9B0E25] text-white px-3 py-1.5 rounded-lg disabled:opacity-40 transition-colors flex items-center gap-1.5"
+                        >
+                          {inlineSaving ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" /> : null}
+                          Enregistrer
+                        </button>
+                        <button onClick={cancelInline} className="text-xs text-[#999999] hover:text-[#666666] transition-colors">Annuler</button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              }
+
               return (
-                <div key={video.id} className="px-4 py-3 items-center hover:bg-[#FAFAFA] group transition-colors"
-                  style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '1rem', alignItems: 'center' }}>
+                <div key={video.id} className="px-4 py-3 hover:bg-[#FAFAFA] group transition-colors cursor-pointer"
+                  style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '1rem', alignItems: 'center' }}
+                  onClick={() => startInline(video)}>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-[#0A0A0A] truncate">{video.title}</p>
                     {video.description && <p className="text-xs text-[#CCCCCC] truncate mt-0.5">{video.description}</p>}
@@ -192,19 +285,16 @@ export default function Bibliotheque() {
                     {video.belt ? (
                       <span className="flex items-center gap-1.5 text-xs text-[#666666]">
                         <span className="w-2.5 h-2.5 rounded-full border border-[#CCCCCC] flex-shrink-0" style={{ backgroundColor: BELT_COLORS[video.belt] }} />
-                        {video.belt.replace('noire-', '').replace('noire', '1er Dan').replace(/^(\d)/, '$1e Dan')}
+                        {CURRICULUM.find(c => c.belt === video.belt)?.label ?? video.belt}
                       </span>
                     ) : <span className="text-xs text-[#CCCCCC]">—</span>}
                   </div>
                   <div>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SOURCE_BADGE[type]}`}>{getVideoLabel(video.video_url)}</span>
                   </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
+                  <div className="flex items-center gap-3 flex-shrink-0" onClick={e => e.stopPropagation()}>
                     <span className="text-xs text-[#CCCCCC]">{new Date(video.created_at).toLocaleDateString('fr-FR')}</span>
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEdit(video)} className="text-xs text-[#999999] hover:text-[#0A0A0A] transition-colors">Modifier</button>
-                      <button onClick={() => setDeleteId(video.id)} className="text-xs text-[#CCCCCC] hover:text-[#C41230] transition-colors">Supprimer</button>
-                    </div>
+                    <button onClick={() => setDeleteId(video.id)} className="text-xs text-[#CCCCCC] hover:text-[#C41230] transition-colors opacity-0 group-hover:opacity-100">Supprimer</button>
                   </div>
                 </div>
               )
