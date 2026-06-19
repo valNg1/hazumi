@@ -145,7 +145,9 @@ export default function Planning() {
   }
 
   async function handleSaveBatchSeances(rows: SeanceFormData[]) {
-    await supabase.from('seances').insert(rows)
+    if (rows.length === 0) return
+    const { error } = await supabase.from('seances').insert(rows)
+    if (error) { alert(`Erreur lors de la création : ${error.message}`); return }
     await loadSeances()
     setShowSeanceModal(false)
     setSelectedSeance(null)
@@ -384,10 +386,17 @@ function SeanceModal({ initial, coursList, onSave, onSaveBatch, onClose }: {
   const [form, setForm] = useState<SeanceFormData>(
     initial ? { titre: initial.titre, date: initial.date, heure_debut: initial.heure_debut?.slice(0, 5) ?? '18:00', heure_fin: initial.heure_fin?.slice(0, 5) ?? '19:30', duree_minutes: initial.duree_minutes, categorie: initial.categorie ?? 'tous', lieu: initial.lieu ?? '', intervenant: initial.intervenant ?? '', notes: initial.notes ?? '' } : SEANCE_EMPTY
   )
+  const defaultDateFin = (() => {
+    const now = new Date()
+    // Fin de saison = 30 juin de l'année prochaine (ou cette année si on est avant juillet)
+    const year = now.getMonth() < 6 ? now.getFullYear() : now.getFullYear() + 1
+    return `${year}-06-30`
+  })()
+
   const [rec, setRec] = useState<RecurringOpts>({
     enabled: false,
     jourIdx: 1,
-    dateFin: new Date(new Date().getFullYear(), 5, 30).toISOString().slice(0, 10),
+    dateFin: defaultDateFin,
     skipVacances: true,
   })
   const [saving, setSaving] = useState(false)
@@ -416,6 +425,10 @@ function SeanceModal({ initial, coursList, onSave, onSaveBatch, onClose }: {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
+    if (rec.enabled && !initial && preview.length === 0) {
+      alert('Aucune séance générée. Vérifiez le jour de répétition et la plage de dates.')
+      return
+    }
     setSaving(true)
     if (rec.enabled && !initial) {
       const rows = preview.map(date => ({ ...form, date }))
