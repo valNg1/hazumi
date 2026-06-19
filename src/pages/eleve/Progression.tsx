@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { CURRICULUM, getCategorieLabel, getBeltIndex } from '../../lib/curriculum'
 import type { Belt } from '../../types'
@@ -38,7 +38,8 @@ export default function Progression() {
   const [selectedBelt, setSelectedBelt] = useState<Belt | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [beltComplete, setBeltComplete] = useState(false)
-  const [mode, setMode] = useState<'grade' | 'playlist'>('grade')
+  const [searchParams] = useSearchParams()
+  const [mode, setMode] = useState<'grade' | 'playlist'>(searchParams.get('mode') === 'playlist' ? 'playlist' : 'grade')
 
   useEffect(() => {
     async function load() {

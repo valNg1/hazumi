@@ -79,7 +79,7 @@ export default function Accueil() {
         {/* Bloc grade actuel */}
         <div
           className="bg-white rounded-xl border border-[#E5E5E5] p-5 cursor-pointer hover:border-[#CCCCCC] transition-all group"
-          onClick={() => navigate('/eleve/progression')}
+          onClick={() => navigate('/eleve/progression?mode=grade')}
         >
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs uppercase tracking-widest text-[#999999]">Mon grade actuel</span>
@@ -119,7 +119,7 @@ export default function Accueil() {
         {/* Bloc playlists */}
         <div
           className="bg-white rounded-xl border border-[#E5E5E5] p-5 cursor-pointer hover:border-[#CCCCCC] transition-all group"
-          onClick={() => navigate('/eleve/progression')}
+          onClick={() => navigate('/eleve/progression?mode=playlist')}
         >
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs uppercase tracking-widest text-[#999999]">Mes playlists</span>
