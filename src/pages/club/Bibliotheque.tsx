@@ -274,17 +274,26 @@ export default function Bibliotheque() {
               }
 
               return (
-                <div key={video.id} className="px-4 py-3 hover:bg-[#FAFAFA] group transition-colors cursor-pointer"
-                  style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '1rem', alignItems: 'center' }}
-                  onClick={() => startInline(video)}>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-[#0A0A0A] truncate">{video.title}</p>
-                    {video.description && <p className="text-xs text-[#CCCCCC] truncate mt-0.5">{video.description}</p>}
+                <div key={video.id} className="px-4 py-3 hover:bg-[#FAFAFA] group transition-colors"
+                  style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '1rem', alignItems: 'center' }}>
+                  <div className="min-w-0 flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-[#0A0A0A] truncate">{video.title}</p>
+                      {video.description && <p className="text-xs text-[#CCCCCC] truncate mt-0.5">{video.description}</p>}
+                    </div>
+                    <button
+                      onClick={() => startInline(video)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 w-6 h-6 rounded flex items-center justify-center text-[#999999] hover:text-[#0A0A0A] hover:bg-[#F0F0F0]"
+                      title="Modifier">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
                   </div>
                   <div>
                     {video.belt ? (
                       <span className="flex items-center gap-1.5 text-xs text-[#666666]">
-                        <span className="w-2.5 h-2.5 rounded-full border border-[#CCCCCC] flex-shrink-0" style={{ backgroundColor: BELT_COLORS[video.belt] }} />
+                        <span className="w-2.5 h-2.5 rounded-full border border-[#CCCCCC] flex-shrink-0" style={{ backgroundColor: BELT_COLORS[video.belt] ?? '#0A0A0A' }} />
                         {CURRICULUM.find(c => c.belt === video.belt)?.label ?? video.belt}
                       </span>
                     ) : <span className="text-xs text-[#CCCCCC]">—</span>}
@@ -292,7 +301,7 @@ export default function Bibliotheque() {
                   <div>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SOURCE_BADGE[type]}`}>{getVideoLabel(video.video_url)}</span>
                   </div>
-                  <div className="flex items-center gap-3 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center gap-3 flex-shrink-0">
                     <span className="text-xs text-[#CCCCCC]">{new Date(video.created_at).toLocaleDateString('fr-FR')}</span>
                     <button onClick={() => setDeleteId(video.id)} className="text-xs text-[#CCCCCC] hover:text-[#C41230] transition-colors opacity-0 group-hover:opacity-100">Supprimer</button>
                   </div>
