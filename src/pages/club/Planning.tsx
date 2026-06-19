@@ -170,13 +170,13 @@ export default function Planning() {
     setSelectedSeance(null)
   }
 
-  async function handleSaveBatchSeances(rows: SeanceFormData[]) {
+  async function handleSaveBatchSeances(rows: SeanceFormData[], closeGenerate = false) {
     if (rows.length === 0) return
     const { error } = await supabase.from('seances').insert(rows)
     if (error) { alert(`Erreur lors de la création : ${error.message}`); return }
     await loadSeances()
-    setShowSeanceModal(false)
-    setSelectedSeance(null)
+    if (closeGenerate) { setShowGenerateModal(false); setGenerateCours(null) }
+    else { setShowSeanceModal(false); setSelectedSeance(null) }
   }
 
   async function handleDeleteSeance(id: string) {
@@ -292,7 +292,7 @@ export default function Planning() {
       {showGenerateModal && generateCours && (
         <GenerateModal
           cours={generateCours}
-          onSaveBatch={handleSaveBatchSeances}
+          onSaveBatch={rows => handleSaveBatchSeances(rows, true)}
           onClose={() => { setShowGenerateModal(false); setGenerateCours(null) }}
         />
       )}
@@ -361,7 +361,12 @@ function GenerateModal({ cours, onClose, onSaveBatch }: { cours: Cours; onClose:
     e.preventDefault()
     if (preview.length === 0) { alert('Aucune séance générée. Vérifiez la plage de dates.'); return }
     setSaving(true)
-    const rows: SeanceFormData[] = preview.map(date => ({
+    // Récupérer les dates déjà existantes pour ce cours
+    const { data: existing } = await supabase.from('seances').select('date').eq('cours_id', cours.id)
+    const existingDates = new Set((existing ?? []).map((s: { date: string }) => s.date))
+    const newDates = preview.filter(d => !existingDates.has(d))
+    if (newDates.length === 0) { alert('Toutes ces séances existent déjà.'); setSaving(false); return }
+    const rows: SeanceFormData[] = newDates.map(date => ({
       titre: cours.titre,
       date,
       heure_debut: cours.heure_debut.slice(0, 5),
