@@ -68,7 +68,6 @@ export default function Login() {
             {clubNom && (
               <h1 className="text-white text-xl font-bold tracking-widest uppercase">{clubNom}</h1>
             )}
-            <p className="text-[#666666] text-sm tracking-wider mt-1">L'école du ippon</p>
           </div>
 
           <div className="flex mb-6 bg-[#1A1A1A] rounded-lg p-1">
