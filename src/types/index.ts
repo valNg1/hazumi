@@ -7,13 +7,31 @@ export type Belt =
   | 'marron'
   | 'noire'
 
-export interface Judoka {
+export type UserRole = 'eleve' | 'club'
+
+export interface Profile {
   id: string
   user_id: string
-  name: string
+  role: UserRole
+  full_name: string
+  avatar_url?: string
+  created_at: string
+}
+
+export interface Judoka {
+  id: string
+  user_id?: string
+  full_name: string
   belt: Belt
   club?: string
   birth_date?: string
+  license_number?: string
+  license_expiry?: string
+  email?: string
+  phone?: string
+  emergency_contact?: string
+  cotisation_paid?: boolean
+  cert_medical_expiry?: string
   created_at: string
 }
 
@@ -22,6 +40,7 @@ export interface Technique {
   name: string
   category: TechniqueCategory
   description?: string
+  belt_required: Belt
 }
 
 export type TechniqueCategory =

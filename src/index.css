@@ -1,12 +1,21 @@
 @import "tailwindcss";
 
+@theme {
+  --color-hazumi-red: #C41230;
+  --color-hazumi-red-dark: #9B0E25;
+  --color-hazumi-black: #0A0A0A;
+  --font-sans: 'Apto', system-ui, sans-serif;
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Apto', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #F5F5F5;
+  color: #0A0A0A;
 }

@@ -1,0 +1,9 @@
+insert into videos (title, description, belt, technique_key, video_url) values
+('O-goshi — Grande hanche', 'Placement du corps, saisie et rotation. Points clés pour la projection.', 'blanche', 'o-goshi', 'https://drive.google.com/file/d/1ac3VZfJDkl1tJO76M9TC7D3ixlxg5tCO/view?usp=sharing'),
+('Ippon-seoi-nage — Projection épaule', 'Entrée, engagement et finition. Erreurs fréquentes à éviter.', 'jaune', 'ippon-seoi-nage', 'https://drive.google.com/file/d/1heBw9Rv616_7-NbGzMcnBaithLfO726B/view?usp=sharing'),
+('Harai-goshi — Fauchage de hanche', 'Déséquilibre, pivot et balayage de jambe. Analyse au ralenti.', 'orange', 'harai-goshi', 'https://drive.google.com/file/d/1lbAve6YJRI3qMZKYKdTc4MuGA9dl6oON/view?usp=sharing'),
+('Uchi-mata — Fauchage intérieur', 'Technique emblématique — placement du pied et timing.', 'bleue', 'uchi-mata', 'https://drive.google.com/file/d/1VXeHbo6yOt1wLdX23lROu1gm_uVXCuhl/view?usp=sharing'),
+('Kesa-gatame — Immobilisation en écharpe', 'Contrôle du buste, pression et maintien. Sorties à connaître.', 'blanche', 'kesa-gatame', 'https://drive.google.com/file/d/17B2g1syPHfPrL0QxvQ-QFc2RpFfNIbH7/view?usp=sharing'),
+('Juji-gatame — Clé de bras en croix', 'Entrée depuis le sol et finition. Attention aux règles de sécurité.', 'verte', 'juji-gatame', 'https://drive.google.com/file/d/1RFGkArPQYPqDC0xB2gaJgoC6MJDJp-AC/view?usp=sharing'),
+('Mae mawari ukemi — Chute avant roulée', 'Fondamental à maîtriser dès la ceinture blanche. Roulade progressive.', 'blanche', 'mae-mawari-ukemi', 'https://drive.google.com/file/d/1QorTmfdg48ThjTzm_YPAg1ahKKzo-08-/view?usp=sharing'),
+('Tai-otoshi — Chute du corps', 'Blocage du pied, traction et rotation. Combinaisons efficaces.', 'orange', 'tai-otoshi', 'https://drive.google.com/file/d/1doLEBzzwRgFIJW-CsdElf3gIwYU2MSfh/view?usp=sharing');
