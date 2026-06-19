@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 
 interface Professeur {
@@ -21,11 +21,12 @@ interface FormData {
   grade_arbitrage: string
   date_naissance: string
   notes: string
+  photo_url: string
 }
 
 const EMPTY: FormData = {
   full_name: '', email: '', phone: '', diplome: '',
-  grade_arbitrage: '', date_naissance: '', notes: '',
+  grade_arbitrage: '', date_naissance: '', notes: '', photo_url: '',
 }
 
 const DIPLOMES = [
@@ -146,9 +147,21 @@ function ProfModal({ initial, onSave, onClose }: { initial: Professeur | null; o
       full_name: initial.full_name, email: initial.email ?? '', phone: initial.phone ?? '',
       diplome: initial.diplome ?? '', grade_arbitrage: initial.grade_arbitrage ?? '',
       date_naissance: initial.date_naissance ?? '', notes: initial.notes ?? '',
+      photo_url: initial.photo_url ?? '',
     } : EMPTY
   )
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const photoRef = useRef<HTMLInputElement>(null)
+
+  async function handlePhotoUpload(file: File) {
+    setUploading(true)
+    const path = `professeurs/${Date.now()}_${file.name}`
+    await supabase.storage.from('documents').upload(path, file, { upsert: true })
+    const { data } = supabase.storage.from('documents').getPublicUrl(path)
+    setForm(f => ({ ...f, photo_url: data.publicUrl }))
+    setUploading(false)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); setSaving(true); await onSave(form); setSaving(false)
@@ -165,6 +178,26 @@ function ProfModal({ initial, onSave, onClose }: { initial: Professeur | null; o
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Photo */}
+          <div className="flex justify-center">
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full bg-[#0A0A0A] flex items-center justify-center text-white text-2xl font-bold overflow-hidden border-2 border-[#E5E5E5]">
+                {form.photo_url
+                  ? <img src={form.photo_url} alt="" className="w-full h-full object-cover" />
+                  : form.full_name ? form.full_name.charAt(0).toUpperCase() : '?'
+                }
+              </div>
+              <button type="button" onClick={() => photoRef.current?.click()}
+                className="absolute -bottom-1 -right-1 w-7 h-7 bg-[#C41230] rounded-full flex items-center justify-center shadow">
+                {uploading
+                  ? <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  : <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                }
+              </button>
+              <input ref={photoRef} type="file" accept="image/*" className="hidden"
+                onChange={e => e.target.files?.[0] && handlePhotoUpload(e.target.files[0])} />
+            </div>
+          </div>
           <Field label="Nom complet *">
             <input required type="text" value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })}
               placeholder="Prénom Nom" className={inputClass} />
