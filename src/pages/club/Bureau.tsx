@@ -56,9 +56,9 @@ export default function Bureau() {
     setUploadingLogo(true)
     const ext = file.name.split('.').pop()
     const path = `club/logo.${ext}`
-    const { error: upErr } = await supabase.storage.from('documents').upload(path, file, { upsert: true })
+    const { error: upErr } = await supabase.storage.from('club').upload(path, file, { upsert: true })
     if (upErr) { alert(`Erreur upload : ${upErr.message}`); setUploadingLogo(false); return }
-    const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(path)
+    const { data: { publicUrl } } = supabase.storage.from('club').getPublicUrl(path)
     if (clubId) {
       await supabase.from('clubs').update({ logo_url: publicUrl }).eq('id', clubId)
     } else {
