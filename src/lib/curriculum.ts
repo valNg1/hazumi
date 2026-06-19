@@ -121,7 +121,7 @@ export const CURRICULUM: BeltCurriculum[] = [
   },
   {
     belt: 'noire',
-    label: 'Ceinture Noire',
+    label: '1er Dan',
     color: '#0A0A0A',
     kyu: '1er Dan',
     objectif: 'Excellence technique, pédagogie et esprit du judo',
@@ -137,7 +137,7 @@ export const CURRICULUM: BeltCurriculum[] = [
   },
   {
     belt: 'noire-2',
-    label: 'Ceinture Noire',
+    label: '2e Dan',
     color: '#0A0A0A',
     kyu: '2e Dan',
     objectif: 'Approfondissement technique, enseignement et kata avancé',
@@ -154,7 +154,7 @@ export const CURRICULUM: BeltCurriculum[] = [
   },
   {
     belt: 'noire-3',
-    label: 'Ceinture Noire',
+    label: '3e Dan',
     color: '#0A0A0A',
     kyu: '3e Dan',
     objectif: 'Maîtrise complète, formation et rayonnement du judo',
@@ -170,7 +170,7 @@ export const CURRICULUM: BeltCurriculum[] = [
   },
   {
     belt: 'noire-4',
-    label: 'Ceinture Noire',
+    label: '4e Dan',
     color: '#0A0A0A',
     kyu: '4e Dan',
     objectif: 'Expert reconnu, contribution à la discipline',
@@ -185,7 +185,7 @@ export const CURRICULUM: BeltCurriculum[] = [
   },
   {
     belt: 'noire-5',
-    label: 'Ceinture Noire',
+    label: '5e Dan',
     color: '#0A0A0A',
     kyu: '5e Dan',
     objectif: 'Maître du judo — transmission et héritage',
