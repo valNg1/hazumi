@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { CURRICULUM, getCategorieLabel, getBeltIndex } from '../../lib/curriculum'
 import type { Belt } from '../../types'
 import type { TechniqueStatus } from '../../lib/curriculum'
+import MesPlaylists from './MesPlaylists'
 const BELT_COLORS: Record<Belt, string> = {
   blanche: '#FFFFFF', jaune: '#FFD700', orange: '#FF8C00',
   verte: '#228B22', bleue: '#1565C0', marron: '#6D3B1E', noire: '#0A0A0A',
@@ -37,6 +38,7 @@ export default function Progression() {
   const [selectedBelt, setSelectedBelt] = useState<Belt | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [beltComplete, setBeltComplete] = useState(false)
+  const [mode, setMode] = useState<'grade' | 'playlist'>('grade')
 
   useEffect(() => {
     async function load() {
@@ -110,6 +112,31 @@ export default function Progression() {
 
   return (
     <div>
+      {/* Titre + onglets */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight mb-4">Ma progression</h1>
+        <div className="flex gap-1 bg-[#F5F5F5] p-1 rounded-lg w-fit">
+          <button
+            onClick={() => setMode('grade')}
+            className={`px-4 py-2 text-xs rounded-md transition-all ${mode === 'grade' ? 'bg-white text-[#0A0A0A] shadow-sm font-semibold' : 'text-[#999999] hover:text-[#666666]'}`}
+          >
+            Par grade
+          </button>
+          <button
+            onClick={() => setMode('playlist')}
+            className={`px-4 py-2 text-xs rounded-md transition-all flex items-center gap-1.5 ${mode === 'playlist' ? 'bg-white text-[#0A0A0A] shadow-sm font-semibold' : 'text-[#999999] hover:text-[#666666]'}`}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+            </svg>
+            Mes playlists
+          </button>
+        </div>
+      </div>
+
+      {mode === 'playlist' && <MesPlaylists />}
+      {mode === 'grade' && <>
+
       {/* Toast encouragement */}
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#0A0A0A] text-white text-sm px-5 py-3 rounded-xl shadow-lg animate-pulse">
@@ -143,7 +170,6 @@ export default function Progression() {
       )}
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Ma progression</h1>
         {objectif && (
           <div className="mt-3 bg-white border border-[#E5E5E5] rounded-xl px-4 py-3 flex gap-3 items-start max-w-xl">
             <svg className="w-4 h-4 text-[#C41230] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -277,6 +303,7 @@ export default function Progression() {
           </p>
         </div>
       )}
+      </>}
     </div>
   )
 }
