@@ -172,8 +172,7 @@ export default function Bibliotheque() {
         <div className="text-center py-16 text-[#CCCCCC] text-sm">Aucune vidéo{filterBelt ? ' pour cette ceinture' : ''}.</div>
       ) : viewMode === 'list' ? (
         <div className="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden">
-          {/* Header colonnes */}
-          <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-4 px-4 py-2 border-b border-[#F0F0F0] bg-[#FAFAFA]">
+          <div className="px-4 py-2 border-b border-[#F0F0F0] bg-[#FAFAFA]" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '1rem' }}>
             <span className="text-xs uppercase tracking-widest text-[#999999]">Titre</span>
             <span className="text-xs uppercase tracking-widest text-[#999999]">Ceinture</span>
             <span className="text-xs uppercase tracking-widest text-[#999999]">Source</span>
@@ -183,7 +182,8 @@ export default function Bibliotheque() {
             {filtered.map(video => {
               const type = detectVideoType(video.video_url)
               return (
-                <div key={video.id} className="grid grid-cols-[2fr_1fr_1fr_auto] gap-4 px-4 py-3 items-center hover:bg-[#FAFAFA] group transition-colors">
+                <div key={video.id} className="px-4 py-3 items-center hover:bg-[#FAFAFA] group transition-colors"
+                  style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '1rem', alignItems: 'center' }}>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-[#0A0A0A] truncate">{video.title}</p>
                     {video.description && <p className="text-xs text-[#CCCCCC] truncate mt-0.5">{video.description}</p>}
