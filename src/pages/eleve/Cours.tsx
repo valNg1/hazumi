@@ -30,11 +30,31 @@ export default function Cours() {
   const [loading, setLoading] = useState(true)
   const [filterBelt, setFilterBelt] = useState('')
   const [active, setActive] = useState<Video | null>(null)
+  const [viewedIds, setViewedIds] = useState<Set<string>>(new Set())
+  const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
-    supabase.from('videos').select('*').order('created_at', { ascending: false })
-      .then(({ data }) => { setVideos(data ?? []); setLoading(false) })
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUserId(user?.id ?? null)
+      const [{ data: vids }, { data: views }] = await Promise.all([
+        supabase.from('videos').select('*').order('created_at', { ascending: false }),
+        user ? supabase.from('video_views').select('video_id').eq('user_id', user.id) : Promise.resolve({ data: [] }),
+      ])
+      setVideos(vids ?? [])
+      setViewedIds(new Set((views ?? []).map((v: { video_id: string }) => v.video_id)))
+      setLoading(false)
+    }
+    load()
   }, [])
+
+  async function openVideo(video: Video) {
+    setActive(video)
+    if (userId && !viewedIds.has(video.id)) {
+      await supabase.from('video_views').upsert({ user_id: userId, video_id: video.id }, { onConflict: 'user_id,video_id' })
+      setViewedIds(prev => new Set([...prev, video.id]))
+    }
+  }
 
   const filterIdx = filterBelt ? getBeltIndex(filterBelt as any) : -1
   const filtered = filterBelt
@@ -84,10 +104,16 @@ export default function Cours() {
             return (
               <div
                 key={video.id}
-                onClick={() => setActive(video)}
+                onClick={() => openVideo(video)}
                 className="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden cursor-pointer group hover:border-[#C41230] transition-colors"
               >
                 <div className="relative bg-[#0A0A0A] aspect-video flex items-center justify-center overflow-hidden">
+                  {viewedIds.has(video.id) && (
+                    <div className="absolute top-2 left-2 z-10 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                      Vu
+                    </div>
+                  )}
                   {type === 'youtube' && (() => {
                     const match = video.video_url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
                     const id = match?.[1]

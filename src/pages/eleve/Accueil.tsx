@@ -19,6 +19,10 @@ export default function Accueil() {
   const [acquis, setAcquis] = useState(0)
   const [total, setTotal] = useState(0)
   const [playlistCount, setPlaylistCount] = useState(0)
+  const [entrainementCount, setEntrainementCount] = useState(0)
+  const [coursTotal, setCoursTotal] = useState(0)
+  const [coursVus, setCoursVus] = useState(0)
+  const [coursNouveaux, setCoursNouveaux] = useState(0)
   const [dossierDone, setDossierDone] = useState(0)
   const [dossierTotal] = useState(3)
 
@@ -50,8 +54,32 @@ export default function Accueil() {
       }
 
       // Playlists
-      const { count } = await supabase.from('playlists').select('*', { count: 'exact', head: true }).eq('judoka_id', j.id)
-      setPlaylistCount(count ?? 0)
+      const { count: plCount } = await supabase.from('playlists').select('*', { count: 'exact', head: true }).eq('judoka_id', j.id)
+      setPlaylistCount(plCount ?? 0)
+
+      // Entraînements semaine à venir
+      const today = new Date()
+      const todayStr = today.toISOString().slice(0, 10)
+      const in7 = new Date(today); in7.setDate(today.getDate() + 7)
+      const in7Str = in7.toISOString().slice(0, 10)
+      const { count: entCount } = await supabase.from('entrainements')
+        .select('*', { count: 'exact', head: true })
+        .eq('judoka_id', j.id)
+        .gte('date', todayStr)
+        .lte('date', in7Str)
+      setEntrainementCount(entCount ?? 0)
+
+      // Cours stats
+      const sevenDaysAgo = new Date(today); sevenDaysAgo.setDate(today.getDate() - 7)
+      const sevenDaysAgoStr = sevenDaysAgo.toISOString()
+      const [{ count: totalVids }, { count: vuCount }, { count: newCount }] = await Promise.all([
+        supabase.from('videos').select('*', { count: 'exact', head: true }),
+        supabase.from('video_views').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('videos').select('*', { count: 'exact', head: true }).gte('created_at', sevenDaysAgoStr),
+      ])
+      setCoursTotal(totalVids ?? 0)
+      setCoursVus(vuCount ?? 0)
+      setCoursNouveaux(newCount ?? 0)
 
       setLoading(false)
     }
@@ -116,33 +144,66 @@ export default function Accueil() {
           )}
         </div>
 
-        {/* Bloc playlists */}
-        <div
-          className="bg-white rounded-xl border border-[#E5E5E5] p-5 cursor-pointer hover:border-[#CCCCCC] transition-all group"
-          onClick={() => navigate('/eleve/progression?mode=playlist')}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs uppercase tracking-widest text-[#999999]">Mes playlists</span>
-            <svg className="w-4 h-4 text-[#CCCCCC] group-hover:text-[#C41230] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-[#F5F5F5] rounded-xl flex items-center justify-center flex-shrink-0">
-              <svg className="w-6 h-6 text-[#CCCCCC]" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="12" cy="3.5" r="1.5" />
-                <path d="M9 7.5c0-.3.2-.5.5-.5h5c.3 0 .5.2.5.5v.1L16.5 11H14l-.5-2h-3L10 11H7.5L9 7.6V7.5z" />
-                <path d="M7.5 11l-2 5h2l1-2.5 1.5 1.5v4h2v-4.5l-1.8-1.8L11 11H7.5z" />
-                <path d="M16.5 11l2 5h-2l-1-2.5-1.5 1.5v4h-2v-4.5l1.8-1.8L13 11h3.5z" />
+        {/* 3 blocs stats en grille */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Mes playlists */}
+          <div
+            className="bg-white rounded-xl border border-[#E5E5E5] p-5 cursor-pointer hover:border-[#CCCCCC] transition-all group"
+            onClick={() => navigate('/eleve/progression?mode=playlist')}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs uppercase tracking-widest text-[#999999]">Mes playlists</span>
+              <svg className="w-3.5 h-3.5 text-[#CCCCCC] group-hover:text-[#C41230] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-[#0A0A0A]">{playlistCount}</p>
-              <p className="text-xs text-[#999999]">playlist{playlistCount !== 1 ? 's' : ''} créée{playlistCount !== 1 ? 's' : ''}</p>
+            <p className="text-3xl font-bold text-[#0A0A0A]">{playlistCount}</p>
+            <p className="text-xs text-[#999999] mt-1">playlist{playlistCount !== 1 ? 's' : ''}</p>
+          </div>
+
+          {/* Mes entraînements */}
+          <div
+            className="bg-white rounded-xl border border-[#E5E5E5] p-5 cursor-pointer hover:border-[#CCCCCC] transition-all group"
+            onClick={() => navigate('/eleve/entrainements')}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs uppercase tracking-widest text-[#999999]">Entraînements</span>
+              <svg className="w-3.5 h-3.5 text-[#CCCCCC] group-hover:text-[#C41230] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </div>
-            {playlistCount === 0 && (
-              <p className="text-xs text-[#CCCCCC] ml-2">Créez votre première playlist dans Ma progression.</p>
-            )}
+            <p className="text-3xl font-bold text-[#0A0A0A]">{entrainementCount}</p>
+            <p className="text-xs text-[#999999] mt-1">cette semaine</p>
+          </div>
+
+          {/* Mes cours */}
+          <div
+            className="bg-white rounded-xl border border-[#E5E5E5] p-5 cursor-pointer hover:border-[#CCCCCC] transition-all group"
+            onClick={() => navigate('/eleve/cours')}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs uppercase tracking-widest text-[#999999]">Mes cours</span>
+              <svg className="w-3.5 h-3.5 text-[#CCCCCC] group-hover:text-[#C41230] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+            <p className="text-3xl font-bold text-[#0A0A0A]">{coursTotal}</p>
+            <div className="mt-2 space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-[#999999]">Vues</span>
+                <span className="text-[#0A0A0A] font-medium">{coursVus}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-[#999999]">À voir</span>
+                <span className="text-[#0A0A0A] font-medium">{coursTotal - coursVus}</span>
+              </div>
+              {coursNouveaux > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-[#C41230]">Nouvelles</span>
+                  <span className="text-[#C41230] font-semibold">+{coursNouveaux}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
