@@ -120,7 +120,7 @@ export default function Progression() {
             onClick={() => setMode('grade')}
             className={`px-4 py-2 text-xs rounded-md transition-all ${mode === 'grade' ? 'bg-white text-[#0A0A0A] shadow-sm font-semibold' : 'text-[#999999] hover:text-[#666666]'}`}
           >
-            Par grade
+            Passage de grades
           </button>
           <button
             onClick={() => setMode('playlist')}

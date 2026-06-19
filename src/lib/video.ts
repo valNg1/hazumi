@@ -31,6 +31,16 @@ export function getEmbedUrl(url: string): string {
   return url
 }
 
+export function getThumbnailUrl(url: string): string | null {
+  const type = detectVideoType(url)
+  if (type === 'youtube') {
+    const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+    const id = match?.[1]
+    return id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null
+  }
+  return null
+}
+
 export function getVideoLabel(url: string): string {
   const type = detectVideoType(url)
   if (type === 'youtube') return 'YouTube'
