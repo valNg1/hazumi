@@ -5,6 +5,16 @@ import { CURRICULUM, getCategorieLabel, getBeltIndex } from '../../lib/curriculu
 import type { Belt } from '../../types'
 import type { TechniqueStatus } from '../../lib/curriculum'
 import MesPlaylists from './MesPlaylists'
+import { getThumbnailUrl, getEmbedUrl, getVideoLabel, detectVideoType } from '../../lib/video'
+
+interface BibVideo {
+  id: string
+  title: string
+  description: string | null
+  belt: string | null
+  technique_key: string | null
+  video_url: string
+}
 const BELT_COLORS: Record<Belt, string> = {
   blanche: '#FFFFFF', jaune: '#FFD700', orange: '#FF8C00',
   verte: '#228B22', bleue: '#1565C0', marron: '#6D3B1E',
@@ -41,6 +51,8 @@ export default function Progression() {
   const [beltComplete, setBeltComplete] = useState(false)
   const [searchParams] = useSearchParams()
   const [mode, setMode] = useState<'grade' | 'playlist'>(searchParams.get('mode') === 'playlist' ? 'playlist' : 'grade')
+  const [bibVideos, setBibVideos] = useState<BibVideo[]>([])
+  const [playerVideo, setPlayerVideo] = useState<BibVideo | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -87,6 +99,14 @@ export default function Progression() {
   }
 
   if (loading) return <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
+
+  useEffect(() => {
+    if (!selectedBelt) return
+    supabase.from('videos').select('id, title, description, belt, technique_key, video_url')
+      .eq('belt', selectedBelt)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setBibVideos(data ?? []))
+  }, [selectedBelt])
 
   if (!currentBelt) return (
     <div className="text-center py-16">
@@ -306,6 +326,65 @@ export default function Progression() {
           <p className="text-xs text-[#CCCCCC] text-center mt-4">
             Cliquez sur une technique pour faire tourner son statut : À travailler → En cours → Acquis
           </p>
+
+          {bibVideos.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-xs font-semibold uppercase tracking-widest text-[#999999] mb-3">
+                Vidéos — {activeCurriculum.label}
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {bibVideos.map(v => {
+                  const thumb = getThumbnailUrl(v.video_url)
+                  return (
+                    <div key={v.id} onClick={() => setPlayerVideo(v)}
+                      className="cursor-pointer group bg-white rounded-xl border border-[#E5E5E5] overflow-hidden hover:border-[#C41230] transition-all">
+                      <div className="aspect-video bg-[#0A0A0A] relative overflow-hidden">
+                        {thumb
+                          ? <img src={thumb} alt={v.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          : <div className="w-full h-full flex items-center justify-center text-[#444444] text-2xl">▶</div>
+                        }
+                      </div>
+                      <div className="p-3">
+                        <p className="text-xs font-semibold text-[#0A0A0A] line-clamp-2">{v.title}</p>
+                        <p className="text-xs text-[#999999] mt-0.5">{getVideoLabel(v.video_url)}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {playerVideo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/80" onClick={() => setPlayerVideo(null)} />
+          <div className="relative bg-[#0A0A0A] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[#1A1A1A]">
+              <div>
+                <p className="text-sm font-semibold text-white">{playerVideo.title}</p>
+                {playerVideo.description && <p className="text-xs text-[#666666] mt-0.5">{playerVideo.description}</p>}
+              </div>
+              <button onClick={() => setPlayerVideo(null)}
+                className="w-8 h-8 flex items-center justify-center text-[#666666] hover:text-white transition-colors flex-shrink-0 ml-4">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="aspect-video w-full">
+              {detectVideoType(playerVideo.video_url) !== 'direct'
+                ? <iframe
+                    src={getEmbedUrl(playerVideo.video_url)}
+                    className="w-full h-full"
+                    allow="autoplay; fullscreen"
+                    allowFullScreen
+                  />
+                : <video src={playerVideo.video_url} controls className="w-full h-full" />
+              }
+            </div>
+          </div>
         </div>
       )}
       </>}

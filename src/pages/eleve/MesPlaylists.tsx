@@ -66,6 +66,7 @@ function PlaylistCover({ thumbs, name }: { thumbs: (string | null)[], name: stri
 }
 
 export default function MesPlaylists() {
+  const [tab, setTab] = useState<'club' | 'perso'>('club')
   const [judokaId, setJudokaId] = useState<string | null>(null)
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const [loading, setLoading] = useState(true)
@@ -84,10 +85,12 @@ export default function MesPlaylists() {
   const [extUrlError, setExtUrlError] = useState<string | null>(null)
   const [addingItem, setAddingItem] = useState(false)
   const [playingItem, setPlayingItem] = useState<PlaylistItem | null>(null)
+  const [playingClubVideo, setPlayingClubVideo] = useState<ClubVideo | null>(null)
   const [deletePlaylistId, setDeletePlaylistId] = useState<string | null>(null)
   const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null)
   const [editName, setEditName] = useState('')
   const [editSaving, setEditSaving] = useState(false)
+  const [clubSearch, setClubSearch] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -96,7 +99,7 @@ export default function MesPlaylists() {
       const { data: judoka } = await supabase.from('judokas').select('id').eq('user_id', user.id).single()
       if (!judoka) { setLoading(false); return }
       setJudokaId(judoka.id)
-      await loadPlaylists(judoka.id)
+      await Promise.all([loadPlaylists(judoka.id), loadClubVideos()])
       setLoading(false)
     }
     load()
@@ -192,7 +195,6 @@ export default function MesPlaylists() {
     setExtTitle('')
     setExtUrlError(null)
     setShowAddModal(true)
-    loadClubVideos()
   }
 
   async function addClubVideo(video: ClubVideo) {
@@ -441,8 +443,100 @@ export default function MesPlaylists() {
   }
 
   // ── Vue liste des playlists ───────────────────────────────────────────────
+  const filteredClubMain = clubSearch.trim()
+    ? clubVideos.filter(v => v.title.toLowerCase().includes(clubSearch.toLowerCase()))
+    : clubVideos
+
   return (
     <div>
+      {/* Onglets Club / Mes playlists */}
+      <div className="flex gap-1 bg-[#F5F5F5] p-1 rounded-lg w-fit mb-6">
+        <button onClick={() => setTab('club')}
+          className={`px-4 py-2 text-xs rounded-md transition-all ${tab === 'club' ? 'bg-white text-[#0A0A0A] shadow-sm font-semibold' : 'text-[#999999] hover:text-[#666666]'}`}>
+          Bibliothèque du club
+        </button>
+        <button onClick={() => setTab('perso')}
+          className={`px-4 py-2 text-xs rounded-md transition-all ${tab === 'perso' ? 'bg-white text-[#0A0A0A] shadow-sm font-semibold' : 'text-[#999999] hover:text-[#666666]'}`}>
+          Mes playlists
+        </button>
+      </div>
+
+      {/* ── Bibliothèque du club ── */}
+      {tab === 'club' && (
+        <div>
+          {/* Lecteur club */}
+          {playingClubVideo && (() => {
+            const url = playingClubVideo.video_url
+            const vtype = detectVideoType(url)
+            return (
+              <div className="mb-5 bg-[#0A0A0A] rounded-xl overflow-hidden">
+                <div className="aspect-video">
+                  {vtype === 'direct'
+                    ? <video src={url} className="w-full h-full" controls autoPlay />
+                    : <iframe src={getEmbedUrl(url)} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                  }
+                </div>
+                <div className="px-4 py-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-white">{playingClubVideo.title}</p>
+                    {playingClubVideo.description && <p className="text-xs text-[#666666] mt-0.5">{playingClubVideo.description}</p>}
+                  </div>
+                  <button onClick={() => setPlayingClubVideo(null)} className="text-[#666666] hover:text-white transition-colors">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )
+          })()}
+
+          <input type="text" value={clubSearch} onChange={e => setClubSearch(e.target.value)}
+            placeholder="Rechercher dans la bibliothèque…"
+            className="w-full border border-[#E5E5E5] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#C41230] mb-5 transition-colors" />
+
+          {filteredClubMain.length === 0 ? (
+            <div className="text-center py-20 border-2 border-dashed border-[#E5E5E5] rounded-2xl">
+              <p className="text-[#999999] text-sm mb-1">Aucune vidéo disponible</p>
+              <p className="text-[#CCCCCC] text-xs">Le club n'a pas encore partagé de contenu.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {filteredClubMain.map(v => {
+                const thumb = getThumbnailUrl(v.video_url)
+                const isPlaying = playingClubVideo?.id === v.id
+                return (
+                  <div key={v.id} onClick={() => setPlayingClubVideo(isPlaying ? null : v)}
+                    className={`group cursor-pointer rounded-xl overflow-hidden border transition-all ${isPlaying ? 'border-[#C41230] shadow-lg shadow-red-100' : 'border-[#E5E5E5] hover:border-[#C41230]'}`}>
+                    <div className="relative aspect-video bg-[#0A0A0A]">
+                      {thumb
+                        ? <img src={thumb} alt={v.title} className="w-full h-full object-cover" />
+                        : <div className="w-full h-full bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center">
+                            <svg className="w-8 h-8 text-white/20" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                          </div>
+                      }
+                      <div className={`absolute inset-0 flex items-center justify-center bg-black/50 transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                        {isPlaying
+                          ? <svg className="w-10 h-10 text-white drop-shadow" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
+                          : <svg className="w-10 h-10 text-white drop-shadow" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                        }
+                      </div>
+                      {isPlaying && <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#C41230] animate-pulse" />}
+                    </div>
+                    <div className="p-3 bg-white">
+                      <p className={`text-xs font-semibold line-clamp-2 ${isPlaying ? 'text-[#C41230]' : 'text-[#0A0A0A]'}`}>{v.title}</p>
+                      <p className="text-xs text-[#999999] mt-0.5">{getVideoLabel(v.video_url)}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Mes playlists ── */}
+      {tab === 'perso' && <>
       <div className="flex items-center justify-between mb-6">
         <p className="text-[#999999] text-sm">{playlists.length} playlist{playlists.length !== 1 ? 's' : ''}</p>
         <button onClick={() => setShowNewPlaylist(true)}
@@ -561,6 +655,7 @@ export default function MesPlaylists() {
           </div>
         </div>
       )}
+      </>}
     </div>
   )
 }
