@@ -126,8 +126,11 @@ export default function Progression() {
             onClick={() => setMode('playlist')}
             className={`px-4 py-2 text-xs rounded-md transition-all flex items-center gap-1.5 ${mode === 'playlist' ? 'bg-white text-[#0A0A0A] shadow-sm font-semibold' : 'text-[#999999] hover:text-[#666666]'}`}
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="3.5" r="1.5" />
+              <path d="M9 7.5c0-.3.2-.5.5-.5h5c.3 0 .5.2.5.5v.1L16.5 11H14l-.5-2h-3L10 11H7.5L9 7.6V7.5z" />
+              <path d="M7.5 11l-2 5h2l1-2.5 1.5 1.5v4h2v-4.5l-1.8-1.8L11 11H7.5z" />
+              <path d="M16.5 11l2 5h-2l-1-2.5-1.5 1.5v4h-2v-4.5l1.8-1.8L13 11h3.5z" />
             </svg>
             Mes playlists
           </button>
