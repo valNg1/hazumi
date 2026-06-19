@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 
 interface CR {
@@ -32,14 +32,42 @@ export default function Bureau() {
   const [showModal, setShowModal] = useState(false)
   const [selected, setSelected] = useState<CR | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [clubId, setClubId] = useState<string | null>(null)
+  const [clubNom, setClubNom] = useState('')
+  const [clubLogo, setClubLogo] = useState<string | null>(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const logoInputRef = useRef<HTMLInputElement>(null)
 
   async function load() {
-    const { data } = await supabase.from('bureau_cr').select('*').order('date', { ascending: false })
-    setCrs(data ?? [])
+    const [{ data: crData }, { data: clubData }] = await Promise.all([
+      supabase.from('bureau_cr').select('*').order('date', { ascending: false }),
+      supabase.from('clubs').select('*').limit(1).single(),
+    ])
+    setCrs(crData ?? [])
+    if (clubData) { setClubId(clubData.id); setClubNom(clubData.nom); setClubLogo(clubData.logo_url) }
     setLoading(false)
   }
 
   useEffect(() => { load() }, [])
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingLogo(true)
+    const ext = file.name.split('.').pop()
+    const path = `club/logo.${ext}`
+    const { error: upErr } = await supabase.storage.from('documents').upload(path, file, { upsert: true })
+    if (upErr) { alert(`Erreur upload : ${upErr.message}`); setUploadingLogo(false); return }
+    const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(path)
+    if (clubId) {
+      await supabase.from('clubs').update({ logo_url: publicUrl }).eq('id', clubId)
+    } else {
+      const { data } = await supabase.from('clubs').insert({ nom: clubNom || 'Mon club', logo_url: publicUrl }).select().single()
+      if (data) setClubId(data.id)
+    }
+    setClubLogo(publicUrl)
+    setUploadingLogo(false)
+  }
 
   async function handleSave(form: FormData) {
     if (selected) {
@@ -71,6 +99,31 @@ export default function Bureau() {
         >
           + Nouveau CR
         </button>
+      </div>
+
+      {/* Logo club */}
+      <div className="bg-white rounded-xl border border-[#E5E5E5] p-5 mb-6 flex items-center gap-5">
+        <div
+          className="w-20 h-20 rounded-xl border-2 border-dashed border-[#E5E5E5] flex items-center justify-center cursor-pointer hover:border-[#C41230] transition-colors overflow-hidden flex-shrink-0"
+          onClick={() => logoInputRef.current?.click()}
+        >
+          {clubLogo
+            ? <img src={clubLogo} alt="Logo club" className="w-full h-full object-contain p-1" />
+            : <svg className="w-7 h-7 text-[#CCCCCC]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          }
+        </div>
+        <div>
+          <p className="text-sm font-medium text-[#0A0A0A]">Logo du club</p>
+          <p className="text-xs text-[#999999] mt-0.5">Affiché sur l'accueil des judokas</p>
+          <button
+            onClick={() => logoInputRef.current?.click()}
+            disabled={uploadingLogo}
+            className="mt-2 text-xs text-[#C41230] hover:underline disabled:opacity-50"
+          >
+            {uploadingLogo ? 'Envoi en cours…' : clubLogo ? 'Changer le logo' : 'Ajouter un logo'}
+          </button>
+        </div>
+        <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
       </div>
 
       {loading ? (

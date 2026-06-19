@@ -20,6 +20,7 @@ export default function Accueil() {
   const [pctGrade, setPctGrade] = useState(0)
   const [acquis, setAcquis] = useState(0)
   const [total, setTotal] = useState(0)
+  const [clubLogo, setClubLogo] = useState<string | null>(null)
   const [playlistCount, setPlaylistCount] = useState(0)
   const [entrainementCount, setEntrainementCount] = useState(0)
   const [coursTotal, setCoursTotal] = useState(0)
@@ -56,6 +57,10 @@ export default function Accueil() {
         setAcquis(a)
         setPctGrade(t > 0 ? Math.round((a / t) * 100) : 0)
       }
+
+      // Logo club
+      const { data: clubData } = await supabase.from('clubs').select('logo_url').limit(1).single()
+      setClubLogo(clubData?.logo_url ?? null)
 
       // Playlists
       const { count: plCount } = await supabase.from('playlists').select('*', { count: 'exact', head: true }).eq('judoka_id', j.id)
@@ -121,7 +126,7 @@ export default function Accueil() {
             <p className="text-[#999999] text-sm mt-0.5">Voici un résumé de ta progression.</p>
           </div>
         </div>
-        <img src="/logo.png" alt={club || 'Club'} title={club || 'Club'} className="h-12 w-12 object-contain opacity-80" />
+        <img src={clubLogo ?? '/logo.png'} alt={club || 'Club'} title={club || 'Club'} className="h-12 w-12 object-contain opacity-80" />
       </div>
 
       <div className="space-y-4">
