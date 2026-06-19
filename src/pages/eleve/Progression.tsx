@@ -98,8 +98,6 @@ export default function Progression() {
     }
   }
 
-  if (loading) return <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
-
   useEffect(() => {
     if (!selectedBelt) return
     supabase.from('videos').select('id, title, description, belt, technique_key, video_url')
@@ -107,6 +105,8 @@ export default function Progression() {
       .order('created_at', { ascending: false })
       .then(({ data }) => setBibVideos(data ?? []))
   }, [selectedBelt])
+
+  if (loading) return <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
 
   if (!currentBelt) return (
     <div className="text-center py-16">
