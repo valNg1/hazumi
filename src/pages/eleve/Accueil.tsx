@@ -1,10 +1,48 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { supabase } from '../../lib/supabase'
 import { CURRICULUM, getBeltIndex } from '../../lib/curriculum'
 import type { Belt } from '../../types'
 import type { TechniqueStatus } from '../../lib/curriculum'
+
+type ChartView = 'mois' | 'trimestre' | 'annee'
+type RawData = { seancesList: { date: string; duree_minutes: number }[]; confirmedList: { date: string; duree_minutes: number }[]; schoolY: number }
+
+function buildChartData(raw: RawData, view: ChartView): { label: string; possible: number; realise: number }[] {
+  const { seancesList, confirmedList, schoolY } = raw
+  const toH = (min: number) => Math.round((min / 60) * 10) / 10
+
+  if (view === 'mois') {
+    const MONTHS = [9,10,11,12,1,2,3,4,5,6]
+    return MONTHS.map(m => {
+      const y = m >= 9 ? schoolY : schoolY + 1
+      const key = `${y}-${String(m).padStart(2,'0')}`
+      const label = new Date(y, m - 1, 1).toLocaleDateString('fr-FR', { month: 'short' }).replace('.','')
+      const possible = seancesList.filter(s => s.date.startsWith(key)).reduce((a,s) => a + s.duree_minutes, 0)
+      const realise = confirmedList.filter(s => s.date.startsWith(key)).reduce((a,s) => a + s.duree_minutes, 0)
+      return { label, possible: toH(possible), realise: toH(realise) }
+    })
+  }
+  if (view === 'trimestre') {
+    const TRIMS = [
+      { label: 'T1 Sep–Nov', months: [9,10,11], y1: schoolY },
+      { label: 'T2 Déc–Fév', months: [12,1,2], y1: schoolY },
+      { label: 'T3 Mar–Mai', months: [3,4,5], y1: schoolY + 1 },
+      { label: 'T4 Jun', months: [6], y1: schoolY + 1 },
+    ]
+    return TRIMS.map(({ label, months, y1 }) => {
+      const keys = months.map(m => `${m >= 9 ? y1 : y1 + 1}-${String(m).padStart(2,'0')}`)
+      const possible = seancesList.filter(s => keys.some(k => s.date.startsWith(k))).reduce((a,s) => a + s.duree_minutes, 0)
+      const realise = confirmedList.filter(s => keys.some(k => s.date.startsWith(k))).reduce((a,s) => a + s.duree_minutes, 0)
+      return { label, possible: toH(possible), realise: toH(realise) }
+    })
+  }
+  // annee
+  const possible = seancesList.reduce((a,s) => a + s.duree_minutes, 0)
+  const realise = confirmedList.reduce((a,s) => a + s.duree_minutes, 0)
+  return [{ label: `${schoolY}–${schoolY+1}`, possible: toH(possible), realise: toH(realise) }]
+}
 
 const BELT_COLORS: Record<Belt, string> = {
   blanche: '#E5E5E5', jaune: '#FFD700', orange: '#FF8C00',
@@ -27,7 +65,9 @@ export default function Accueil() {
   const [confirmedCount, setConfirmedCount] = useState(0)
   const [totalUpcoming, setTotalUpcoming] = useState(0)
   const [confirmedMinutes, setConfirmedMinutes] = useState(0)
-  const [hoursChart, setHoursChart] = useState<{ mois: string; heures: number; cumul: number }[]>([])
+  const [chartData, setChartData] = useState<{ label: string; possible: number; realise: number }[]>([])
+  const [chartView, setChartView] = useState<ChartView>('mois')
+  const [rawData, setRawData] = useState<RawData | null>(null)
   const [coursTotal, setCoursTotal] = useState(0)
   const [coursVus, setCoursVus] = useState(0)
   const [coursNouveaux, setCoursNouveaux] = useState(0)
@@ -78,40 +118,30 @@ export default function Accueil() {
       const todayStr = today.toISOString().slice(0, 10)
       const in7 = new Date(today); in7.setDate(today.getDate() + 7)
       const in7Str = in7.toISOString().slice(0, 10)
-      // Année scolaire courante : sept Y → juin Y+1
-      const [{ data: allSeances }, { data: presencesData }] = await Promise.all([
-        supabase.from('seances').select('id, date, duree_minutes').gte('date', todayStr),
+      const schoolY = today.getMonth() >= 8 ? today.getFullYear() : today.getFullYear() - 1
+      const schoolStart = `${schoolY}-09-01`
+      const schoolEnd = `${schoolY + 1}-06-30`
+      type SeanceRef = { date: string; duree_minutes: number }
+      const [{ data: seancesAll }, { data: presencesData }] = await Promise.all([
+        supabase.from('seances').select('id, date, duree_minutes').gte('date', schoolStart).lte('date', schoolEnd),
         supabase.from('presences').select('seances(date, duree_minutes)').eq('judoka_id', j.id),
       ])
-      type SeanceRef = { date: string; duree_minutes: number }
       const allPresences = (presencesData ?? []).map((p: { seances: SeanceRef | SeanceRef[] | null }) => {
-        const s = p.seances
-        return Array.isArray(s) ? s[0] : s
+        const s = p.seances; return Array.isArray(s) ? s[0] : s
       }).filter(Boolean) as SeanceRef[]
       const upcomingPresences = allPresences.filter(s => s.date >= todayStr && s.date <= in7Str)
       const futureConfirmed = allPresences.filter(s => s.date >= todayStr)
       setEntrainementCount(upcomingPresences.length)
-      setTotalUpcoming((allSeances ?? []).length)
+      setTotalUpcoming((seancesAll ?? []).filter(s => s.date >= todayStr).length)
       setConfirmedCount(futureConfirmed.length)
       setConfirmedMinutes(futureConfirmed.reduce((sum, s) => sum + s.duree_minutes, 0))
 
-      // Heures cumulées sur les 12 prochains mois (séances confirmées à venir)
-      const monthMinutes: Record<string, number> = {}
-      for (const s of allPresences) {
-        const key = s.date.slice(0, 7) // YYYY-MM
-        monthMinutes[key] = (monthMinutes[key] ?? 0) + s.duree_minutes
-      }
-      // Générer 12 mois à partir de ce mois-ci
-      const chart = Array.from({ length: 12 }, (_, i) => {
-        const d = new Date(today.getFullYear(), today.getMonth() + i, 1)
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-        const label = d.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '')
-        return { mois: label, heures: Math.round(((monthMinutes[key] ?? 0) / 60) * 10) / 10 }
-      })
-      // Cumul progressif
-      let cumul = 0
-      const chartWithCumul = chart.map(pt => { cumul += pt.heures; return { ...pt, cumul: Math.round(cumul * 10) / 10 } })
-      setHoursChart(chartWithCumul)
+      // Données brutes pour le graph (année scolaire)
+      const seancesList = (seancesAll ?? []) as SeanceRef[]
+      const confirmedList = allPresences.filter(s => s.date >= schoolStart && s.date <= schoolEnd)
+      const raw = { seancesList, confirmedList, schoolY }
+      setRawData(raw)
+      setChartData(buildChartData(raw, 'mois'))
 
       // Cours stats
       const sevenDaysAgo = new Date(today); sevenDaysAgo.setDate(today.getDate() - 7)
@@ -279,29 +309,35 @@ export default function Accueil() {
           </div>
         </div>
 
-        {/* Graph heures cumulées */}
+        {/* Graph heures : possible vs réalisé */}
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-xs uppercase tracking-widest text-[#999999]">Heures d'entraînement — 12 mois</span>
-            <span className="text-sm font-bold text-[#C41230]">{hoursChart[hoursChart.length - 1]?.cumul ?? 0}h cumulées</span>
+            <span className="text-xs uppercase tracking-widest text-[#999999]">Heures d'entraînement</span>
+            <div className="flex gap-1">
+              {(['mois', 'trimestre', 'annee'] as ChartView[]).map(v => (
+                <button
+                  key={v}
+                  onClick={() => { setChartView(v); if (rawData) setChartData(buildChartData(rawData, v)) }}
+                  className={`text-xs px-2.5 py-1 rounded-md transition-colors ${chartView === v ? 'bg-[#0A0A0A] text-white' : 'text-[#999999] hover:text-[#0A0A0A]'}`}
+                >
+                  {v === 'annee' ? 'Année' : v.charAt(0).toUpperCase() + v.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
-          <ResponsiveContainer width="100%" height={120}>
-            <AreaChart data={hoursChart} margin={{ top: 4, right: 0, left: -28, bottom: 0 }}>
-              <defs>
-                <linearGradient id="hGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#C41230" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#C41230" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="mois" tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} />
+          <ResponsiveContainer width="100%" height={150}>
+            <BarChart data={chartData} margin={{ top: 4, right: 0, left: -20, bottom: 0 }} barCategoryGap="30%">
+              <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} unit="h" />
               <Tooltip
                 contentStyle={{ fontSize: 11, border: '1px solid #E5E5E5', borderRadius: 8, boxShadow: 'none' }}
-                formatter={(v: unknown, name: unknown) => [`${v}h`, name === 'cumul' ? 'Cumulé' : 'Ce mois']}
-                labelStyle={{ color: '#666', fontWeight: 600 }}
+                formatter={(v: unknown, name: unknown) => [`${v}h`, name === 'possible' ? 'Possible' : 'Réalisé']}
+                labelStyle={{ color: '#333', fontWeight: 600 }}
               />
-              <Area type="monotone" dataKey="cumul" stroke="#C41230" strokeWidth={2} fill="url(#hGrad)" dot={false} activeDot={{ r: 4, fill: '#C41230' }} />
-            </AreaChart>
+              <Legend formatter={(v) => v === 'possible' ? 'Possible' : 'Réalisé'} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+              <Bar dataKey="possible" fill="#E5E5E5" radius={[3,3,0,0]} />
+              <Bar dataKey="realise" fill="#C41230" radius={[3,3,0,0]} />
+            </BarChart>
           </ResponsiveContainer>
         </div>
 
