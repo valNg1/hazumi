@@ -139,7 +139,7 @@ export default function Login() {
 
       <footer className="text-center text-[#444444] text-xs leading-relaxed mt-8">
         <p>Propulsé par <span className="text-[#666666]">Hazumi</span> — L'école du Ippon</p>
-        <p className="mt-1">Groupe DAKOTAlb · 59, rue de Ponthieu · 75008 Paris</p>
+        <p className="mt-1">Groupe DAKOTAlab · 59, rue de Ponthieu · 75008 Paris</p>
         <p className="mt-0.5">SIREN 951 717 925</p>
       </footer>
     </div>
