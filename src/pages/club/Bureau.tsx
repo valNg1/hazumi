@@ -101,7 +101,7 @@ export default function Bureau() {
         </button>
       </div>
 
-      {/* Logo club */}
+      {/* Identité du club */}
       <div className="bg-white rounded-xl border border-[#E5E5E5] p-5 mb-6 flex items-center gap-5">
         <div
           className="w-20 h-20 rounded-xl border-2 border-dashed border-[#E5E5E5] flex items-center justify-center cursor-pointer hover:border-[#C41230] transition-colors overflow-hidden flex-shrink-0"
@@ -112,9 +112,9 @@ export default function Bureau() {
             : <svg className="w-7 h-7 text-[#CCCCCC]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
           }
         </div>
-        <div>
-          <p className="text-sm font-medium text-[#0A0A0A]">Logo du club</p>
-          <p className="text-xs text-[#999999] mt-0.5">Affiché sur l'accueil des judokas</p>
+        <div className="flex-1 min-w-0">
+          <NomClubEditor clubId={clubId} clubNom={clubNom} onSaved={setClubNom} />
+          <p className="text-xs text-[#999999] mt-1">Affiché sur la page de connexion et l'accueil des judokas</p>
           <button
             onClick={() => logoInputRef.current?.click()}
             disabled={uploadingLogo}
@@ -183,6 +183,51 @@ export default function Bureau() {
       {showModal && (
         <CRModal initial={selected} onSave={handleSave} onClose={() => { setShowModal(false); setSelected(null) }} />
       )}
+    </div>
+  )
+}
+
+function NomClubEditor({ clubId, clubNom, onSaved }: { clubId: string | null; clubNom: string; onSaved: (nom: string) => void }) {
+  const [editing, setEditing] = useState(false)
+  const [value, setValue] = useState(clubNom)
+  const [saving, setSaving] = useState(false)
+
+  async function save() {
+    if (!value.trim()) return
+    setSaving(true)
+    if (clubId) {
+      await supabase.from('clubs').update({ nom: value.trim() }).eq('id', clubId)
+    } else {
+      await supabase.from('clubs').insert({ nom: value.trim() })
+    }
+    onSaved(value.trim())
+    setSaving(false)
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-2">
+        <input
+          autoFocus
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false) }}
+          className="text-sm font-semibold text-[#0A0A0A] border-b border-[#C41230] bg-transparent outline-none flex-1"
+        />
+        <button onClick={save} disabled={saving} className="text-xs text-[#C41230] font-medium hover:underline disabled:opacity-50">
+          {saving ? '…' : 'OK'}
+        </button>
+        <button onClick={() => setEditing(false)} className="text-xs text-[#999999] hover:underline">Annuler</button>
+      </div>
+    )
+  }
+  return (
+    <div className="flex items-center gap-2 group">
+      <p className="text-sm font-semibold text-[#0A0A0A]">{clubNom || 'Nom du club'}</p>
+      <button onClick={() => { setValue(clubNom); setEditing(true) }} className="text-xs text-[#CCCCCC] hover:text-[#C41230] opacity-0 group-hover:opacity-100 transition-opacity">
+        Modifier
+      </button>
     </div>
   )
 }

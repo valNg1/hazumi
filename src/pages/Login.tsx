@@ -137,9 +137,12 @@ export default function Login() {
         </div>
       </div>
 
-      <footer className="text-center text-[#444444] text-xs leading-relaxed mt-8">
-        <p>Propulsé par <span className="text-[#666666]">Hazumi</span> — L'école du Ippon</p>
-        <p className="mt-1">Groupe DAKOTAlab · 59, rue de Ponthieu · 75008 Paris</p>
+      <footer className="flex flex-col items-center text-[#444444] text-xs leading-relaxed mt-8">
+        <div className="flex items-center gap-2 mb-2">
+          <img src="/logo.png" alt="Hazumi" className="h-5 w-5 object-contain opacity-40" />
+          <p>Propulsé par <span className="text-[#666666]">Hazumi</span> — L'école du Ippon</p>
+        </div>
+        <p>Groupe DAKOTAlab · 59, rue de Ponthieu · 75008 Paris</p>
         <p className="mt-0.5">SIREN 951 717 925</p>
       </footer>
     </div>
