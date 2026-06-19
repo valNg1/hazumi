@@ -66,7 +66,11 @@ export default function Accueil() {
         .from('presences')
         .select('seances(date, duree_minutes)')
         .eq('judoka_id', j.id)
-      const allPresences = (presencesData ?? []).map((p: { seances: { date: string; duree_minutes: number } | null }) => p.seances).filter(Boolean) as { date: string; duree_minutes: number }[]
+      type SeanceRef = { date: string; duree_minutes: number }
+      const allPresences = (presencesData ?? []).map((p: { seances: SeanceRef | SeanceRef[] | null }) => {
+        const s = p.seances
+        return Array.isArray(s) ? s[0] : s
+      }).filter(Boolean) as SeanceRef[]
       const upcomingPresences = allPresences.filter(s => s.date >= todayStr && s.date <= in7Str)
       setEntrainementCount(upcomingPresences.length)
 
