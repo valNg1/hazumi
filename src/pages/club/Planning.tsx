@@ -367,6 +367,7 @@ function GenerateModal({ cours, onClose, onSaveBatch }: { cours: Cours; onClose:
     const newDates = preview.filter(d => !existingDates.has(d))
     if (newDates.length === 0) { alert('Toutes ces séances existent déjà.'); setSaving(false); return }
     const rows: SeanceFormData[] = newDates.map(date => ({
+      cours_id: cours.id,
       titre: cours.titre,
       date,
       heure_debut: cours.heure_debut.slice(0, 5),
@@ -498,7 +499,7 @@ function CoursModal({ initial, onSave, onClose }: { initial: Cours | null; onSav
   )
 }
 
-interface SeanceFormData { titre: string; date: string; heure_debut: string; heure_fin: string; duree_minutes: number; categorie: string; lieu: string; intervenant: string; notes: string }
+interface SeanceFormData { titre: string; date: string; heure_debut: string; heure_fin: string; duree_minutes: number; categorie: string; lieu: string; intervenant: string; notes: string; cours_id?: string }
 const SEANCE_EMPTY: SeanceFormData = { titre: '', date: new Date().toISOString().slice(0, 10), heure_debut: '18:00', heure_fin: '19:30', duree_minutes: 90, categorie: 'tous', lieu: '', intervenant: '', notes: '' }
 
 interface RecurringOpts { enabled: boolean; jourIdx: number; dateFin: string; skipVacances: boolean }
