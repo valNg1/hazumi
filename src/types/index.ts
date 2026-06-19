@@ -6,6 +6,10 @@ export type Belt =
   | 'bleue'
   | 'marron'
   | 'noire'
+  | 'noire-2'
+  | 'noire-3'
+  | 'noire-4'
+  | 'noire-5'
 
 export type UserRole = 'eleve' | 'club'
 

@@ -4,13 +4,9 @@ import { supabase } from '../../lib/supabase'
 import type { Belt, Judoka } from '../../types'
 
 const BELT_COLORS: Record<Belt, string> = {
-  blanche: '#FFFFFF',
-  jaune: '#FFD700',
-  orange: '#FF8C00',
-  verte: '#228B22',
-  bleue: '#1565C0',
-  marron: '#6D3B1E',
-  noire: '#0A0A0A',
+  blanche: '#FFFFFF', jaune: '#FFD700', orange: '#FF8C00',
+  verte: '#228B22', bleue: '#1565C0', marron: '#6D3B1E',
+  noire: '#0A0A0A', 'noire-2': '#0A0A0A', 'noire-3': '#0A0A0A', 'noire-4': '#0A0A0A', 'noire-5': '#0A0A0A',
 }
 
 interface JudokaExt extends Judoka {
