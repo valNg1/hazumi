@@ -22,80 +22,130 @@ interface Cours {
   lieu?: string
 }
 
-interface FormData {
+interface Seance {
+  id: string
   titre: string
-  jour: string
-  heure_debut: string
-  heure_fin: string
-  intervenant: string
-  categorie: string
-  lieu: string
+  date: string
+  heure_debut: string | null
+  heure_fin: string | null
+  duree_minutes: number
+  categorie: string | null
+  lieu: string | null
+  intervenant: string | null
+  notes: string | null
+  _presenceCount?: number
 }
 
-const EMPTY: FormData = {
-  titre: '',
-  jour: 'lundi',
-  heure_debut: '18:00',
-  heure_fin: '19:30',
-  intervenant: '',
-  categorie: 'tous',
-  lieu: '',
-}
+type Tab = 'planning' | 'seances'
+
+const inputClass = 'w-full bg-[#FAFAFA] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm text-[#0A0A0A] focus:outline-none focus:border-[#C41230] transition-colors'
 
 export default function Planning() {
+  const [tab, setTab] = useState<Tab>('planning')
   const [cours, setCours] = useState<Cours[]>([])
+  const [seances, setSeances] = useState<Seance[]>([])
   const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
-  const [selected, setSelected] = useState<Cours | null>(null)
+  const [showCoursModal, setShowCoursModal] = useState(false)
+  const [showSeanceModal, setShowSeanceModal] = useState(false)
+  const [selectedCours, setSelectedCours] = useState<Cours | null>(null)
+  const [selectedSeance, setSelectedSeance] = useState<Seance | null>(null)
 
-  async function load() {
+  async function loadCours() {
     const { data } = await supabase.from('cours').select('*').order('jour').order('heure_debut')
     setCours(data ?? [])
-    setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  async function loadSeances() {
+    const { data: s } = await supabase.from('seances').select('*').order('date').order('heure_debut')
+    const { data: p } = await supabase.from('presences').select('seance_id')
+    const counts: Record<string, number> = {}
+    for (const x of p ?? []) counts[x.seance_id] = (counts[x.seance_id] ?? 0) + 1
+    setSeances((s ?? []).map((x: Seance) => ({ ...x, _presenceCount: counts[x.id] ?? 0 })))
+  }
+
+  useEffect(() => {
+    async function init() {
+      await Promise.all([loadCours(), loadSeances()])
+      setLoading(false)
+    }
+    init()
+  }, [])
 
   const byJour = JOURS.reduce<Record<string, Cours[]>>((acc, j) => {
     acc[j] = cours.filter(c => c.jour === j)
     return acc
   }, {})
 
-  async function handleSave(form: FormData) {
-    if (selected) {
-      await supabase.from('cours').update(form).eq('id', selected.id)
+  const today = new Date().toISOString().slice(0, 10)
+  const upcoming = seances.filter(s => s.date >= today)
+  const past = seances.filter(s => s.date < today)
+
+  async function handleSaveCours(form: CoursFormData) {
+    if (selectedCours) {
+      await supabase.from('cours').update(form).eq('id', selectedCours.id)
     } else {
       await supabase.from('cours').insert(form)
     }
-    await load()
-    setShowModal(false)
-    setSelected(null)
+    await loadCours()
+    setShowCoursModal(false)
+    setSelectedCours(null)
   }
 
-  async function handleDelete(id: string) {
+  async function handleDeleteCours(id: string) {
     if (!confirm('Supprimer ce cours ?')) return
     await supabase.from('cours').delete().eq('id', id)
-    await load()
+    await loadCours()
+  }
+
+  async function handleSaveSeance(form: SeanceFormData) {
+    if (selectedSeance) {
+      await supabase.from('seances').update(form).eq('id', selectedSeance.id)
+    } else {
+      await supabase.from('seances').insert(form)
+    }
+    await loadSeances()
+    setShowSeanceModal(false)
+    setSelectedSeance(null)
+  }
+
+  async function handleDeleteSeance(id: string) {
+    if (!confirm('Supprimer cette séance ?')) return
+    await supabase.from('seances').delete().eq('id', id)
+    await loadSeances()
   }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Planning des cours</h1>
-          <p className="text-[#666666] text-sm mt-1">{cours.length} cours planifié{cours.length !== 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Planning</h1>
         </div>
         <button
-          onClick={() => { setSelected(null); setShowModal(true) }}
+          onClick={() => {
+            if (tab === 'planning') { setSelectedCours(null); setShowCoursModal(true) }
+            else { setSelectedSeance(null); setShowSeanceModal(true) }
+          }}
           className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-5 py-2.5 rounded-lg transition-colors"
         >
           + Ajouter
         </button>
       </div>
 
+      <div className="flex gap-1 mb-6 border-b border-[#E5E5E5]">
+        {([['planning', 'Planning hebdo'], ['seances', 'Séances planifiées']] as [Tab, string][]).map(([t, label]) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-4 py-2.5 text-sm border-b-2 -mb-px transition-colors ${tab === t ? 'border-[#C41230] text-[#0A0A0A] font-medium' : 'border-transparent text-[#999999] hover:text-[#666666]'}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
-      ) : (
+      ) : tab === 'planning' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {JOURS.map(jour => (
             <div key={jour} className="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden">
@@ -111,8 +161,8 @@ export default function Planning() {
                     <CoursCard
                       key={c.id}
                       cours={c}
-                      onEdit={() => { setSelected(c); setShowModal(true) }}
-                      onDelete={() => handleDelete(c.id)}
+                      onEdit={() => { setSelectedCours(c); setShowCoursModal(true) }}
+                      onDelete={() => handleDeleteCours(c.id)}
                     />
                   ))
                 )}
@@ -120,13 +170,59 @@ export default function Planning() {
             </div>
           ))}
         </div>
+      ) : (
+        <div>
+          {upcoming.length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-xs uppercase tracking-widest text-[#999999] mb-3">À venir — {upcoming.length} séance{upcoming.length !== 1 ? 's' : ''}</h2>
+              <div className="space-y-3">
+                {upcoming.map(s => (
+                  <SeanceCard
+                    key={s.id}
+                    seance={s}
+                    onEdit={() => { setSelectedSeance(s); setShowSeanceModal(true) }}
+                    onDelete={() => handleDeleteSeance(s.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+          {past.length > 0 && (
+            <div>
+              <h2 className="text-xs uppercase tracking-widest text-[#999999] mb-3">Passées — {past.length} séance{past.length !== 1 ? 's' : ''}</h2>
+              <div className="space-y-3 opacity-60">
+                {[...past].reverse().map(s => (
+                  <SeanceCard
+                    key={s.id}
+                    seance={s}
+                    onEdit={() => { setSelectedSeance(s); setShowSeanceModal(true) }}
+                    onDelete={() => handleDeleteSeance(s.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+          {seances.length === 0 && (
+            <div className="text-center py-16 text-[#CCCCCC] text-sm">
+              Aucune séance planifiée. Cliquez sur "+ Ajouter" pour créer la première.
+            </div>
+          )}
+        </div>
       )}
 
-      {showModal && (
+      {showCoursModal && (
         <CoursModal
-          initial={selected}
-          onSave={handleSave}
-          onClose={() => { setShowModal(false); setSelected(null) }}
+          initial={selectedCours}
+          onSave={handleSaveCours}
+          onClose={() => { setShowCoursModal(false); setSelectedCours(null) }}
+        />
+      )}
+      {showSeanceModal && (
+        <SeanceModal
+          initial={selectedSeance}
+          coursList={cours}
+          onSave={handleSaveSeance}
+          onClose={() => { setShowSeanceModal(false); setSelectedSeance(null) }}
         />
       )}
     </div>
@@ -142,17 +238,13 @@ function CoursCard({ cours, onEdit, onDelete }: { cours: Cours; onEdit: () => vo
           <p className="text-xs text-[#999999] mt-0.5">
             {cours.heure_debut.slice(0, 5)} – {cours.heure_fin.slice(0, 5)}
           </p>
-          {cours.intervenant && (
-            <p className="text-xs text-[#666666] mt-1">{cours.intervenant}</p>
-          )}
+          {cours.intervenant && <p className="text-xs text-[#666666] mt-1">{cours.intervenant}</p>}
         </div>
-        <div className="flex flex-col items-end gap-1">
-          {cours.categorie && (
-            <span className={`text-xs px-2 py-0.5 rounded-full ${CATEGORIE_COLORS[cours.categorie] ?? 'bg-gray-100 text-gray-600'}`}>
-              {cours.categorie}
-            </span>
-          )}
-        </div>
+        {cours.categorie && (
+          <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${CATEGORIE_COLORS[cours.categorie] ?? 'bg-gray-100 text-gray-600'}`}>
+            {cours.categorie}
+          </span>
+        )}
       </div>
       <div className="hidden group-hover:flex items-center gap-2 mt-2 pt-2 border-t border-[#EEEEEE]">
         <button onClick={onEdit} className="text-xs text-[#666666] hover:text-[#0A0A0A] transition-colors">Modifier</button>
@@ -162,84 +254,157 @@ function CoursCard({ cours, onEdit, onDelete }: { cours: Cours; onEdit: () => vo
   )
 }
 
-function CoursModal({
-  initial, onSave, onClose,
-}: {
-  initial: Cours | null
-  onSave: (f: FormData) => Promise<void>
-  onClose: () => void
-}) {
-  const [form, setForm] = useState<FormData>(
-    initial
-      ? { titre: initial.titre, jour: initial.jour, heure_debut: initial.heure_debut.slice(0, 5), heure_fin: initial.heure_fin.slice(0, 5), intervenant: initial.intervenant ?? '', categorie: initial.categorie ?? 'tous', lieu: initial.lieu ?? '' }
-      : EMPTY
+function SeanceCard({ seance, onEdit, onDelete }: { seance: Seance; onEdit: () => void; onDelete: () => void }) {
+  const d = new Date(seance.date + 'T12:00:00')
+  const dateLabel = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  return (
+    <div className="bg-white rounded-xl border border-[#E5E5E5] p-4 group flex items-start gap-4">
+      <div className="flex-shrink-0 text-center w-12">
+        <p className="text-xs text-[#999999] uppercase">{d.toLocaleDateString('fr-FR', { month: 'short' })}</p>
+        <p className="text-xl font-bold text-[#0A0A0A] leading-none">{d.getDate()}</p>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-[#0A0A0A] text-sm">{seance.titre}</p>
+        <p className="text-xs text-[#999999] mt-0.5 capitalize">{dateLabel}</p>
+        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+          {seance.heure_debut && (
+            <span className="text-xs text-[#666666]">{seance.heure_debut.slice(0, 5)}{seance.heure_fin ? ` – ${seance.heure_fin.slice(0, 5)}` : ''}</span>
+          )}
+          <span className="text-xs text-[#666666]">{seance.duree_minutes} min</span>
+          {seance.categorie && (
+            <span className={`text-xs px-2 py-0.5 rounded-full ${CATEGORIE_COLORS[seance.categorie] ?? 'bg-gray-100 text-gray-600'}`}>{seance.categorie}</span>
+          )}
+          {seance.lieu && <span className="text-xs text-[#999999]">{seance.lieu}</span>}
+        </div>
+        {(seance._presenceCount ?? 0) > 0 && (
+          <p className="text-xs text-[#C41230] mt-1.5 font-medium">{seance._presenceCount} présence{(seance._presenceCount ?? 0) !== 1 ? 's' : ''} confirmée{(seance._presenceCount ?? 0) !== 1 ? 's' : ''}</p>
+        )}
+      </div>
+      <div className="hidden group-hover:flex items-center gap-2 flex-shrink-0">
+        <button onClick={onEdit} className="text-xs text-[#666666] hover:text-[#0A0A0A] transition-colors">Modifier</button>
+        <button onClick={onDelete} className="text-xs text-[#CCCCCC] hover:text-[#C41230] transition-colors">Supprimer</button>
+      </div>
+    </div>
+  )
+}
+
+interface CoursFormData { titre: string; jour: string; heure_debut: string; heure_fin: string; intervenant: string; categorie: string; lieu: string }
+const COURS_EMPTY: CoursFormData = { titre: '', jour: 'lundi', heure_debut: '18:00', heure_fin: '19:30', intervenant: '', categorie: 'tous', lieu: '' }
+
+function CoursModal({ initial, onSave, onClose }: { initial: Cours | null; onSave: (f: CoursFormData) => Promise<void>; onClose: () => void }) {
+  const [form, setForm] = useState<CoursFormData>(
+    initial ? { titre: initial.titre, jour: initial.jour, heure_debut: initial.heure_debut.slice(0, 5), heure_fin: initial.heure_fin.slice(0, 5), intervenant: initial.intervenant ?? '', categorie: initial.categorie ?? 'tous', lieu: initial.lieu ?? '' } : COURS_EMPTY
+  )
+  const [saving, setSaving] = useState(false)
+  async function submit(e: React.FormEvent) { e.preventDefault(); setSaving(true); await onSave(form); setSaving(false) }
+  return (
+    <Modal title={initial ? 'Modifier le cours' : 'Ajouter un cours'} onClose={onClose}>
+      <form onSubmit={submit} className="p-6 space-y-4">
+        <Field label="Intitulé *"><input required type="text" value={form.titre} onChange={e => setForm({ ...form, titre: e.target.value })} className={inputClass} /></Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Jour">
+            <select value={form.jour} onChange={e => setForm({ ...form, jour: e.target.value })} className={inputClass}>
+              {JOURS.map(j => <option key={j} value={j}>{j.charAt(0).toUpperCase() + j.slice(1)}</option>)}
+            </select>
+          </Field>
+          <Field label="Catégorie">
+            <select value={form.categorie} onChange={e => setForm({ ...form, categorie: e.target.value })} className={inputClass}>
+              {CATEGORIES.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+            </select>
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Début"><input type="time" value={form.heure_debut} onChange={e => setForm({ ...form, heure_debut: e.target.value })} className={inputClass} /></Field>
+          <Field label="Fin"><input type="time" value={form.heure_fin} onChange={e => setForm({ ...form, heure_fin: e.target.value })} className={inputClass} /></Field>
+        </div>
+        <Field label="Intervenant"><input type="text" value={form.intervenant} onChange={e => setForm({ ...form, intervenant: e.target.value })} placeholder="Nom du professeur" className={inputClass} /></Field>
+        <Field label="Lieu"><input type="text" value={form.lieu} onChange={e => setForm({ ...form, lieu: e.target.value })} placeholder="Salle, dojo…" className={inputClass} /></Field>
+        <ModalActions onClose={onClose} saving={saving} isEdit={!!initial} />
+      </form>
+    </Modal>
+  )
+}
+
+interface SeanceFormData { titre: string; date: string; heure_debut: string; heure_fin: string; duree_minutes: number; categorie: string; lieu: string; intervenant: string; notes: string }
+const SEANCE_EMPTY: SeanceFormData = { titre: '', date: new Date().toISOString().slice(0, 10), heure_debut: '18:00', heure_fin: '19:30', duree_minutes: 90, categorie: 'tous', lieu: '', intervenant: '', notes: '' }
+
+function SeanceModal({ initial, coursList, onSave, onClose }: { initial: Seance | null; coursList: Cours[]; onSave: (f: SeanceFormData) => Promise<void>; onClose: () => void }) {
+  const [form, setForm] = useState<SeanceFormData>(
+    initial ? { titre: initial.titre, date: initial.date, heure_debut: initial.heure_debut?.slice(0, 5) ?? '18:00', heure_fin: initial.heure_fin?.slice(0, 5) ?? '19:30', duree_minutes: initial.duree_minutes, categorie: initial.categorie ?? 'tous', lieu: initial.lieu ?? '', intervenant: initial.intervenant ?? '', notes: initial.notes ?? '' } : SEANCE_EMPTY
   )
   const [saving, setSaving] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setSaving(true)
-    await onSave(form)
-    setSaving(false)
+  function prefill(coursId: string) {
+    const c = coursList.find(x => x.id === coursId)
+    if (!c) return
+    const [h1, m1] = c.heure_debut.split(':').map(Number)
+    const [h2, m2] = c.heure_fin.split(':').map(Number)
+    const dur = (h2 * 60 + m2) - (h1 * 60 + m1)
+    setForm(f => ({ ...f, titre: c.titre, heure_debut: c.heure_debut.slice(0, 5), heure_fin: c.heure_fin.slice(0, 5), duree_minutes: dur > 0 ? dur : 90, categorie: c.categorie ?? 'tous', lieu: c.lieu ?? '', intervenant: c.intervenant ?? '' }))
   }
 
+  async function submit(e: React.FormEvent) { e.preventDefault(); setSaving(true); await onSave(form); setSaving(false) }
+
+  return (
+    <Modal title={initial ? 'Modifier la séance' : 'Ajouter une séance'} onClose={onClose}>
+      <form onSubmit={submit} className="p-6 space-y-4">
+        {coursList.length > 0 && !initial && (
+          <Field label="Basée sur un cours récurrent (optionnel)">
+            <select onChange={e => e.target.value && prefill(e.target.value)} className={inputClass} defaultValue="">
+              <option value="">— Choisir un cours —</option>
+              {coursList.map(c => <option key={c.id} value={c.id}>{c.titre} ({c.jour} {c.heure_debut.slice(0, 5)})</option>)}
+            </select>
+          </Field>
+        )}
+        <Field label="Intitulé *"><input required type="text" value={form.titre} onChange={e => setForm({ ...form, titre: e.target.value })} placeholder="Ex: Judo adultes" className={inputClass} /></Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Date *"><input required type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className={inputClass} /></Field>
+          <Field label="Durée (min)"><input type="number" min={15} max={300} value={form.duree_minutes} onChange={e => setForm({ ...form, duree_minutes: Number(e.target.value) })} className={inputClass} /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Début"><input type="time" value={form.heure_debut} onChange={e => setForm({ ...form, heure_debut: e.target.value })} className={inputClass} /></Field>
+          <Field label="Fin"><input type="time" value={form.heure_fin} onChange={e => setForm({ ...form, heure_fin: e.target.value })} className={inputClass} /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Catégorie">
+            <select value={form.categorie} onChange={e => setForm({ ...form, categorie: e.target.value })} className={inputClass}>
+              {CATEGORIES.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+            </select>
+          </Field>
+          <Field label="Lieu"><input type="text" value={form.lieu} onChange={e => setForm({ ...form, lieu: e.target.value })} placeholder="Dojo, salle…" className={inputClass} /></Field>
+        </div>
+        <Field label="Intervenant"><input type="text" value={form.intervenant} onChange={e => setForm({ ...form, intervenant: e.target.value })} placeholder="Nom du professeur" className={inputClass} /></Field>
+        <Field label="Notes"><textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} placeholder="Informations complémentaires…" className={`${inputClass} resize-none`} /></Field>
+        <ModalActions onClose={onClose} saving={saving} isEdit={!!initial} />
+      </form>
+    </Modal>
+  )
+}
+
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md">
+      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-5 border-b border-[#F0F0F0]">
-          <h2 className="font-semibold text-[#0A0A0A]">{initial ? 'Modifier le cours' : 'Ajouter un cours'}</h2>
+          <h2 className="font-semibold text-[#0A0A0A]">{title}</h2>
           <button onClick={onClose} className="text-[#CCCCCC] hover:text-[#666666] transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <Field label="Intitulé *">
-            <input required type="text" value={form.titre} onChange={e => setForm({ ...form, titre: e.target.value })}
-              placeholder="Ex: Judo adultes" className={inputClass} />
-          </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Jour">
-              <select value={form.jour} onChange={e => setForm({ ...form, jour: e.target.value })} className={inputClass}>
-                {JOURS.map(j => <option key={j} value={j}>{j.charAt(0).toUpperCase() + j.slice(1)}</option>)}
-              </select>
-            </Field>
-            <Field label="Catégorie">
-              <select value={form.categorie} onChange={e => setForm({ ...form, categorie: e.target.value })} className={inputClass}>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
-              </select>
-            </Field>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Début">
-              <input type="time" value={form.heure_debut} onChange={e => setForm({ ...form, heure_debut: e.target.value })} className={inputClass} />
-            </Field>
-            <Field label="Fin">
-              <input type="time" value={form.heure_fin} onChange={e => setForm({ ...form, heure_fin: e.target.value })} className={inputClass} />
-            </Field>
-          </div>
-          <Field label="Intervenant">
-            <input type="text" value={form.intervenant} onChange={e => setForm({ ...form, intervenant: e.target.value })}
-              placeholder="Nom du professeur" className={inputClass} />
-          </Field>
-          <Field label="Lieu">
-            <input type="text" value={form.lieu} onChange={e => setForm({ ...form, lieu: e.target.value })}
-              placeholder="Salle, dojo…" className={inputClass} />
-          </Field>
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose}
-              className="flex-1 border border-[#E5E5E5] text-[#666666] py-3 rounded-lg text-sm transition-colors hover:border-[#CCCCCC]">
-              Annuler
-            </button>
-            <button type="submit" disabled={saving}
-              className="flex-1 bg-[#C41230] hover:bg-[#9B0E25] text-white py-3 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50">
-              {saving ? '…' : initial ? 'Enregistrer' : 'Ajouter'}
-            </button>
-          </div>
-        </form>
+        {children}
       </div>
+    </div>
+  )
+}
+
+function ModalActions({ onClose, saving, isEdit }: { onClose: () => void; saving: boolean; isEdit: boolean }) {
+  return (
+    <div className="flex gap-3 pt-2">
+      <button type="button" onClick={onClose} className="flex-1 border border-[#E5E5E5] text-[#666666] py-3 rounded-lg text-sm transition-colors hover:border-[#CCCCCC]">Annuler</button>
+      <button type="submit" disabled={saving} className="flex-1 bg-[#C41230] hover:bg-[#9B0E25] text-white py-3 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50">
+        {saving ? '…' : isEdit ? 'Enregistrer' : 'Ajouter'}
+      </button>
     </div>
   )
 }
@@ -252,5 +417,3 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </div>
   )
 }
-
-const inputClass = 'w-full bg-[#FAFAFA] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm text-[#0A0A0A] focus:outline-none focus:border-[#C41230] transition-colors'

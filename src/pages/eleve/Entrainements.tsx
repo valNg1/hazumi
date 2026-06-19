@@ -1,303 +1,384 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
 
-interface Entrainement {
+interface Seance {
   id: string
-  judoka_id: string
+  titre: string
   date: string
+  heure_debut: string | null
+  heure_fin: string | null
   duree_minutes: number
-  objectif?: string
-  feedback?: string
-  niveau_effort?: number
-  created_at: string
+  categorie: string | null
+  lieu: string | null
+  intervenant: string | null
+  notes: string | null
 }
 
-interface FormData {
-  date: string
-  duree_minutes: number
-  objectif: string
-  feedback: string
-  niveau_effort: number
+type ViewMode = 'semaine' | 'mois' | 'trimestre' | 'annee'
+
+const MOIS_LABELS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+const JOURS_COURTS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+
+function getMonday(date: Date): Date {
+  const d = new Date(date)
+  const day = d.getDay()
+  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
+  d.setHours(0, 0, 0, 0)
+  return d
 }
 
-const EMPTY: FormData = {
-  date: new Date().toISOString().slice(0, 10),
-  duree_minutes: 90,
-  objectif: '',
-  feedback: '',
-  niveau_effort: 3,
+function toStr(date: Date): string {
+  return date.toISOString().slice(0, 10)
 }
 
-const EFFORT_LABELS: Record<number, { label: string; color: string }> = {
-  1: { label: 'Léger', color: 'text-blue-500' },
-  2: { label: 'Modéré', color: 'text-green-500' },
-  3: { label: 'Intense', color: 'text-yellow-500' },
-  4: { label: 'Très intense', color: 'text-orange-500' },
-  5: { label: 'Maximum', color: 'text-[#C41230]' },
+function addDays(date: Date, n: number): Date {
+  const d = new Date(date)
+  d.setDate(d.getDate() + n)
+  return d
+}
+
+function fmtDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return h > 0 ? (m > 0 ? `${h}h${m.toString().padStart(2, '0')}` : `${h}h`) : `${m}min`
 }
 
 export default function Entrainements() {
   const [judokaId, setJudokaId] = useState<string | null>(null)
-  const [entrainements, setEntrainements] = useState<Entrainement[]>([])
+  const [seances, setSeances] = useState<Seance[]>([])
+  const [confirmedIds, setConfirmedIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
-  const [selected, setSelected] = useState<Entrainement | null>(null)
+  const [view, setView] = useState<ViewMode>('semaine')
+  const [cursor, setCursor] = useState(new Date())
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) { setLoading(false); return }
       const { data: judoka } = await supabase.from('judokas').select('id').eq('user_id', user.id).single()
-      if (!judoka) { setLoading(false); return }
-      setJudokaId(judoka.id)
-      const { data } = await supabase.from('entrainements').select('*').eq('judoka_id', judoka.id).order('date', { ascending: false })
-      setEntrainements(data ?? [])
+      const [{ data: s }, { data: p }] = await Promise.all([
+        supabase.from('seances').select('*').order('date').order('heure_debut'),
+        judoka
+          ? supabase.from('presences').select('seance_id').eq('judoka_id', judoka.id)
+          : Promise.resolve({ data: [] }),
+      ])
+      setJudokaId(judoka?.id ?? null)
+      setSeances(s ?? [])
+      setConfirmedIds(new Set((p ?? []).map((x: { seance_id: string }) => x.seance_id)))
       setLoading(false)
     }
     load()
   }, [])
 
-  async function reload() {
+  async function togglePresence(seanceId: string) {
     if (!judokaId) return
-    const { data } = await supabase.from('entrainements').select('*').eq('judoka_id', judokaId).order('date', { ascending: false })
-    setEntrainements(data ?? [])
-  }
-
-  async function handleSave(form: FormData) {
-    if (!judokaId) return
-    if (selected) {
-      await supabase.from('entrainements').update(form).eq('id', selected.id)
+    if (confirmedIds.has(seanceId)) {
+      await supabase.from('presences').delete().eq('seance_id', seanceId).eq('judoka_id', judokaId)
+      setConfirmedIds(prev => { const s = new Set(prev); s.delete(seanceId); return s })
     } else {
-      await supabase.from('entrainements').insert({ ...form, judoka_id: judokaId })
+      await supabase.from('presences').upsert({ seance_id: seanceId, judoka_id: judokaId }, { onConflict: 'seance_id,judoka_id' })
+      setConfirmedIds(prev => new Set([...prev, seanceId]))
     }
-    await reload()
-    setShowModal(false)
-    setSelected(null)
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('Supprimer cette séance ?')) return
-    await supabase.from('entrainements').delete().eq('id', id)
-    await reload()
+  const today = toStr(new Date())
+  const past = useMemo(() => seances.filter(s => s.date < today), [seances, today])
+  const upcoming = useMemo(() => seances.filter(s => s.date >= today), [seances, today])
+
+  const totalMinPast = past.reduce((sum, s) => sum + s.duree_minutes, 0)
+  const totalMinUpcoming = upcoming.reduce((sum, s) => sum + s.duree_minutes, 0)
+
+  function navigate(dir: 1 | -1) {
+    const d = new Date(cursor)
+    if (view === 'semaine') d.setDate(d.getDate() + dir * 7)
+    else if (view === 'mois') d.setMonth(d.getMonth() + dir)
+    else if (view === 'trimestre') d.setMonth(d.getMonth() + dir * 3)
+    else d.setFullYear(d.getFullYear() + dir)
+    setCursor(d)
   }
 
-  const totalHeures = Math.round(entrainements.reduce((s, e) => s + e.duree_minutes, 0) / 60)
-  const ce_mois = entrainements.filter(e => e.date.startsWith(new Date().toISOString().slice(0, 7))).length
+  const navLabel = useMemo(() => {
+    if (view === 'semaine') {
+      const mon = getMonday(cursor)
+      const sun = addDays(mon, 6)
+      const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' }
+      return `${mon.toLocaleDateString('fr-FR', opts)} – ${sun.toLocaleDateString('fr-FR', opts)} ${sun.getFullYear()}`
+    }
+    if (view === 'mois') return `${MOIS_LABELS[cursor.getMonth()]} ${cursor.getFullYear()}`
+    if (view === 'trimestre') {
+      const q = Math.floor(cursor.getMonth() / 3)
+      return `T${q + 1} ${cursor.getFullYear()}`
+    }
+    return String(cursor.getFullYear())
+  }, [view, cursor])
+
+  const visibleSeances = useMemo(() => {
+    if (view === 'semaine') {
+      const mon = getMonday(cursor)
+      const sun = addDays(mon, 6)
+      return seances.filter(s => s.date >= toStr(mon) && s.date <= toStr(sun))
+    }
+    if (view === 'mois') {
+      const prefix = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
+      return seances.filter(s => s.date.startsWith(prefix))
+    }
+    if (view === 'trimestre') {
+      const q = Math.floor(cursor.getMonth() / 3)
+      const start = new Date(cursor.getFullYear(), q * 3, 1)
+      const end = new Date(cursor.getFullYear(), q * 3 + 3, 0)
+      return seances.filter(s => s.date >= toStr(start) && s.date <= toStr(end))
+    }
+    return seances.filter(s => s.date.startsWith(String(cursor.getFullYear())))
+  }, [seances, view, cursor])
 
   if (loading) return <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Mes entraînements</h1>
-          <p className="text-[#666666] text-sm mt-1">{entrainements.length} séance{entrainements.length !== 1 ? 's' : ''} enregistrée{entrainements.length !== 1 ? 's' : ''}</p>
-        </div>
-        <button
-          onClick={() => { setSelected(null); setShowModal(true) }}
-          className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-5 py-2.5 rounded-lg transition-colors"
-        >
-          + Ajouter
-        </button>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Mes entraînements</h1>
+        <p className="text-[#999999] text-sm mt-0.5">Séances planifiées par le club</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <Stat label="Séances ce mois" value={String(ce_mois)} />
-        <Stat label="Total séances" value={String(entrainements.length)} />
-        <Stat label="Heures au total" value={`${totalHeures}h`} />
+      {/* Recap panel */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+        <RecapCard label="Séances passées" value={String(past.length)} sub={fmtDuration(totalMinPast)} />
+        <RecapCard label="Heures passées" value={fmtDuration(totalMinPast)} sub={`${past.length} séance${past.length !== 1 ? 's' : ''}`} />
+        <RecapCard label="Séances à venir" value={String(upcoming.length)} sub={fmtDuration(totalMinUpcoming)} accent />
+        <RecapCard label="Heures à venir" value={fmtDuration(totalMinUpcoming)} sub={`${upcoming.length} séance${upcoming.length !== 1 ? 's' : ''}`} accent />
       </div>
 
-      {!judokaId ? (
-        <div className="text-center py-16 text-[#999999] text-sm">
-          Complétez votre profil élève pour accéder à vos entraînements.
+      {/* View tabs + navigation */}
+      <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
+        <div className="flex gap-1 border border-[#E5E5E5] rounded-lg p-0.5">
+          {(['semaine', 'mois', 'trimestre', 'annee'] as ViewMode[]).map(v => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`px-3 py-1.5 rounded-md text-xs transition-all capitalize ${view === v ? 'bg-[#0A0A0A] text-white font-medium' : 'text-[#999999] hover:text-[#666666]'}`}
+            >
+              {v === 'annee' ? 'Année' : v.charAt(0).toUpperCase() + v.slice(1)}
+            </button>
+          ))}
         </div>
-      ) : entrainements.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-[#999999] text-sm mb-4">Aucune séance enregistrée.</p>
-          <button
-            onClick={() => setShowModal(true)}
-            className="text-xs text-[#C41230] uppercase tracking-widest font-semibold hover:underline"
-          >
-            + Ajouter ma première séance
+        <div className="flex items-center gap-2">
+          <button onClick={() => navigate(-1)} className="w-7 h-7 flex items-center justify-center rounded-lg border border-[#E5E5E5] text-[#666666] hover:border-[#CCCCCC] transition-colors">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
           </button>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {entrainements.map(e => (
-            <EntrainementCard
-              key={e.id}
-              e={e}
-              onEdit={() => { setSelected(e); setShowModal(true) }}
-              onDelete={() => handleDelete(e.id)}
-            />
-          ))}
-        </div>
-      )}
-
-      {showModal && (
-        <EntrainementModal
-          initial={selected}
-          onSave={handleSave}
-          onClose={() => { setShowModal(false); setSelected(null) }}
-        />
-      )}
-    </div>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-white rounded-xl border border-[#E5E5E5] p-4">
-      <p className="text-xs uppercase tracking-widest text-[#999999] mb-2">{label}</p>
-      <p className="text-2xl font-bold text-[#0A0A0A]">{value}</p>
-    </div>
-  )
-}
-
-function EntrainementCard({ e, onEdit, onDelete }: { e: Entrainement; onEdit: () => void; onDelete: () => void }) {
-  const effort = e.niveau_effort ? EFFORT_LABELS[e.niveau_effort] : null
-  return (
-    <div className="bg-white rounded-xl border border-[#E5E5E5] p-5 group">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-sm font-semibold text-[#0A0A0A]">
-              {new Date(e.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </span>
-            <span className="text-xs text-[#999999]">{e.duree_minutes} min</span>
-            {effort && (
-              <span className={`text-xs font-medium ${effort.color}`}>{effort.label}</span>
-            )}
-          </div>
-          {e.objectif && (
-            <p className="text-sm text-[#333333] mb-1">
-              <span className="text-xs uppercase tracking-widest text-[#CCCCCC] mr-2">Objectif</span>
-              {e.objectif}
-            </p>
-          )}
-          {e.feedback && (
-            <p className="text-sm text-[#666666]">
-              <span className="text-xs uppercase tracking-widest text-[#CCCCCC] mr-2">Ressenti</span>
-              {e.feedback}
-            </p>
-          )}
-        </div>
-        <div className="hidden group-hover:flex items-center gap-3 flex-shrink-0">
-          <button onClick={onEdit} className="text-xs text-[#666666] hover:text-[#0A0A0A] transition-colors">Modifier</button>
-          <button onClick={onDelete} className="text-xs text-[#CCCCCC] hover:text-[#C41230] transition-colors">Supprimer</button>
+          <span className="text-sm text-[#0A0A0A] font-medium min-w-48 text-center">{navLabel}</span>
+          <button onClick={() => navigate(1)} className="w-7 h-7 flex items-center justify-center rounded-lg border border-[#E5E5E5] text-[#666666] hover:border-[#CCCCCC] transition-colors">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+          </button>
+          <button onClick={() => setCursor(new Date())} className="text-xs text-[#C41230] hover:underline ml-1">Aujourd'hui</button>
         </div>
       </div>
-      {e.niveau_effort && (
-        <div className="mt-3 flex gap-1">
-          {[1, 2, 3, 4, 5].map(n => (
-            <div key={n} className={`h-1 flex-1 rounded-full ${n <= e.niveau_effort! ? 'bg-[#C41230]' : 'bg-[#F0F0F0]'}`} />
-          ))}
-        </div>
+
+      {/* Agenda */}
+      {view === 'semaine' ? (
+        <WeekView seances={visibleSeances} cursor={cursor} today={today} confirmedIds={confirmedIds} onToggle={togglePresence} />
+      ) : view === 'mois' ? (
+        <MonthView seances={visibleSeances} cursor={cursor} today={today} confirmedIds={confirmedIds} onToggle={togglePresence} />
+      ) : (
+        <ListView seances={visibleSeances} today={today} confirmedIds={confirmedIds} onToggle={togglePresence} groupBy={view === 'annee' || view === 'trimestre' ? 'month' : 'week'} />
       )}
     </div>
   )
 }
 
-function EntrainementModal({
-  initial, onSave, onClose,
-}: {
-  initial: Entrainement | null
-  onSave: (f: FormData) => Promise<void>
-  onClose: () => void
-}) {
-  const [form, setForm] = useState<FormData>(
-    initial
-      ? { date: initial.date, duree_minutes: initial.duree_minutes, objectif: initial.objectif ?? '', feedback: initial.feedback ?? '', niveau_effort: initial.niveau_effort ?? 3 }
-      : EMPTY
+function RecapCard({ label, value, sub, accent }: { label: string; value: string; sub: string; accent?: boolean }) {
+  return (
+    <div className={`rounded-xl border p-4 ${accent ? 'border-[#C41230]/20 bg-[#FFF5F6]' : 'border-[#E5E5E5] bg-white'}`}>
+      <p className="text-xs uppercase tracking-widest text-[#999999] mb-1">{label}</p>
+      <p className={`text-2xl font-bold ${accent ? 'text-[#C41230]' : 'text-[#0A0A0A]'}`}>{value}</p>
+      <p className="text-xs text-[#999999] mt-0.5">{sub}</p>
+    </div>
   )
-  const [saving, setSaving] = useState(false)
+}
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setSaving(true)
-    await onSave(form)
-    setSaving(false)
+function SeancePill({ seance, today, confirmed, onToggle, compact }: {
+  seance: Seance; today: string; confirmed: boolean; onToggle: (id: string) => void; compact?: boolean
+}) {
+  const isPast = seance.date < today
+  const isToday = seance.date === today
+  return (
+    <div className={`rounded-lg border p-3 transition-all ${isPast ? 'border-[#F0F0F0] bg-[#FAFAFA]' : isToday ? 'border-[#C41230]/30 bg-[#FFF5F6]' : 'border-[#E5E5E5] bg-white'}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <p className={`text-sm font-medium truncate ${isPast ? 'text-[#999999]' : 'text-[#0A0A0A]'}`}>{seance.titre}</p>
+          {!compact && (
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              {seance.heure_debut && <span className="text-xs text-[#999999]">{seance.heure_debut.slice(0, 5)}</span>}
+              <span className="text-xs text-[#CCCCCC]">{fmtDuration(seance.duree_minutes)}</span>
+              {seance.lieu && <span className="text-xs text-[#CCCCCC]">{seance.lieu}</span>}
+            </div>
+          )}
+        </div>
+        {!isPast && (
+          <button
+            onClick={() => onToggle(seance.id)}
+            className={`flex-shrink-0 text-xs px-2.5 py-1 rounded-full border transition-all ${confirmed ? 'bg-[#C41230] border-[#C41230] text-white' : 'border-[#E5E5E5] text-[#999999] hover:border-[#C41230] hover:text-[#C41230]'}`}
+          >
+            {confirmed ? '✓ Présent' : 'Je viens'}
+          </button>
+        )}
+        {isPast && confirmed && (
+          <span className="text-xs text-[#999999] flex-shrink-0">✓</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function WeekView({ seances, cursor, today, confirmedIds, onToggle }: {
+  seances: Seance[]; cursor: Date; today: string; confirmedIds: Set<string>; onToggle: (id: string) => void
+}) {
+  const mon = getMonday(cursor)
+  const days = Array.from({ length: 7 }, (_, i) => addDays(mon, i))
+
+  return (
+    <div className="grid grid-cols-7 gap-2">
+      {days.map((day, i) => {
+        const str = toStr(day)
+        const isToday = str === today
+        const daySessions = seances.filter(s => s.date === str)
+        return (
+          <div key={str}>
+            <div className={`text-center mb-2 py-1.5 rounded-lg ${isToday ? 'bg-[#C41230]' : ''}`}>
+              <p className={`text-[10px] uppercase tracking-widest ${isToday ? 'text-white/70' : 'text-[#CCCCCC]'}`}>{JOURS_COURTS[i]}</p>
+              <p className={`text-sm font-semibold ${isToday ? 'text-white' : 'text-[#0A0A0A]'}`}>{day.getDate()}</p>
+            </div>
+            <div className="space-y-2">
+              {daySessions.length === 0
+                ? <div className="h-16 rounded-lg border border-dashed border-[#F0F0F0]" />
+                : daySessions.map(s => (
+                  <SeancePill key={s.id} seance={s} today={today} confirmed={confirmedIds.has(s.id)} onToggle={onToggle} compact />
+                ))
+              }
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function MonthView({ seances, cursor, today, confirmedIds, onToggle }: {
+  seances: Seance[]; cursor: Date; today: string; confirmedIds: Set<string>; onToggle: (id: string) => void
+}) {
+  const year = cursor.getFullYear()
+  const month = cursor.getMonth()
+  const firstDay = new Date(year, month, 1)
+  const lastDay = new Date(year, month + 1, 0)
+  const startMon = getMonday(firstDay)
+
+  const weeks: Date[][] = []
+  let d = new Date(startMon)
+  while (d <= lastDay || weeks.length === 0) {
+    const week = Array.from({ length: 7 }, (_, i) => addDays(d, i))
+    weeks.push(week)
+    d = addDays(d, 7)
+    if (d > lastDay && weeks.length >= 4) break
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-[#F0F0F0]">
-          <h2 className="font-semibold text-[#0A0A0A]">{initial ? 'Modifier la séance' : 'Ajouter une séance'}</h2>
-          <button onClick={onClose} className="text-[#CCCCCC] hover:text-[#666666] transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Date *">
-              <input required type="date" value={form.date}
-                onChange={e => setForm({ ...form, date: e.target.value })} className={inputClass} />
-            </Field>
-            <Field label="Durée (min)">
-              <input type="number" min={15} max={300} value={form.duree_minutes}
-                onChange={e => setForm({ ...form, duree_minutes: Number(e.target.value) })} className={inputClass} />
-            </Field>
-          </div>
-
-          <Field label="Objectif de la séance">
-            <input type="text" value={form.objectif}
-              onChange={e => setForm({ ...form, objectif: e.target.value })}
-              placeholder="Ex: travailler mon uchi-mata" className={inputClass} />
-          </Field>
-
-          <Field label="Ressenti / Feedback">
-            <textarea value={form.feedback}
-              onChange={e => setForm({ ...form, feedback: e.target.value })}
-              placeholder="Comment s'est passé l'entraînement ?"
-              rows={3} className={`${inputClass} resize-none`} />
-          </Field>
-
-          <Field label={`Niveau d'effort — ${EFFORT_LABELS[form.niveau_effort].label}`}>
-            <div className="flex gap-2 mt-1">
-              {[1, 2, 3, 4, 5].map(n => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setForm({ ...form, niveau_effort: n })}
-                  className={`flex-1 h-8 rounded-lg border transition-all text-xs font-medium ${
-                    n <= form.niveau_effort
-                      ? 'bg-[#C41230] border-[#C41230] text-white'
-                      : 'bg-[#FAFAFA] border-[#E5E5E5] text-[#CCCCCC]'
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-          </Field>
-
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose}
-              className="flex-1 border border-[#E5E5E5] text-[#666666] py-3 rounded-lg text-sm transition-colors hover:border-[#CCCCCC]">
-              Annuler
-            </button>
-            <button type="submit" disabled={saving}
-              className="flex-1 bg-[#C41230] hover:bg-[#9B0E25] text-white py-3 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50">
-              {saving ? '…' : initial ? 'Enregistrer' : 'Ajouter'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
     <div>
-      <label className="block text-xs text-[#666666] mb-1.5">{label}</label>
-      {children}
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {JOURS_COURTS.map(j => <div key={j} className="text-center text-[10px] uppercase tracking-widest text-[#CCCCCC] py-1">{j}</div>)}
+      </div>
+      <div className="space-y-1">
+        {weeks.map((week, wi) => (
+          <div key={wi} className="grid grid-cols-7 gap-1">
+            {week.map(day => {
+              const str = toStr(day)
+              const inMonth = day.getMonth() === month
+              const isToday = str === today
+              const daySessions = seances.filter(s => s.date === str)
+              return (
+                <div key={str} className={`min-h-16 rounded-lg p-1.5 border ${isToday ? 'border-[#C41230]/30 bg-[#FFF5F6]' : inMonth ? 'border-[#E5E5E5] bg-white' : 'border-[#F5F5F5] bg-[#FAFAFA]'}`}>
+                  <p className={`text-xs font-medium mb-1 ${isToday ? 'text-[#C41230]' : inMonth ? 'text-[#0A0A0A]' : 'text-[#CCCCCC]'}`}>{day.getDate()}</p>
+                  <div className="space-y-0.5">
+                    {daySessions.map(s => (
+                      <div key={s.id} className={`text-[10px] px-1.5 py-0.5 rounded truncate ${confirmedIds.has(s.id) ? 'bg-[#C41230] text-white' : 'bg-[#F0F0F0] text-[#666666]'}`} title={s.titre}>
+                        {s.titre}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ))}
+      </div>
+      {/* Detail list below calendar for clicked sessions */}
+      {seances.length > 0 && (
+        <div className="mt-6 space-y-2">
+          <p className="text-xs uppercase tracking-widest text-[#999999] mb-3">{seances.length} séance{seances.length !== 1 ? 's' : ''} ce mois</p>
+          {seances.map(s => (
+            <SeancePill key={s.id} seance={s} today={today} confirmed={confirmedIds.has(s.id)} onToggle={onToggle} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
 
-const inputClass = 'w-full bg-[#FAFAFA] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm text-[#0A0A0A] focus:outline-none focus:border-[#C41230] transition-colors'
+function ListView({ seances, today, confirmedIds, onToggle, groupBy }: {
+  seances: Seance[]; today: string; confirmedIds: Set<string>; onToggle: (id: string) => void; groupBy: 'month' | 'week'
+}) {
+  const groups = useMemo(() => {
+    const map = new Map<string, Seance[]>()
+    for (const s of seances) {
+      const key = groupBy === 'month'
+        ? s.date.slice(0, 7)
+        : toStr(getMonday(new Date(s.date + 'T12:00:00')))
+      if (!map.has(key)) map.set(key, [])
+      map.get(key)!.push(s)
+    }
+    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+  }, [seances, groupBy])
+
+  if (seances.length === 0) return (
+    <div className="text-center py-16 text-[#CCCCCC] text-sm">Aucune séance sur cette période.</div>
+  )
+
+  return (
+    <div className="space-y-6">
+      {groups.map(([key, items]) => {
+        let label = ''
+        if (groupBy === 'month') {
+          const [y, m] = key.split('-')
+          label = `${MOIS_LABELS[parseInt(m) - 1]} ${y}`
+        } else {
+          const mon = new Date(key + 'T12:00:00')
+          const sun = addDays(mon, 6)
+          label = `Sem. du ${mon.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} au ${sun.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`
+        }
+        const totalMin = items.reduce((s, x) => s + x.duree_minutes, 0)
+        return (
+          <div key={key}>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs uppercase tracking-widest text-[#999999]">{label}</h3>
+              <span className="text-xs text-[#CCCCCC]">{items.length} séance{items.length !== 1 ? 's' : ''} · {fmtDuration(totalMin)}</span>
+            </div>
+            <div className="space-y-2">
+              {items.map(s => {
+                const d = new Date(s.date + 'T12:00:00')
+                return (
+                  <div key={s.id} className="flex gap-4 items-start">
+                    <div className="flex-shrink-0 w-10 text-center pt-3">
+                      <p className="text-[10px] uppercase text-[#CCCCCC]">{d.toLocaleDateString('fr-FR', { weekday: 'short' })}</p>
+                      <p className="text-base font-bold text-[#0A0A0A] leading-none">{d.getDate()}</p>
+                    </div>
+                    <div className="flex-1">
+                      <SeancePill seance={s} today={today} confirmed={confirmedIds.has(s.id)} onToggle={onToggle} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
