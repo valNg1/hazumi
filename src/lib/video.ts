@@ -38,6 +38,11 @@ export function getThumbnailUrl(url: string): string | null {
     const id = match?.[1]
     return id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null
   }
+  if (type === 'gdrive') {
+    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/)
+    const id = match?.[1]
+    return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w320` : null
+  }
   return null
 }
 
