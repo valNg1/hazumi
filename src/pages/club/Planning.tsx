@@ -83,8 +83,10 @@ export default function Planning() {
   const [loading, setLoading] = useState(true)
   const [showCoursModal, setShowCoursModal] = useState(false)
   const [showSeanceModal, setShowSeanceModal] = useState(false)
+  const [showGenerateModal, setShowGenerateModal] = useState(false)
   const [selectedCours, setSelectedCours] = useState<Cours | null>(null)
   const [selectedSeance, setSelectedSeance] = useState<Seance | null>(null)
+  const [generateCours, setGenerateCours] = useState<Cours | null>(null)
 
   async function loadCours() {
     const { data } = await supabase.from('cours').select('*').order('jour').order('heure_debut')
@@ -208,6 +210,7 @@ export default function Planning() {
                       cours={c}
                       onEdit={() => { setSelectedCours(c); setShowCoursModal(true) }}
                       onDelete={() => handleDeleteCours(c.id)}
+                      onGenerate={() => { setGenerateCours(c); setShowGenerateModal(true) }}
                     />
                   ))
                 )}
@@ -262,6 +265,13 @@ export default function Planning() {
           onClose={() => { setShowCoursModal(false); setSelectedCours(null) }}
         />
       )}
+      {showGenerateModal && generateCours && (
+        <GenerateModal
+          cours={generateCours}
+          onSaveBatch={handleSaveBatchSeances}
+          onClose={() => { setShowGenerateModal(false); setGenerateCours(null) }}
+        />
+      )}
       {showSeanceModal && (
         <SeanceModal
           initial={selectedSeance}
@@ -275,7 +285,7 @@ export default function Planning() {
   )
 }
 
-function CoursCard({ cours, onEdit, onDelete }: { cours: Cours; onEdit: () => void; onDelete: () => void }) {
+function CoursCard({ cours, onEdit, onDelete, onGenerate }: { cours: Cours; onEdit: () => void; onDelete: () => void; onGenerate: () => void }) {
   return (
     <div className="bg-[#FAFAFA] rounded-lg p-3 group relative">
       <div className="flex items-start justify-between gap-2">
@@ -294,9 +304,97 @@ function CoursCard({ cours, onEdit, onDelete }: { cours: Cours; onEdit: () => vo
       </div>
       <div className="hidden group-hover:flex items-center gap-2 mt-2 pt-2 border-t border-[#EEEEEE]">
         <button onClick={onEdit} className="text-xs text-[#666666] hover:text-[#0A0A0A] transition-colors">Modifier</button>
+        <button onClick={onGenerate} className="text-xs text-[#C41230] hover:text-[#9B0E25] transition-colors font-medium">Générer séances</button>
         <button onClick={onDelete} className="text-xs text-[#CCCCCC] hover:text-[#C41230] transition-colors ml-auto">Supprimer</button>
       </div>
     </div>
+  )
+}
+
+function GenerateModal({ cours, onClose, onSaveBatch }: { cours: Cours; onClose: () => void; onSaveBatch: (rows: SeanceFormData[]) => Promise<void> }) {
+  const now = new Date()
+  const defaultFin = `${now.getMonth() < 6 ? now.getFullYear() : now.getFullYear() + 1}-06-30`
+  const [dateDebut, setDateDebut] = useState(now.toISOString().slice(0, 10))
+  const [dateFin, setDateFin] = useState(defaultFin)
+  const [skipVacances, setSkipVacances] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  const jourIdx = JOURS.indexOf(cours.jour)
+  const [h1, m1] = cours.heure_debut.split(':').map(Number)
+  const [h2, m2] = cours.heure_fin.split(':').map(Number)
+  const duree = Math.max((h2 * 60 + m2) - (h1 * 60 + m1), 30)
+
+  const preview = useMemo(
+    () => jourIdx >= 0 ? generateRecurringDates(jourIdx, dateDebut, dateFin, skipVacances) : [],
+    [jourIdx, dateDebut, dateFin, skipVacances]
+  )
+  const skipped = useMemo(() => {
+    if (!skipVacances || jourIdx < 0) return []
+    return generateRecurringDates(jourIdx, dateDebut, dateFin, false).filter(d => isInVacances(d))
+  }, [jourIdx, dateDebut, dateFin, skipVacances])
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    if (preview.length === 0) { alert('Aucune séance générée. Vérifiez la plage de dates.'); return }
+    setSaving(true)
+    const rows: SeanceFormData[] = preview.map(date => ({
+      titre: cours.titre,
+      date,
+      heure_debut: cours.heure_debut.slice(0, 5),
+      heure_fin: cours.heure_fin.slice(0, 5),
+      duree_minutes: duree,
+      categorie: cours.categorie ?? 'tous',
+      lieu: cours.lieu ?? '',
+      intervenant: cours.intervenant ?? '',
+      notes: '',
+    }))
+    await onSaveBatch(rows)
+    setSaving(false)
+  }
+
+  return (
+    <Modal title={`Générer les séances — ${cours.titre}`} onClose={onClose}>
+      <form onSubmit={submit} className="p-6 space-y-4">
+        <div className="bg-[#F5F5F5] rounded-lg px-4 py-3 text-sm text-[#666666]">
+          <span className="capitalize font-medium text-[#0A0A0A]">{cours.jour}</span>
+          {' · '}{cours.heure_debut.slice(0, 5)}–{cours.heure_fin.slice(0, 5)}
+          {' · '}{duree} min
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Du"><input required type="date" value={dateDebut} onChange={e => setDateDebut(e.target.value)} className={inputClass} /></Field>
+          <Field label="Au"><input required type="date" value={dateFin} onChange={e => setDateFin(e.target.value)} className={inputClass} /></Field>
+        </div>
+        <label className="flex items-center gap-2.5 cursor-pointer select-none">
+          <input type="checkbox" checked={skipVacances} onChange={e => setSkipVacances(e.target.checked)} className="w-4 h-4 accent-[#C41230]" />
+          <span className="text-sm text-[#333333]">Ignorer les vacances scolaires Zone C (Paris)</span>
+        </label>
+        {preview.length > 0 && (
+          <div className="bg-[#FAFAFA] rounded-lg p-3">
+            <p className="text-xs text-[#999999] mb-2">
+              <span className="font-semibold text-[#0A0A0A]">{preview.length} séance{preview.length !== 1 ? 's' : ''}</span> seront créées
+              {skipped.length > 0 && ` · ${skipped.length} ignorée${skipped.length !== 1 ? 's' : ''} (vacances)`}
+            </p>
+            <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto">
+              {preview.map(d => (
+                <span key={d} className="text-xs bg-white border border-[#E5E5E5] rounded px-1.5 py-0.5 text-[#666666]">
+                  {new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                </span>
+              ))}
+            </div>
+            {skipped.length > 0 && (
+              <div className="mt-2 pt-2 border-t border-[#F0F0F0] flex flex-wrap gap-1">
+                {skipped.map(d => (
+                  <span key={d} className="text-xs bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 text-amber-600 line-through">
+                    {new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        <ModalActions onClose={onClose} saving={saving} isEdit={false} label={preview.length > 0 ? `Créer ${preview.length} séances` : 'Générer'} />
+      </form>
+    </Modal>
   )
 }
 
