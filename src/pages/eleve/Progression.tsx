@@ -14,6 +14,7 @@ interface BibVideo {
   belt: string | null
   technique_key: string | null
   video_url: string
+  tags: string | null
 }
 const BELT_COLORS: Record<Belt, string> = {
   blanche: '#FFFFFF', jaune: '#FFD700', orange: '#FF8C00',
@@ -53,6 +54,7 @@ export default function Progression() {
   const [mode, setMode] = useState<'grade' | 'playlist'>(searchParams.get('mode') === 'playlist' ? 'playlist' : 'grade')
   const [bibVideos, setBibVideos] = useState<BibVideo[]>([])
   const [playerVideo, setPlayerVideo] = useState<BibVideo | null>(null)
+  const [videoViewMode, setVideoViewMode] = useState<'grid' | 'list'>('list')
 
   useEffect(() => {
     async function load() {
@@ -100,7 +102,7 @@ export default function Progression() {
 
   useEffect(() => {
     if (!selectedBelt) return
-    supabase.from('videos').select('id, title, description, belt, technique_key, video_url')
+    supabase.from('videos').select('id, title, description, belt, technique_key, video_url, tags')
       .eq('belt', selectedBelt)
       .order('created_at', { ascending: false })
       .then(({ data }) => setBibVideos(data ?? []))
@@ -329,29 +331,85 @@ export default function Progression() {
 
           {bibVideos.length > 0 && (
             <div className="mt-6">
-              <h3 className="text-xs font-semibold uppercase tracking-widest text-[#999999] mb-3">
-                Vidéos — {activeCurriculum.label}
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {bibVideos.map(v => {
-                  const thumb = getThumbnailUrl(v.video_url)
-                  return (
-                    <div key={v.id} onClick={() => setPlayerVideo(v)}
-                      className="cursor-pointer group bg-white rounded-xl border border-[#E5E5E5] overflow-hidden hover:border-[#C41230] transition-all">
-                      <div className="aspect-video bg-[#0A0A0A] relative overflow-hidden">
-                        {thumb
-                          ? <img src={thumb} alt={v.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                          : <div className="w-full h-full flex items-center justify-center text-[#444444] text-2xl">▶</div>
-                        }
-                      </div>
-                      <div className="p-3">
-                        <p className="text-xs font-semibold text-[#0A0A0A] line-clamp-2">{v.title}</p>
-                        <p className="text-xs text-[#999999] mt-0.5">{getVideoLabel(v.video_url)}</p>
-                      </div>
-                    </div>
-                  )
-                })}
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-semibold uppercase tracking-widest text-[#999999]">
+                  Vidéos — {activeCurriculum.label}
+                </h3>
+                <div className="flex border border-[#E5E5E5] rounded-lg overflow-hidden">
+                  <button onClick={() => setVideoViewMode('list')}
+                    className={`px-2.5 py-1.5 transition-colors ${videoViewMode === 'list' ? 'bg-[#0A0A0A] text-white' : 'text-[#999999] hover:text-[#666666]'}`}>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                    </svg>
+                  </button>
+                  <button onClick={() => setVideoViewMode('grid')}
+                    className={`px-2.5 py-1.5 transition-colors ${videoViewMode === 'grid' ? 'bg-[#0A0A0A] text-white' : 'text-[#999999] hover:text-[#666666]'}`}>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                    </svg>
+                  </button>
+                </div>
               </div>
+
+              {videoViewMode === 'list' ? (
+                <div className="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden">
+                  {bibVideos.map((v, idx) => {
+                    const thumb = getThumbnailUrl(v.video_url)
+                    return (
+                      <div key={v.id} onClick={() => setPlayerVideo(v)}
+                        className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[#FAFAFA] transition-colors group ${idx > 0 ? 'border-t border-[#F5F5F5]' : ''}`}>
+                        <div className="w-16 h-10 rounded-lg overflow-hidden bg-[#0A0A0A] flex-shrink-0">
+                          {thumb
+                            ? <img src={thumb} alt={v.title} className="w-full h-full object-cover" />
+                            : <div className="w-full h-full bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center">
+                                <svg className="w-4 h-4 text-white/30" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                              </div>
+                          }
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-[#0A0A0A] truncate">{v.title}</p>
+                          <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                            <span className="text-xs text-[#999999]">{getVideoLabel(v.video_url)}</span>
+                            {v.tags && v.tags.split(',').map(t => t.trim()).filter(Boolean).slice(0, 2).map(t => (
+                              <span key={t} className="text-xs bg-[#F5F0FF] text-[#7C3AED] px-1.5 py-0.5 rounded-full">{t}</span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="w-7 h-7 rounded-full bg-[#F5F5F5] group-hover:bg-[#C41230] flex items-center justify-center transition-colors flex-shrink-0">
+                          <svg className="w-3 h-3 text-[#999999] group-hover:text-white ml-0.5 transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {bibVideos.map(v => {
+                    const thumb = getThumbnailUrl(v.video_url)
+                    return (
+                      <div key={v.id} onClick={() => setPlayerVideo(v)}
+                        className="cursor-pointer group bg-white rounded-xl border border-[#E5E5E5] overflow-hidden hover:border-[#C41230] transition-all">
+                        <div className="aspect-video bg-[#0A0A0A] relative overflow-hidden">
+                          {thumb
+                            ? <img src={thumb} alt={v.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            : <div className="w-full h-full flex items-center justify-center text-[#444444] text-2xl">▶</div>
+                          }
+                        </div>
+                        <div className="p-3">
+                          <p className="text-xs font-semibold text-[#0A0A0A] line-clamp-2">{v.title}</p>
+                          {v.tags && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {v.tags.split(',').map(t => t.trim()).filter(Boolean).slice(0, 2).map(t => (
+                                <span key={t} className="text-xs bg-[#F5F0FF] text-[#7C3AED] px-1.5 py-0.5 rounded-full">{t}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
