@@ -96,7 +96,6 @@ export default function MesPlaylists() {
   const [kwInput, setKwInput] = useState('')
   const [kwResults, setKwResults] = useState<ClubVideo[]>([])
   const [kwName, setKwName] = useState('')
-  const [kwNameEdited, setKwNameEdited] = useState(false)
   const [kwCreating, setKwCreating] = useState(false)
 
   useEffect(() => {
@@ -255,14 +254,13 @@ export default function MesPlaylists() {
     setKwInput('')
     setKwResults([])
     setKwName('')
-    setKwNameEdited(false)
     setShowKeywordModal(true)
   }
 
   function handleKwSearch(val: string) {
     setKwInput(val)
     setKwResults(val.trim() ? scanByKeywords(val) : [])
-    if (!kwNameEdited) setKwName(val.trim())
+    setKwName(val.trim())
   }
 
   async function createPlaylistFromKeywords() {
@@ -745,7 +743,7 @@ export default function MesPlaylists() {
                     </div>
                     <div className="mb-3">
                       <label className="block text-xs text-[#999999] mb-1.5">Nom de la playlist</label>
-                      <input type="text" value={kwName} onChange={e => { setKwName(e.target.value); setKwNameEdited(true) }}
+                      <input type="text" value={kwName} onChange={e => setKwName(e.target.value)}
                         placeholder="Ex : O-goshi — perfectionnement"
                         className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#C41230]" />
                     </div>
