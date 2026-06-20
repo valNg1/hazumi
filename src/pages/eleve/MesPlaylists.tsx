@@ -92,6 +92,8 @@ export default function MesPlaylists() {
   const [editName, setEditName] = useState('')
   const [editSaving, setEditSaving] = useState(false)
   const [clubSearch, setClubSearch] = useState('')
+  const [clubViewMode, setClubViewMode] = useState<'grid' | 'list'>('list')
+  const [playlistViewMode, setPlaylistViewMode] = useState<'grid' | 'list'>('list')
   const [showKeywordModal, setShowKeywordModal] = useState(false)
   const [kwInput, setKwInput] = useState('')
   const [kwResults, setKwResults] = useState<ClubVideo[]>([])
@@ -311,13 +313,23 @@ export default function MesPlaylists() {
             </button>
             <span className="text-xs text-[#999999]">· {items.length} vidéo{items.length !== 1 ? 's' : ''}</span>
           </div>
-          <button onClick={openAddModal}
-            className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors flex items-center gap-2">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Ajouter
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="flex border border-[#E5E5E5] rounded-lg overflow-hidden">
+              <button onClick={() => setPlaylistViewMode('list')} className={`px-3 py-2 transition-colors ${playlistViewMode === 'list' ? 'bg-[#0A0A0A] text-white' : 'text-[#999999] hover:text-[#666666]'}`}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+              </button>
+              <button onClick={() => setPlaylistViewMode('grid')} className={`px-3 py-2 transition-colors ${playlistViewMode === 'grid' ? 'bg-[#0A0A0A] text-white' : 'text-[#999999] hover:text-[#666666]'}`}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" /></svg>
+              </button>
+            </div>
+            <button onClick={openAddModal}
+              className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors flex items-center gap-2">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Ajouter
+            </button>
+          </div>
         </div>
 
         {/* Lecteur */}
@@ -337,6 +349,40 @@ export default function MesPlaylists() {
             <p className="text-[#CCCCCC] text-sm mb-3">Playlist vide</p>
             <button onClick={openAddModal} className="text-xs text-[#C41230] hover:underline">Ajouter une première vidéo</button>
           </div>
+        ) : playlistViewMode === 'list' ? (
+          <div className="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden">
+            {items.map((item, idx) => {
+              const itemUrl = getItemUrl(item)
+              const type = itemUrl ? detectVideoType(itemUrl) : 'direct'
+              const isPlaying = playingItem?.id === item.id
+              const thumb = itemUrl ? getThumbnailUrl(itemUrl) : null
+              return (
+                <div key={item.id} onClick={() => setPlayingItem(isPlaying ? null : item)}
+                  className={`flex items-center gap-3 px-4 py-3 cursor-pointer group transition-colors ${idx > 0 ? 'border-t border-[#F5F5F5]' : ''} ${isPlaying ? 'bg-[#FFF5F7]' : 'hover:bg-[#FAFAFA]'}`}>
+                  <span className="text-xs text-[#CCCCCC] font-mono w-5 flex-shrink-0">{idx + 1}</span>
+                  <div className="w-16 h-10 rounded-lg overflow-hidden bg-[#0A0A0A] flex-shrink-0">
+                    {thumb ? <img src={thumb} alt="" className="w-full h-full object-cover" />
+                      : <div className="w-full h-full bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center">
+                          <svg className="w-4 h-4 text-white/30" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                        </div>}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium truncate ${isPlaying ? 'text-[#C41230]' : 'text-[#0A0A0A]'}`}>{getItemTitle(item)}</p>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${SOURCE_BADGE[type]}`}>{getVideoLabel(itemUrl)}</span>
+                  </div>
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${isPlaying ? 'bg-[#C41230]' : 'bg-[#F5F5F5] group-hover:bg-[#C41230]'}`}>
+                    {isPlaying
+                      ? <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
+                      : <svg className="w-3 h-3 text-[#999999] group-hover:text-white ml-0.5 transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>}
+                  </div>
+                  <button onClick={e => { e.stopPropagation(); removeItem(item) }}
+                    className="opacity-0 group-hover:opacity-100 text-[#CCCCCC] hover:text-[#C41230] transition-all flex-shrink-0 p-0.5">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              )
+            })}
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {items.map((item, idx) => {
@@ -347,26 +393,20 @@ export default function MesPlaylists() {
               return (
                 <div key={item.id}
                   className={`group cursor-pointer rounded-xl overflow-hidden border transition-all ${isPlaying ? 'border-[#C41230] shadow-lg shadow-red-100' : 'border-[#E5E5E5] hover:border-[#C41230]'}`}
-                  onClick={() => setPlayingItem(isPlaying ? null : item)}
-                >
-                  {/* Thumbnail */}
+                  onClick={() => setPlayingItem(isPlaying ? null : item)}>
                   <div className="relative aspect-video bg-[#0A0A0A]">
-                    {thumb
-                      ? <img src={thumb} alt="" className="w-full h-full object-cover" />
+                    {thumb ? <img src={thumb} alt="" className="w-full h-full object-cover" />
                       : <div className="w-full h-full bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center">
                           <svg className="w-8 h-8 text-white/20" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                        </div>
-                    }
+                        </div>}
                     <div className={`absolute inset-0 flex items-center justify-center bg-black/50 transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                       {isPlaying
                         ? <svg className="w-10 h-10 text-white drop-shadow" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
-                        : <svg className="w-10 h-10 text-white drop-shadow" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                      }
+                        : <svg className="w-10 h-10 text-white drop-shadow" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>}
                     </div>
                     <span className="absolute top-2 left-2 text-xs bg-black/60 text-white px-1.5 py-0.5 rounded font-mono">{idx + 1}</span>
                     {isPlaying && <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#C41230] animate-pulse" />}
                   </div>
-                  {/* Info */}
                   <div className="p-3 bg-white flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className={`text-sm font-semibold truncate ${isPlaying ? 'text-[#C41230]' : 'text-[#0A0A0A]'}`}>{getItemTitle(item)}</p>
@@ -374,9 +414,7 @@ export default function MesPlaylists() {
                     </div>
                     <button onClick={e => { e.stopPropagation(); removeItem(item) }}
                       className="opacity-0 group-hover:opacity-100 text-[#CCCCCC] hover:text-[#C41230] transition-all flex-shrink-0 p-0.5">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                   </div>
                 </div>
@@ -536,14 +574,57 @@ export default function MesPlaylists() {
             )
           })()}
 
-          <input type="text" value={clubSearch} onChange={e => setClubSearch(e.target.value)}
-            placeholder="Rechercher dans la bibliothèque…"
-            className="w-full border border-[#E5E5E5] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#C41230] mb-5 transition-colors" />
+          <div className="flex items-center gap-3 mb-5">
+            <input type="text" value={clubSearch} onChange={e => setClubSearch(e.target.value)}
+              placeholder="Rechercher dans la bibliothèque…"
+              className="flex-1 border border-[#E5E5E5] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#C41230] transition-colors" />
+            <div className="flex border border-[#E5E5E5] rounded-lg overflow-hidden flex-shrink-0">
+              <button onClick={() => setClubViewMode('list')} className={`px-3 py-2 transition-colors ${clubViewMode === 'list' ? 'bg-[#0A0A0A] text-white' : 'text-[#999999] hover:text-[#666666]'}`}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+              </button>
+              <button onClick={() => setClubViewMode('grid')} className={`px-3 py-2 transition-colors ${clubViewMode === 'grid' ? 'bg-[#0A0A0A] text-white' : 'text-[#999999] hover:text-[#666666]'}`}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" /></svg>
+              </button>
+            </div>
+          </div>
 
           {filteredClubMain.length === 0 ? (
             <div className="text-center py-20 border-2 border-dashed border-[#E5E5E5] rounded-2xl">
               <p className="text-[#999999] text-sm mb-1">Aucune vidéo disponible</p>
               <p className="text-[#CCCCCC] text-xs">Le club n'a pas encore partagé de contenu.</p>
+            </div>
+          ) : clubViewMode === 'list' ? (
+            <div className="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden">
+              {filteredClubMain.map((v, idx) => {
+                const thumb = getThumbnailUrl(v.video_url)
+                const isPlaying = playingClubVideo?.id === v.id
+                return (
+                  <div key={v.id} onClick={() => setPlayingClubVideo(isPlaying ? null : v)}
+                    className={`flex items-center gap-3 px-4 py-3 cursor-pointer group transition-colors ${idx > 0 ? 'border-t border-[#F5F5F5]' : ''} ${isPlaying ? 'bg-[#FFF5F7]' : 'hover:bg-[#FAFAFA]'}`}>
+                    <div className="w-16 h-10 rounded-lg overflow-hidden bg-[#0A0A0A] flex-shrink-0 relative">
+                      {thumb ? <img src={thumb} alt={v.title} className="w-full h-full object-cover" />
+                        : <div className="w-full h-full bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center">
+                            <svg className="w-4 h-4 text-white/30" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                          </div>}
+                      {isPlaying && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[#C41230] animate-pulse" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium truncate ${isPlaying ? 'text-[#C41230]' : 'text-[#0A0A0A]'}`}>{v.title}</p>
+                      <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                        <span className="text-xs text-[#999999]">{getVideoLabel(v.video_url)}</span>
+                        {v.tags && v.tags.split(',').map(t => t.trim()).filter(Boolean).slice(0, 2).map(t => (
+                          <span key={t} className="text-xs bg-[#F5F0FF] text-[#7C3AED] px-1.5 py-0.5 rounded-full">{t}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${isPlaying ? 'bg-[#C41230]' : 'bg-[#F5F5F5] group-hover:bg-[#C41230]'}`}>
+                      {isPlaying
+                        ? <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
+                        : <svg className="w-3 h-3 text-[#999999] group-hover:text-white ml-0.5 transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -554,17 +635,14 @@ export default function MesPlaylists() {
                   <div key={v.id} onClick={() => setPlayingClubVideo(isPlaying ? null : v)}
                     className={`group cursor-pointer rounded-xl overflow-hidden border transition-all ${isPlaying ? 'border-[#C41230] shadow-lg shadow-red-100' : 'border-[#E5E5E5] hover:border-[#C41230]'}`}>
                     <div className="relative aspect-video bg-[#0A0A0A]">
-                      {thumb
-                        ? <img src={thumb} alt={v.title} className="w-full h-full object-cover" />
+                      {thumb ? <img src={thumb} alt={v.title} className="w-full h-full object-cover" />
                         : <div className="w-full h-full bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center">
                             <svg className="w-8 h-8 text-white/20" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                          </div>
-                      }
+                          </div>}
                       <div className={`absolute inset-0 flex items-center justify-center bg-black/50 transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                         {isPlaying
                           ? <svg className="w-10 h-10 text-white drop-shadow" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
-                          : <svg className="w-10 h-10 text-white drop-shadow" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                        }
+                          : <svg className="w-10 h-10 text-white drop-shadow" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>}
                       </div>
                       {isPlaying && <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#C41230] animate-pulse" />}
                     </div>
