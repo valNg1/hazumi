@@ -99,6 +99,7 @@ export default function Bibliotheque() {
     setAddingRow(true)
     setAddError(null)
     const { data: { user } } = await supabase.auth.getUser()
+    const { data: judoka } = await supabase.from('judokas').select('club_id').eq('user_id', user?.id ?? '').single()
     const { error } = await supabase.from('videos').insert({
       video_url: newRow.video_url.trim(),
       title: newRow.title.trim(),
@@ -106,6 +107,7 @@ export default function Bibliotheque() {
       description: newRow.description.trim() || null,
       tags: newRow.tags.trim() || null,
       uploaded_by: user?.id,
+      club_id: judoka?.club_id ?? null,
     })
     setAddingRow(false)
     if (error) { setAddError(error.message); return }
