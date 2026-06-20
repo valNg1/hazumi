@@ -22,6 +22,7 @@ interface NewRow {
 
 const EMPTY_ROW: NewRow = { video_url: '', title: '', belt: '', description: '' }
 
+
 const BELT_COLORS: Record<string, string> = {
   blanche: '#E5E5E5', jaune: '#FFD700', orange: '#FF8C00',
   verte: '#228B22', bleue: '#1565C0', marron: '#6D3B1E',
@@ -66,6 +67,7 @@ export default function Bibliotheque() {
 
   // Nouvelle ligne tableur
   const [newRow, setNewRow] = useState<NewRow>(EMPTY_ROW)
+  const [showNewRow, setShowNewRow] = useState(false)
   const [addingRow, setAddingRow] = useState(false)
   const [fetchingTitle, setFetchingTitle] = useState(false)
   const urlInputRef = useRef<HTMLInputElement>(null)
@@ -100,9 +102,9 @@ export default function Bibliotheque() {
       uploaded_by: user?.id,
     })
     setNewRow(EMPTY_ROW)
+    setShowNewRow(false)
     setAddingRow(false)
     load()
-    urlInputRef.current?.focus()
   }
 
   function startInline(video: Video) {
@@ -189,53 +191,67 @@ export default function Bibliotheque() {
             <span className="text-xs uppercase tracking-widest text-[#999999]">Titre</span>
             <span className="text-xs uppercase tracking-widest text-[#999999]">Ceinture</span>
             <span className="text-xs uppercase tracking-widest text-[#999999]">Source</span>
-            <span />
-          </div>
-
-          {/* Ligne d'ajout rapide en haut */}
-          <div className="px-4 py-2.5 bg-[#FFFBF5] border-b border-[#F0F0F0]"
-            style={{ display: 'grid', gridTemplateColumns: COL, gap: '0.75rem', alignItems: 'center' }}>
-            <div className="relative">
-              <input
-                ref={urlInputRef}
-                type="url"
-                value={newRow.video_url}
-                onChange={e => handleUrlPaste(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && saveNewRow()}
-                placeholder="Coller un lien YouTube, Drive…"
-                className="w-full text-xs border border-[#E5E5E5] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#C41230] bg-white placeholder-[#CCCCCC]"
-              />
-              {newType && (
-                <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs px-1.5 py-0.5 rounded-full ${SOURCE_BADGE[newType]}`}>
-                  {getVideoLabel(newRow.video_url)}
-                </span>
-              )}
-            </div>
-            <div className="relative">
-              <input
-                type="text"
-                value={newRow.title}
-                onChange={e => setNewRow(r => ({ ...r, title: e.target.value }))}
-                onKeyDown={e => e.key === 'Enter' && saveNewRow()}
-                placeholder={fetchingTitle ? 'Récupération…' : 'Titre'}
-                className="w-full text-xs border border-[#E5E5E5] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#C41230] bg-white placeholder-[#CCCCCC]"
-              />
-              {fetchingTitle && <div className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 border border-[#C41230] border-t-transparent rounded-full animate-spin" />}
-            </div>
-            <select value={newRow.belt} onChange={e => setNewRow(r => ({ ...r, belt: e.target.value }))}
-              className="w-full text-xs border border-[#E5E5E5] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#C41230] bg-white text-[#666666]">
-              <option value="">Ceinture…</option>
-              {CURRICULUM.map(c => <option key={c.belt} value={c.belt}>{c.label}</option>)}
-            </select>
-            <div />
             <button
-              onClick={saveNewRow}
-              disabled={!newRow.video_url.trim() || !newRow.title.trim() || addingRow}
-              className="flex items-center gap-1.5 bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs px-3 py-1.5 rounded-lg disabled:opacity-40 transition-colors whitespace-nowrap">
-              {addingRow ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" /> : null}
+              onClick={() => { setShowNewRow(true); setNewRow(EMPTY_ROW); setTimeout(() => urlInputRef.current?.focus(), 50) }}
+              className="flex items-center gap-1 text-xs text-[#C41230] hover:text-[#9B0E25] font-medium transition-colors whitespace-nowrap">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
               Ajouter
             </button>
           </div>
+
+          {/* Ligne d'ajout (conditionnelle) */}
+          {showNewRow && (
+            <div className="px-4 py-2.5 bg-[#FFFBF5] border-b border-[#F0EED8]"
+              style={{ display: 'grid', gridTemplateColumns: COL, gap: '0.75rem', alignItems: 'center' }}>
+              <div className="relative">
+                <input
+                  ref={urlInputRef}
+                  type="url"
+                  value={newRow.video_url}
+                  onChange={e => handleUrlPaste(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && saveNewRow()}
+                  placeholder="Coller un lien YouTube, Drive…"
+                  className="w-full text-xs border border-[#E5E5E5] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#C41230] bg-white placeholder-[#CCCCCC]"
+                />
+                {newType && (
+                  <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs px-1.5 py-0.5 rounded-full ${SOURCE_BADGE[newType]}`}>
+                    {getVideoLabel(newRow.video_url)}
+                  </span>
+                )}
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={newRow.title}
+                  onChange={e => setNewRow(r => ({ ...r, title: e.target.value }))}
+                  onKeyDown={e => e.key === 'Enter' && saveNewRow()}
+                  placeholder={fetchingTitle ? 'Récupération…' : 'Titre'}
+                  className="w-full text-xs border border-[#E5E5E5] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#C41230] bg-white placeholder-[#CCCCCC]"
+                />
+                {fetchingTitle && <div className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 border border-[#C41230] border-t-transparent rounded-full animate-spin" />}
+              </div>
+              <select value={newRow.belt} onChange={e => setNewRow(r => ({ ...r, belt: e.target.value }))}
+                className="w-full text-xs border border-[#E5E5E5] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#C41230] bg-white text-[#666666]">
+                <option value="">Ceinture…</option>
+                {CURRICULUM.map(c => <option key={c.belt} value={c.belt}>{c.label}</option>)}
+              </select>
+              <div />
+              <div className="flex items-center gap-2">
+                <button onClick={saveNewRow} disabled={!newRow.video_url.trim() || !newRow.title.trim() || addingRow}
+                  className="flex items-center gap-1.5 bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs px-3 py-1.5 rounded-lg disabled:opacity-40 transition-colors whitespace-nowrap">
+                  {addingRow && <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />}
+                  Ajouter
+                </button>
+                <button onClick={() => { setShowNewRow(false); setNewRow(EMPTY_ROW) }} className="text-[#CCCCCC] hover:text-[#999999] transition-colors">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Lignes existantes */}
           {filtered.length === 0 ? (
