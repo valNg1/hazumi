@@ -66,6 +66,7 @@ export default function Bibliotheque() {
   const [inlineId, setInlineId] = useState<string | null>(null)
   const [inlineEdit, setInlineEdit] = useState<Record<string, string> | null>(null)
   const [inlineSaving, setInlineSaving] = useState(false)
+  const [inlineError, setInlineError] = useState<string | null>(null)
 
   // Nouvelle ligne tableur
   const [newRow, setNewRow] = useState<NewRow>(EMPTY_ROW)
@@ -116,23 +117,26 @@ export default function Bibliotheque() {
   function startInline(video: Video) {
     setInlineId(video.id)
     setInlineEdit({ title: video.title, description: video.description ?? '', belt: video.belt ?? '', video_url: video.video_url, tags: video.tags ?? '' })
+    setInlineError(null)
   }
 
-  function cancelInline() { setInlineId(null); setInlineEdit(null) }
+  function cancelInline() { setInlineId(null); setInlineEdit(null); setInlineError(null) }
 
   async function saveInline() {
     if (!inlineId || !inlineEdit) return
     setInlineSaving(true)
-    await supabase.from('videos').update({
+    setInlineError(null)
+    const { error } = await supabase.from('videos').update({
       title: inlineEdit.title.trim(),
       description: inlineEdit.description.trim() || null,
       belt: inlineEdit.belt || null,
       video_url: inlineEdit.video_url.trim(),
       tags: inlineEdit.tags?.trim() || null,
     }).eq('id', inlineId)
+    setInlineSaving(false)
+    if (error) { setInlineError(error.message); return }
     setInlineId(null)
     setInlineEdit(null)
-    setInlineSaving(false)
     load()
   }
 
@@ -350,6 +354,7 @@ export default function Bibliotheque() {
                               className="w-full text-sm border border-[#E5E5E5] rounded-lg px-3 py-2 focus:outline-none focus:border-[#C41230] bg-white" placeholder="Ex : o-goshi, projection avant, ceinture jaune" />
                           </div>
                         </div>
+                        {inlineError && <p className="text-xs text-[#C41230] mt-2">Erreur : {inlineError}</p>}
                         <div className="flex items-center gap-3 mt-3">
                           <button onClick={saveInline} disabled={!inlineEdit.title.trim() || !inlineEdit.video_url.trim() || inlineSaving}
                             className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs px-4 py-2 rounded-lg disabled:opacity-40 transition-colors flex items-center gap-2">
