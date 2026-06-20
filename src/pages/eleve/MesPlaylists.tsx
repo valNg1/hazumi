@@ -92,6 +92,11 @@ export default function MesPlaylists() {
   const [editName, setEditName] = useState('')
   const [editSaving, setEditSaving] = useState(false)
   const [clubSearch, setClubSearch] = useState('')
+  const [showKeywordModal, setShowKeywordModal] = useState(false)
+  const [kwInput, setKwInput] = useState('')
+  const [kwResults, setKwResults] = useState<ClubVideo[]>([])
+  const [kwName, setKwName] = useState('')
+  const [kwCreating, setKwCreating] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -237,6 +242,39 @@ export default function MesPlaylists() {
     const lq = q.toLowerCase()
     return v.title.toLowerCase().includes(lq) ||
       (v.tags ?? '').toLowerCase().split(',').some(t => t.trim().includes(lq))
+  }
+
+  function scanByKeywords(keywords: string): ClubVideo[] {
+    const kws = keywords.split(/[,\s]+/).map(k => k.trim().toLowerCase()).filter(Boolean)
+    if (!kws.length) return []
+    return clubVideos.filter(v => kws.some(k => matchesSearch(v, k)))
+  }
+
+  function openKeywordModal() {
+    setKwInput('')
+    setKwResults([])
+    setKwName('')
+    setShowKeywordModal(true)
+  }
+
+  function handleKwSearch(val: string) {
+    setKwInput(val)
+    setKwResults(val.trim() ? scanByKeywords(val) : [])
+    if (!kwName) setKwName(val.trim())
+  }
+
+  async function createPlaylistFromKeywords() {
+    if (!kwResults.length || !kwName.trim() || !judokaId) return
+    setKwCreating(true)
+    const { data: pl } = await supabase.from('playlists').insert({ judoka_id: judokaId, name: kwName.trim() }).select('id').single()
+    if (pl) {
+      await supabase.from('playlist_items').insert(
+        kwResults.map((v, i) => ({ playlist_id: pl.id, video_id: v.id, position: i }))
+      )
+    }
+    setKwCreating(false)
+    setShowKeywordModal(false)
+    await loadPlaylists(judokaId)
   }
 
   const filteredClub = searchClub.trim()
@@ -552,13 +590,22 @@ export default function MesPlaylists() {
       {tab === 'perso' && <>
       <div className="flex items-center justify-between mb-6">
         <p className="text-[#999999] text-sm">{playlists.length} playlist{playlists.length !== 1 ? 's' : ''}</p>
-        <button onClick={() => setShowNewPlaylist(true)}
-          className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors flex items-center gap-2">
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Nouvelle playlist
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={openKeywordModal}
+            className="border border-[#C41230] text-[#C41230] hover:bg-[#FFF5F7] text-xs px-4 py-2.5 rounded-lg transition-colors flex items-center gap-2">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            Par mots-clés
+          </button>
+          <button onClick={() => setShowNewPlaylist(true)}
+            className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors flex items-center gap-2">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Nouvelle
+          </button>
+        </div>
       </div>
 
       {playlists.length === 0 ? (
@@ -650,6 +697,66 @@ export default function MesPlaylists() {
                 {editSaving ? 'Enregistrement…' : 'Enregistrer'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal playlist par mots-clés */}
+      {showKeywordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/60" onClick={() => !kwCreating && setShowKeywordModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[85vh] flex flex-col">
+            <h2 className="text-lg font-bold text-[#0A0A0A] mb-1">Créer une playlist par mots-clés</h2>
+            <p className="text-xs text-[#999999] mb-4">Hazumi va scanner la bibliothèque du club et sélectionner les vidéos correspondantes.</p>
+            <input
+              type="text" value={kwInput} autoFocus
+              onChange={e => handleKwSearch(e.target.value)}
+              placeholder="Ex : o-goshi, chute, ceinture jaune…"
+              className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#C41230] mb-4"
+            />
+
+            {kwInput.trim() && (
+              kwResults.length === 0
+                ? <p className="text-sm text-[#CCCCCC] text-center py-6">Aucune vidéo trouvée pour ces mots-clés.</p>
+                : <>
+                    <p className="text-xs text-[#999999] mb-2">{kwResults.length} vidéo{kwResults.length > 1 ? 's' : ''} trouvée{kwResults.length > 1 ? 's' : ''}</p>
+                    <div className="flex-1 overflow-y-auto space-y-2 mb-4 pr-1">
+                      {kwResults.map(v => {
+                        const thumb = getThumbnailUrl(v.video_url)
+                        return (
+                          <div key={v.id} className="flex items-center gap-3 p-2 rounded-lg border border-[#E5E5E5] bg-[#FAFAFA]">
+                            <div className="w-16 h-10 rounded-lg overflow-hidden bg-[#0A0A0A] flex-shrink-0">
+                              {thumb
+                                ? <img src={thumb} alt="" className="w-full h-full object-cover" />
+                                : <div className="w-full h-full bg-[#222] flex items-center justify-center">
+                                    <svg className="w-3 h-3 text-white/30" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                                  </div>
+                              }
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold text-[#0A0A0A] truncate">{v.title}</p>
+                              {v.tags && <p className="text-xs text-[#7C3AED] truncate">{v.tags}</p>}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <div className="mb-3">
+                      <label className="block text-xs text-[#999999] mb-1.5">Nom de la playlist</label>
+                      <input type="text" value={kwName} onChange={e => setKwName(e.target.value)}
+                        placeholder="Ex : O-goshi — perfectionnement"
+                        className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#C41230]" />
+                    </div>
+                    <button onClick={createPlaylistFromKeywords} disabled={!kwName.trim() || kwCreating}
+                      className="w-full bg-[#C41230] hover:bg-[#9B0E25] text-white text-sm py-2.5 rounded-lg transition-colors disabled:opacity-40 flex items-center justify-center gap-2">
+                      {kwCreating ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Création…</> : `Créer la playlist (${kwResults.length} vidéos)`}
+                    </button>
+                  </>
+            )}
+
+            <button onClick={() => setShowKeywordModal(false)} className="mt-3 w-full border border-[#E5E5E5] text-[#666666] text-sm py-2.5 rounded-lg hover:bg-[#F5F5F5] flex-shrink-0">
+              Fermer
+            </button>
           </div>
         </div>
       )}

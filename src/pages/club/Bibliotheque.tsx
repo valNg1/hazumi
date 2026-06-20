@@ -71,6 +71,7 @@ export default function Bibliotheque() {
   const [newRow, setNewRow] = useState<NewRow>(EMPTY_ROW)
   const [showNewRow, setShowNewRow] = useState(false)
   const [addingRow, setAddingRow] = useState(false)
+  const [addError, setAddError] = useState<string | null>(null)
   const [fetchingTitle, setFetchingTitle] = useState(false)
   const urlInputRef = useRef<HTMLInputElement>(null)
 
@@ -95,8 +96,9 @@ export default function Bibliotheque() {
   async function saveNewRow() {
     if (!newRow.video_url.trim() || !newRow.title.trim()) return
     setAddingRow(true)
+    setAddError(null)
     const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('videos').insert({
+    const { error } = await supabase.from('videos').insert({
       video_url: newRow.video_url.trim(),
       title: newRow.title.trim(),
       belt: newRow.belt || null,
@@ -104,9 +106,10 @@ export default function Bibliotheque() {
       tags: newRow.tags.trim() || null,
       uploaded_by: user?.id,
     })
+    setAddingRow(false)
+    if (error) { setAddError(error.message); return }
     setNewRow(EMPTY_ROW)
     setShowNewRow(false)
-    setAddingRow(false)
     load()
   }
 
@@ -207,7 +210,9 @@ export default function Bibliotheque() {
 
           {/* Ligne d'ajout (conditionnelle) */}
           {showNewRow && (
-            <div className="px-4 py-2.5 bg-[#FFFBF5] border-b border-[#F0EED8]"
+            <div className="bg-[#FFFBF5] border-b border-[#F0EED8]">
+            {addError && <p className="px-4 pt-2 text-xs text-[#C41230]">Erreur : {addError}</p>}
+            <div className="px-4 py-2.5"
               style={{ display: 'grid', gridTemplateColumns: COL, gap: '0.75rem', alignItems: 'center' }}>
               <div className="relative">
                 <input
@@ -255,12 +260,13 @@ export default function Bibliotheque() {
                   {addingRow && <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />}
                   Ajouter
                 </button>
-                <button onClick={() => { setShowNewRow(false); setNewRow(EMPTY_ROW) }} className="text-[#CCCCCC] hover:text-[#999999] transition-colors">
+                <button onClick={() => { setShowNewRow(false); setNewRow(EMPTY_ROW); setAddError(null) }} className="text-[#CCCCCC] hover:text-[#999999] transition-colors">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
+            </div>
             </div>
           )}
 
