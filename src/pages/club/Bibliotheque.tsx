@@ -10,6 +10,7 @@ interface Video {
   belt: string | null
   technique_key: string | null
   video_url: string
+  tags: string | null
   created_at: string
 }
 
@@ -18,9 +19,10 @@ interface NewRow {
   title: string
   belt: string
   description: string
+  tags: string
 }
 
-const EMPTY_ROW: NewRow = { video_url: '', title: '', belt: '', description: '' }
+const EMPTY_ROW: NewRow = { video_url: '', title: '', belt: '', description: '', tags: '' }
 
 
 const BELT_COLORS: Record<string, string> = {
@@ -99,6 +101,7 @@ export default function Bibliotheque() {
       title: newRow.title.trim(),
       belt: newRow.belt || null,
       description: newRow.description.trim() || null,
+      tags: newRow.tags.trim() || null,
       uploaded_by: user?.id,
     })
     setNewRow(EMPTY_ROW)
@@ -109,7 +112,7 @@ export default function Bibliotheque() {
 
   function startInline(video: Video) {
     setInlineId(video.id)
-    setInlineEdit({ title: video.title, description: video.description ?? '', belt: video.belt ?? '', video_url: video.video_url })
+    setInlineEdit({ title: video.title, description: video.description ?? '', belt: video.belt ?? '', video_url: video.video_url, tags: video.tags ?? '' })
   }
 
   function cancelInline() { setInlineId(null); setInlineEdit(null) }
@@ -122,6 +125,7 @@ export default function Bibliotheque() {
       description: inlineEdit.description.trim() || null,
       belt: inlineEdit.belt || null,
       video_url: inlineEdit.video_url.trim(),
+      tags: inlineEdit.tags?.trim() || null,
     }).eq('id', inlineId)
     setInlineId(null)
     setInlineEdit(null)
@@ -190,7 +194,7 @@ export default function Bibliotheque() {
             <span className="text-xs uppercase tracking-widest text-[#999999]">Lien</span>
             <span className="text-xs uppercase tracking-widest text-[#999999]">Titre</span>
             <span className="text-xs uppercase tracking-widest text-[#999999]">Ceinture</span>
-            <span className="text-xs uppercase tracking-widest text-[#999999]">Source</span>
+            <span className="text-xs uppercase tracking-widest text-[#999999]">Tags</span>
             <button
               onClick={() => { setShowNewRow(true); setNewRow(EMPTY_ROW); setTimeout(() => urlInputRef.current?.focus(), 50) }}
               className="flex items-center gap-1 text-xs text-[#C41230] hover:text-[#9B0E25] font-medium transition-colors whitespace-nowrap">
@@ -237,7 +241,14 @@ export default function Bibliotheque() {
                 <option value="">Ceinture…</option>
                 {CURRICULUM.map(c => <option key={c.belt} value={c.belt}>{c.label}</option>)}
               </select>
-              <div />
+              <input
+                type="text"
+                value={newRow.tags}
+                onChange={e => setNewRow(r => ({ ...r, tags: e.target.value }))}
+                onKeyDown={e => e.key === 'Enter' && saveNewRow()}
+                placeholder="tags : o-goshi, chute…"
+                className="w-full text-xs border border-[#E5E5E5] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#C41230] bg-white placeholder-[#CCCCCC]"
+              />
               <div className="flex items-center gap-2">
                 <button onClick={saveNewRow} disabled={!newRow.video_url.trim() || !newRow.title.trim() || addingRow}
                   className="flex items-center gap-1.5 bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs px-3 py-1.5 rounded-lg disabled:opacity-40 transition-colors whitespace-nowrap">
@@ -260,7 +271,6 @@ export default function Bibliotheque() {
             <div>
               {filtered.map((video, idx) => {
                 const isEditing = inlineId === video.id
-                const type = detectVideoType(video.video_url)
                 return (
                   <div key={video.id} className={idx > 0 ? 'border-t border-[#F5F5F5]' : ''}>
                     {/* Ligne normale */}
@@ -284,8 +294,13 @@ export default function Bibliotheque() {
                           </span>
                         ) : <span className="text-xs text-[#CCCCCC]">—</span>}
                       </div>
-                      <div>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SOURCE_BADGE[type]}`}>{getVideoLabel(video.video_url)}</span>
+                      <div className="flex flex-wrap gap-1">
+                        {video.tags
+                          ? video.tags.split(',').map(t => t.trim()).filter(Boolean).slice(0, 3).map(t => (
+                              <span key={t} className="text-xs bg-[#F5F0FF] text-[#7C3AED] px-1.5 py-0.5 rounded-full">{t}</span>
+                            ))
+                          : <span className="text-xs text-[#CCCCCC]">—</span>
+                        }
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0">
                         <button onClick={() => isEditing ? cancelInline() : startInline(video)}
@@ -322,6 +337,11 @@ export default function Bibliotheque() {
                             <label className="block text-xs text-[#999999] mb-1">Description</label>
                             <input value={inlineEdit.description} onChange={e => setInlineEdit({ ...inlineEdit, description: e.target.value })}
                               className="w-full text-sm border border-[#E5E5E5] rounded-lg px-3 py-2 focus:outline-none focus:border-[#C41230] bg-white" placeholder="Optionnel" />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="block text-xs text-[#999999] mb-1">Tags (séparés par des virgules)</label>
+                            <input value={inlineEdit.tags ?? ''} onChange={e => setInlineEdit({ ...inlineEdit, tags: e.target.value })}
+                              className="w-full text-sm border border-[#E5E5E5] rounded-lg px-3 py-2 focus:outline-none focus:border-[#C41230] bg-white" placeholder="Ex : o-goshi, projection avant, ceinture jaune" />
                           </div>
                         </div>
                         <div className="flex items-center gap-3 mt-3">

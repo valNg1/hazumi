@@ -27,6 +27,7 @@ interface ClubVideo {
   video_url: string
   belt: string | null
   technique_key: string | null
+  tags: string | null
 }
 
 const SOURCE_BADGE: Record<string, string> = {
@@ -141,7 +142,7 @@ export default function MesPlaylists() {
     if (!data) { setLoadingItems(false); return }
     const itemsWithVideo: PlaylistItem[] = await Promise.all(data.map(async item => {
       if (item.video_id) {
-        const { data: vid } = await supabase.from('videos').select('id, title, description, video_url, belt, technique_key').eq('id', item.video_id).single()
+        const { data: vid } = await supabase.from('videos').select('id, title, description, video_url, belt, technique_key, tags').eq('id', item.video_id).single()
         return { ...item, video: vid ?? null }
       }
       return { ...item, video: null }
@@ -184,7 +185,7 @@ export default function MesPlaylists() {
   }
 
   async function loadClubVideos() {
-    const { data } = await supabase.from('videos').select('id, title, description, video_url, belt, technique_key').order('created_at', { ascending: false })
+    const { data } = await supabase.from('videos').select('id, title, description, video_url, belt, technique_key, tags').order('created_at', { ascending: false })
     setClubVideos(data ?? [])
   }
 
@@ -232,8 +233,14 @@ export default function MesPlaylists() {
   function getItemUrl(item: PlaylistItem): string { return item.video?.video_url ?? item.external_url ?? '' }
   function getItemTitle(item: PlaylistItem): string { return item.video?.title ?? item.external_title ?? '' }
 
+  function matchesSearch(v: ClubVideo, q: string) {
+    const lq = q.toLowerCase()
+    return v.title.toLowerCase().includes(lq) ||
+      (v.tags ?? '').toLowerCase().split(',').some(t => t.trim().includes(lq))
+  }
+
   const filteredClub = searchClub.trim()
-    ? clubVideos.filter(v => v.title.toLowerCase().includes(searchClub.toLowerCase()))
+    ? clubVideos.filter(v => matchesSearch(v, searchClub))
     : clubVideos
 
   if (loading) return <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
@@ -444,7 +451,7 @@ export default function MesPlaylists() {
 
   // ── Vue liste des playlists ───────────────────────────────────────────────
   const filteredClubMain = clubSearch.trim()
-    ? clubVideos.filter(v => v.title.toLowerCase().includes(clubSearch.toLowerCase()))
+    ? clubVideos.filter(v => matchesSearch(v, clubSearch))
     : clubVideos
 
   return (
@@ -525,7 +532,13 @@ export default function MesPlaylists() {
                     </div>
                     <div className="p-3 bg-white">
                       <p className={`text-xs font-semibold line-clamp-2 ${isPlaying ? 'text-[#C41230]' : 'text-[#0A0A0A]'}`}>{v.title}</p>
-                      <p className="text-xs text-[#999999] mt-0.5">{getVideoLabel(v.video_url)}</p>
+                      {v.tags && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {v.tags.split(',').map(t => t.trim()).filter(Boolean).slice(0, 3).map(t => (
+                            <span key={t} className="text-xs bg-[#F5F0FF] text-[#7C3AED] px-1.5 py-0.5 rounded-full">{t}</span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )
