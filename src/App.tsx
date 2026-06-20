@@ -19,6 +19,8 @@ import Planning from './pages/club/Planning'
 import Competitions from './pages/club/Competitions'
 import Bureau from './pages/club/Bureau'
 import Bibliotheque from './pages/club/Bibliotheque'
+import Onboarding from './pages/club/Onboarding'
+import Confidentialite from './pages/Confidentialite'
 
 function DefaultRedirect({ session: _session }: { session: Session }) {
   const space = getSpace()
@@ -50,9 +52,11 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={session ? <Navigate to="/" /> : <Login />} />
+        <Route path="/confidentialite" element={<Confidentialite />} />
 
         {session ? (
           <>
+            <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/espace" element={<SpaceSelector />} />
             <Route element={<Layout />}>
               <Route path="/eleve/accueil" element={<Accueil />} />
