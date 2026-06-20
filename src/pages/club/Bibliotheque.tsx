@@ -210,101 +210,84 @@ export default function Bibliotheque() {
             <span className="text-xs uppercase tracking-widest text-[#999999]">Source</span>
             <span className="text-xs uppercase tracking-widest text-[#999999]">Date</span>
           </div>
-          <div className="divide-y divide-[#F5F5F5]">
-            {filtered.map(video => {
+          <div>
+            {filtered.map((video, idx) => {
               const isEditing = inlineId === video.id
-              const type = detectVideoType(isEditing ? (inlineEdit?.video_url ?? video.video_url) : video.video_url)
-
-              if (isEditing && inlineEdit) {
-                return (
-                  <div key={video.id} className="bg-[#FAFAFA]">
-                    <div className="px-4 py-3" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '1rem', alignItems: 'start' }}>
-                      {/* Titre + description + URL */}
-                      <div className="space-y-1.5">
-                        <input
-                          autoFocus
-                          value={inlineEdit.title}
-                          onChange={e => setInlineEdit({ ...inlineEdit, title: e.target.value })}
-                          className="w-full text-sm font-medium border border-[#E5E5E5] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#C41230] bg-white"
-                          placeholder="Titre"
-                        />
-                        <input
-                          value={inlineEdit.description}
-                          onChange={e => setInlineEdit({ ...inlineEdit, description: e.target.value })}
-                          className="w-full text-xs border border-[#E5E5E5] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#C41230] bg-white text-[#666666]"
-                          placeholder="Description (optionnel)"
-                        />
-                        <input
-                          value={inlineEdit.video_url}
-                          onChange={e => setInlineEdit({ ...inlineEdit, video_url: e.target.value })}
-                          className="w-full text-xs border border-[#E5E5E5] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#C41230] bg-white text-[#999999]"
-                          placeholder="URL vidéo"
-                        />
-                      </div>
-                      {/* Ceinture */}
-                      <div>
-                        <select
-                          value={inlineEdit.belt}
-                          onChange={e => setInlineEdit({ ...inlineEdit, belt: e.target.value, technique_key: '' })}
-                          className="w-full text-xs border border-[#E5E5E5] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#C41230] bg-white"
-                        >
-                          <option value="">Toutes</option>
-                          {CURRICULUM.map(c => <option key={c.belt} value={c.belt}>{c.label}</option>)}
-                        </select>
-                      </div>
-                      {/* Source détectée */}
-                      <div className="pt-1">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SOURCE_BADGE[type]}`}>{getVideoLabel(inlineEdit.video_url || video.video_url)}</span>
-                      </div>
-                      {/* Actions */}
-                      <div className="flex flex-col gap-1.5 flex-shrink-0 items-end pt-0.5">
-                        <button
-                          onClick={saveInline}
-                          disabled={!inlineEdit.title.trim() || !inlineEdit.video_url.trim() || inlineSaving}
-                          className="text-xs bg-[#C41230] hover:bg-[#9B0E25] text-white px-3 py-1.5 rounded-lg disabled:opacity-40 transition-colors flex items-center gap-1.5"
-                        >
-                          {inlineSaving ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" /> : null}
-                          Enregistrer
-                        </button>
-                        <button onClick={cancelInline} className="text-xs text-[#999999] hover:text-[#666666] transition-colors">Annuler</button>
-                      </div>
-                    </div>
-                  </div>
-                )
-              }
-
+              const type = detectVideoType(video.video_url)
               return (
-                <div key={video.id} className="px-4 py-3 hover:bg-[#FAFAFA] group transition-colors"
-                  style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '1rem', alignItems: 'center' }}>
-                  <div className="min-w-0 flex items-center gap-2">
-                    <div className="min-w-0 flex-1">
+                <div key={video.id} className={idx > 0 ? 'border-t border-[#F5F5F5]' : ''}>
+                  {/* Ligne normale */}
+                  <div className="px-4 py-3 hover:bg-[#FAFAFA] transition-colors"
+                    style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '1rem', alignItems: 'center' }}>
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-[#0A0A0A] truncate">{video.title}</p>
                       {video.description && <p className="text-xs text-[#CCCCCC] truncate mt-0.5">{video.description}</p>}
                     </div>
-                    <button
-                      onClick={() => startInline(video)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 w-6 h-6 rounded flex items-center justify-center text-[#999999] hover:text-[#0A0A0A] hover:bg-[#F0F0F0]"
-                      title="Modifier">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
+                    <div>
+                      {video.belt ? (
+                        <span className="flex items-center gap-1.5 text-xs text-[#666666]">
+                          <span className="w-2.5 h-2.5 rounded-full border border-[#CCCCCC] flex-shrink-0" style={{ backgroundColor: BELT_COLORS[video.belt] ?? '#0A0A0A' }} />
+                          {CURRICULUM.find(c => c.belt === video.belt)?.label ?? video.belt}
+                        </span>
+                      ) : <span className="text-xs text-[#CCCCCC]">—</span>}
+                    </div>
+                    <div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SOURCE_BADGE[type]}`}>{getVideoLabel(video.video_url)}</span>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <span className="text-xs text-[#CCCCCC]">{new Date(video.created_at).toLocaleDateString('fr-FR')}</span>
+                      <button
+                        onClick={() => isEditing ? cancelInline() : startInline(video)}
+                        className={`text-xs transition-colors ${isEditing ? 'text-[#C41230]' : 'text-[#999999] hover:text-[#0A0A0A]'}`}>
+                        {isEditing ? 'Fermer' : 'Modifier'}
+                      </button>
+                      <button onClick={() => setDeleteId(video.id)} className="text-xs text-[#CCCCCC] hover:text-[#C41230] transition-colors">Supprimer</button>
+                    </div>
                   </div>
-                  <div>
-                    {video.belt ? (
-                      <span className="flex items-center gap-1.5 text-xs text-[#666666]">
-                        <span className="w-2.5 h-2.5 rounded-full border border-[#CCCCCC] flex-shrink-0" style={{ backgroundColor: BELT_COLORS[video.belt] ?? '#0A0A0A' }} />
-                        {CURRICULUM.find(c => c.belt === video.belt)?.label ?? video.belt}
-                      </span>
-                    ) : <span className="text-xs text-[#CCCCCC]">—</span>}
-                  </div>
-                  <div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SOURCE_BADGE[type]}`}>{getVideoLabel(video.video_url)}</span>
-                  </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className="text-xs text-[#CCCCCC]">{new Date(video.created_at).toLocaleDateString('fr-FR')}</span>
-                    <button onClick={() => setDeleteId(video.id)} className="text-xs text-[#CCCCCC] hover:text-[#C41230] transition-colors opacity-0 group-hover:opacity-100">Supprimer</button>
-                  </div>
+
+                  {/* Formulaire accordéon */}
+                  {isEditing && inlineEdit && (
+                    <div className="px-4 pb-4 bg-[#FAFAFA] border-t border-[#F0F0F0]">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
+                        <div>
+                          <label className="block text-xs text-[#999999] mb-1">Titre</label>
+                          <input autoFocus value={inlineEdit.title}
+                            onChange={e => setInlineEdit({ ...inlineEdit, title: e.target.value })}
+                            className="w-full text-sm border border-[#E5E5E5] rounded-lg px-3 py-2 focus:outline-none focus:border-[#C41230] bg-white" />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[#999999] mb-1">Ceinture</label>
+                          <select value={inlineEdit.belt}
+                            onChange={e => setInlineEdit({ ...inlineEdit, belt: e.target.value })}
+                            className="w-full text-sm border border-[#E5E5E5] rounded-lg px-3 py-2 focus:outline-none focus:border-[#C41230] bg-white">
+                            <option value="">Toutes ceintures</option>
+                            {CURRICULUM.map(c => <option key={c.belt} value={c.belt}>{c.label}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[#999999] mb-1">Description</label>
+                          <input value={inlineEdit.description}
+                            onChange={e => setInlineEdit({ ...inlineEdit, description: e.target.value })}
+                            className="w-full text-sm border border-[#E5E5E5] rounded-lg px-3 py-2 focus:outline-none focus:border-[#C41230] bg-white text-[#666666]"
+                            placeholder="Optionnel" />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[#999999] mb-1">URL vidéo</label>
+                          <input value={inlineEdit.video_url}
+                            onChange={e => setInlineEdit({ ...inlineEdit, video_url: e.target.value })}
+                            className="w-full text-sm border border-[#E5E5E5] rounded-lg px-3 py-2 focus:outline-none focus:border-[#C41230] bg-white text-[#666666]" />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 mt-3">
+                        <button onClick={saveInline} disabled={!inlineEdit.title.trim() || !inlineEdit.video_url.trim() || inlineSaving}
+                          className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs px-4 py-2 rounded-lg disabled:opacity-40 transition-colors flex items-center gap-2">
+                          {inlineSaving && <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />}
+                          Enregistrer
+                        </button>
+                        <button onClick={cancelInline} className="text-xs text-[#999999] hover:text-[#666666]">Annuler</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             })}
