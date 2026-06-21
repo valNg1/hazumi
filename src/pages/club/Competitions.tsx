@@ -6,8 +6,8 @@ interface Competition {
   nom: string
   date: string
   lieu?: string
-  categorie?: string
   niveau?: string
+  tranche_age?: string[]
   notes?: string
 }
 
@@ -15,14 +15,15 @@ interface FormData {
   nom: string
   date: string
   lieu: string
-  categorie: string
   niveau: string
+  tranche_age: string[]
   notes: string
 }
 
-const EMPTY: FormData = { nom: '', date: '', lieu: '', categorie: '', niveau: '', notes: '' }
+const EMPTY: FormData = { nom: '', date: '', lieu: '', niveau: '', tranche_age: [], notes: '' }
 
 const NIVEAUX = ['club', 'départemental', 'régional', 'national', 'international']
+const TRANCHES_AGE = ['poussins', 'benjamins', 'minimes', 'cadets', 'juniors', 'seniors', 'vétérans']
 
 export default function Competitions() {
   const [competitions, setCompetitions] = useState<Competition[]>([])
@@ -116,6 +117,7 @@ export default function Competitions() {
 
 function CompetCard({ comp, past, onEdit, onDelete }: { comp: Competition; past: boolean; onEdit: () => void; onDelete: () => void }) {
   const daysLeft = Math.ceil((new Date(comp.date).getTime() - Date.now()) / 86400000)
+  const tranches = comp.tranche_age ?? []
   return (
     <div className="bg-white rounded-xl border border-[#E5E5E5] p-5 flex items-center gap-4 group">
       <div className="text-center w-12 flex-shrink-0">
@@ -125,14 +127,14 @@ function CompetCard({ comp, past, onEdit, onDelete }: { comp: Competition; past:
       <div className="w-px h-10 bg-[#F0F0F0] flex-shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-[#0A0A0A]">{comp.nom}</p>
-        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
           {comp.lieu && <span className="text-xs text-[#999999]">{comp.lieu}</span>}
           {comp.niveau && (
             <span className="text-xs px-2 py-0.5 bg-[#F5F5F5] text-[#666666] rounded-full capitalize">{comp.niveau}</span>
           )}
-          {comp.categorie && (
-            <span className="text-xs text-[#999999]">{comp.categorie}</span>
-          )}
+          {tranches.map(t => (
+            <span key={t} className="text-xs px-2 py-0.5 bg-[#FFF5F6] text-[#C41230] border border-[#C41230]/20 rounded-full capitalize">{t}</span>
+          ))}
         </div>
       </div>
       {!past && daysLeft >= 0 && (
@@ -150,9 +152,20 @@ function CompetCard({ comp, past, onEdit, onDelete }: { comp: Competition; past:
 
 function CompetModal({ initial, onSave, onClose }: { initial: Competition | null; onSave: (f: FormData) => Promise<void>; onClose: () => void }) {
   const [form, setForm] = useState<FormData>(
-    initial ? { nom: initial.nom, date: initial.date, lieu: initial.lieu ?? '', categorie: initial.categorie ?? '', niveau: initial.niveau ?? '', notes: initial.notes ?? '' } : EMPTY
+    initial
+      ? { nom: initial.nom, date: initial.date, lieu: initial.lieu ?? '', niveau: initial.niveau ?? '', tranche_age: initial.tranche_age ?? [], notes: initial.notes ?? '' }
+      : EMPTY
   )
   const [saving, setSaving] = useState(false)
+
+  function toggleTranche(t: string) {
+    setForm(f => ({
+      ...f,
+      tranche_age: f.tranche_age.includes(t)
+        ? f.tranche_age.filter(x => x !== t)
+        : [...f.tranche_age, t],
+    }))
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); setSaving(true); await onSave(form); setSaving(false)
@@ -161,8 +174,8 @@ function CompetModal({ initial, onSave, onClose }: { initial: Competition | null
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-[#F0F0F0]">
+      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-[#F0F0F0] sticky top-0 bg-white">
           <h2 className="font-semibold text-[#0A0A0A]">{initial ? 'Modifier' : 'Ajouter une compétition'}</h2>
           <button onClick={onClose} className="text-[#CCCCCC] hover:text-[#666666]">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -172,7 +185,7 @@ function CompetModal({ initial, onSave, onClose }: { initial: Competition | null
           <Field label="Nom *"><input required type="text" value={form.nom} onChange={e => setForm({ ...form, nom: e.target.value })} placeholder="Ex: Tournoi de Paris" className={inputClass} /></Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Date *"><input required type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className={inputClass} /></Field>
-            <Field label="Niveau">
+            <Field label="Échelon">
               <select value={form.niveau} onChange={e => setForm({ ...form, niveau: e.target.value })} className={inputClass}>
                 <option value="">—</option>
                 {NIVEAUX.map(n => <option key={n} value={n}>{n.charAt(0).toUpperCase() + n.slice(1)}</option>)}
@@ -180,7 +193,30 @@ function CompetModal({ initial, onSave, onClose }: { initial: Competition | null
             </Field>
           </div>
           <Field label="Lieu"><input type="text" value={form.lieu} onChange={e => setForm({ ...form, lieu: e.target.value })} placeholder="Ville, salle…" className={inputClass} /></Field>
-          <Field label="Catégories concernées"><input type="text" value={form.categorie} onChange={e => setForm({ ...form, categorie: e.target.value })} placeholder="Ex: -60kg, U13…" className={inputClass} /></Field>
+
+          <div>
+            <label className="block text-xs text-[#666666] mb-2">Catégories d'âge</label>
+            <div className="flex flex-wrap gap-2">
+              {TRANCHES_AGE.map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => toggleTranche(t)}
+                  className={`text-xs px-3 py-1.5 rounded-full border transition-all capitalize ${
+                    form.tranche_age.includes(t)
+                      ? 'bg-[#C41230] border-[#C41230] text-white'
+                      : 'border-[#E5E5E5] text-[#666666] hover:border-[#C41230] hover:text-[#C41230]'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            {form.tranche_age.length === 0 && (
+              <p className="text-xs text-[#CCCCCC] mt-1.5">Aucune sélection = compétition visible par tous</p>
+            )}
+          </div>
+
           <Field label="Notes"><textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className={`${inputClass} resize-none`} /></Field>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 border border-[#E5E5E5] text-[#666666] py-3 rounded-lg text-sm">Annuler</button>

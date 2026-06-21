@@ -6,6 +6,20 @@ import { CURRICULUM, getBeltIndex } from '../../lib/curriculum'
 import type { Belt } from '../../types'
 import type { TechniqueStatus } from '../../lib/curriculum'
 
+const TRANCHES_AGE_BOUNDS: [string, number, number][] = [
+  ['poussins', 8, 9], ['benjamins', 10, 11], ['minimes', 12, 13],
+  ['cadets', 14, 15], ['juniors', 16, 20], ['seniors', 21, 34], ['vétérans', 35, 99],
+]
+
+function getAgeCategory(birthDate: string): string {
+  const birth = new Date(birthDate)
+  const now = new Date()
+  let age = now.getFullYear() - birth.getFullYear()
+  if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--
+  for (const [cat, min, max] of TRANCHES_AGE_BOUNDS) if (age >= min && age <= max) return cat
+  return 'seniors'
+}
+
 type ChartView = 'mois' | 'trimestre' | 'annee'
 type RawData = { seancesList: { date: string; duree_minutes: number }[]; confirmedList: { date: string; duree_minutes: number }[]; schoolY: number }
 
@@ -77,6 +91,10 @@ export default function Accueil() {
   const [coursNouveaux, setCoursNouveaux] = useState(0)
   const [dossierDone, setDossierDone] = useState(0)
   const [dossierTotal] = useState(3)
+  const [competitions, setCompetitions] = useState<{ id: string; nom: string; date: string; lieu?: string; niveau?: string; tranche_age?: string[] }[]>([])
+  const [participationIds, setParticipationIds] = useState<Set<string>>(new Set())
+  const [judokaId, setJudokaId] = useState<string | null>(null)
+  const [judokaBirthDate, setJudokaBirthDate] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -89,6 +107,8 @@ export default function Accueil() {
       setPhotoUrl(j.photo_url ?? null)
       setClub(j.club ?? '')
       setBelt(j.belt ?? null)
+      setJudokaId(j.id)
+      setJudokaBirthDate(j.birth_date ?? null)
 
       // Dossier
       const done = [!!(j.full_name && j.birth_date && j.phone), !!j.cert_medical_url, !!j.virement_url].filter(Boolean).length
@@ -159,12 +179,36 @@ export default function Accueil() {
       setCoursVus(vuCount ?? 0)
       setCoursNouveaux(newCount ?? 0)
 
+      // Compétitions à venir
+      const todayStr2 = new Date().toISOString().slice(0, 10)
+      const { data: comps } = await supabase.from('competitions').select('id, nom, date, lieu, niveau, tranche_age').gte('date', todayStr2).order('date')
+      setCompetitions(comps ?? [])
+      const { data: parts } = await supabase.from('competition_participations').select('competition_id').eq('judoka_id', j.id)
+      setParticipationIds(new Set((parts ?? []).map((p: { competition_id: string }) => p.competition_id)))
+
       setLoading(false)
     }
     load()
   }, [])
 
+  async function toggleParticipation(competitionId: string) {
+    if (!judokaId) return
+    if (participationIds.has(competitionId)) {
+      await supabase.from('competition_participations').delete().eq('competition_id', competitionId).eq('judoka_id', judokaId)
+      setParticipationIds(prev => { const s = new Set(prev); s.delete(competitionId); return s })
+    } else {
+      await supabase.from('competition_participations').upsert({ competition_id: competitionId, judoka_id: judokaId }, { onConflict: 'competition_id,judoka_id' })
+      setParticipationIds(prev => new Set([...prev, competitionId]))
+    }
+  }
+
   if (loading) return <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
+
+  const ageCategory = judokaBirthDate ? getAgeCategory(judokaBirthDate) : null
+  const visibleCompetitions = competitions.filter(c => {
+    const tranches = c.tranche_age ?? []
+    return tranches.length === 0 || (ageCategory && tranches.includes(ageCategory))
+  })
 
   const firstName = name ? name.split(' ')[0] : ''
   const beltCurriculum = belt ? CURRICULUM.find(c => c.belt === belt) : null
@@ -354,6 +398,48 @@ export default function Accueil() {
             </AreaChart>
           </ResponsiveContainer>
         </div>
+
+        {/* Compétitions à venir */}
+        {visibleCompetitions.length > 0 && (
+          <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs uppercase tracking-widest text-[#999999]">Compétitions à venir</span>
+              {ageCategory && <span className="text-xs px-2 py-0.5 bg-[#FFF5F6] text-[#C41230] border border-[#C41230]/20 rounded-full capitalize">{ageCategory}</span>}
+            </div>
+            <div className="space-y-3">
+              {visibleCompetitions.map(c => {
+                const daysLeft = Math.ceil((new Date(c.date).getTime() - Date.now()) / 86400000)
+                const participating = participationIds.has(c.id)
+                return (
+                  <div key={c.id} className="flex items-center gap-3 py-2 border-b border-[#F5F5F5] last:border-0">
+                    <div className="text-center w-10 flex-shrink-0">
+                      <p className="text-base font-bold text-[#0A0A0A] leading-none">{new Date(c.date).getDate()}</p>
+                      <p className="text-[10px] text-[#999999] uppercase">{new Date(c.date).toLocaleDateString('fr-FR', { month: 'short' })}</p>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#0A0A0A] truncate">{c.nom}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {c.lieu && <span className="text-xs text-[#999999] truncate">{c.lieu}</span>}
+                        {c.niveau && <span className="text-xs px-1.5 py-0.5 bg-[#F5F5F5] text-[#666666] rounded capitalize">{c.niveau}</span>}
+                      </div>
+                    </div>
+                    <span className={`text-xs flex-shrink-0 ${daysLeft <= 7 ? 'text-[#C41230] font-medium' : 'text-[#CCCCCC]'}`}>J-{daysLeft}</span>
+                    <button
+                      onClick={() => toggleParticipation(c.id)}
+                      className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border transition-all ${
+                        participating
+                          ? 'bg-[#C41230] border-[#C41230] text-white'
+                          : 'border-[#E5E5E5] text-[#999999] hover:border-[#C41230] hover:text-[#C41230]'
+                      }`}
+                    >
+                      {participating ? '✓ Je participe' : 'Je participe'}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Dossier d'inscription — secondaire */}
         <div
