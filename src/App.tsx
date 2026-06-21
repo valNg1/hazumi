@@ -21,6 +21,7 @@ import Bureau from './pages/club/Bureau'
 import Bibliotheque from './pages/club/Bibliotheque'
 import Onboarding from './pages/club/Onboarding'
 import Confidentialite from './pages/Confidentialite'
+import Agenda from './pages/club/Agenda'
 
 function DefaultRedirect({ session: _session }: { session: Session }) {
   const space = getSpace()
@@ -72,6 +73,7 @@ export default function App() {
               <Route path="/club/competitions" element={<Competitions />} />
               <Route path="/club/bureau" element={<Bureau />} />
               <Route path="/club/bibliotheque" element={<Bibliotheque />} />
+              <Route path="/club/agenda" element={<Agenda />} />
             </Route>
             <Route path="*" element={<DefaultRedirect session={session} />} />
           </>

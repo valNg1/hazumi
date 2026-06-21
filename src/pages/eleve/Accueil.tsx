@@ -6,6 +6,26 @@ import { CURRICULUM, getBeltIndex } from '../../lib/curriculum'
 import type { Belt } from '../../types'
 import type { TechniqueStatus } from '../../lib/curriculum'
 
+interface AgendaItem {
+  key: string
+  sourceId: string
+  sourceType: 'competition' | 'evenement'
+  type: 'competition' | 'grade' | 'arbitrage' | 'stage' | 'ag' | 'autre'
+  titre: string
+  date: string
+  lieu?: string
+  niveau?: string
+}
+
+const AGENDA_TYPES: Record<string, { icon: string; label: string; color: string }> = {
+  competition: { icon: '🏆', label: 'Compétition',     color: 'bg-[#FFF5F6] text-[#C41230] border-[#C41230]/20' },
+  grade:       { icon: '🥋', label: 'Passage de grade', color: 'bg-purple-50 text-purple-700 border-purple-200' },
+  arbitrage:   { icon: '🤝', label: 'Arbitrage',        color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  stage:       { icon: '📚', label: 'Stage',            color: 'bg-green-50 text-green-700 border-green-200' },
+  ag:          { icon: '🏛️', label: 'AG du club',       color: 'bg-amber-50 text-amber-700 border-amber-200' },
+  autre:       { icon: '📅', label: 'Événement',        color: 'bg-[#F5F5F5] text-[#666666] border-[#E5E5E5]' },
+}
+
 const TRANCHES_AGE_BOUNDS: [string, number, number][] = [
   ['poussins', 8, 9], ['benjamins', 10, 11], ['minimes', 12, 13],
   ['cadets', 14, 15], ['juniors', 16, 20], ['seniors', 21, 34], ['vétérans', 35, 99],
@@ -91,10 +111,10 @@ export default function Accueil() {
   const [coursNouveaux, setCoursNouveaux] = useState(0)
   const [dossierDone, setDossierDone] = useState(0)
   const [dossierTotal] = useState(3)
-  const [competitions, setCompetitions] = useState<{ id: string; nom: string; date: string; lieu?: string; niveau?: string; tranche_age?: string[] }[]>([])
-  const [participationIds, setParticipationIds] = useState<Set<string>>(new Set())
   const [judokaId, setJudokaId] = useState<string | null>(null)
   const [judokaBirthDate, setJudokaBirthDate] = useState<string | null>(null)
+  const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([])
+  const [participationIds, setParticipationIds] = useState<Set<string>>(new Set()) // "src:id"
 
   useEffect(() => {
     async function load() {
@@ -179,37 +199,63 @@ export default function Accueil() {
       setCoursVus(vuCount ?? 0)
       setCoursNouveaux(newCount ?? 0)
 
-      // Compétitions à venir
+      // Agenda à venir (compétitions + événements)
       const todayStr2 = new Date().toISOString().slice(0, 10)
-      const { data: comps } = await supabase.from('competitions').select('id, nom, date, lieu, niveau, tranche_age').gte('date', todayStr2).order('date')
-      setCompetitions(comps ?? [])
-      const { data: parts } = await supabase.from('competition_participations').select('competition_id').eq('judoka_id', j.id)
-      setParticipationIds(new Set((parts ?? []).map((p: { competition_id: string }) => p.competition_id)))
+      const [{ data: comps }, { data: evts }, { data: compParts }, { data: evtParts }] = await Promise.all([
+        supabase.from('competitions').select('id, nom, date, lieu, niveau, tranche_age').gte('date', todayStr2).order('date'),
+        supabase.from('evenements').select('id, type, titre, date, lieu').gte('date', todayStr2).order('date'),
+        supabase.from('competition_participations').select('competition_id').eq('judoka_id', j.id),
+        supabase.from('evenement_participations').select('evenement_id').eq('judoka_id', j.id),
+      ])
+      const ageCategory = j.birth_date ? getAgeCategory(j.birth_date) : null
+      const items: AgendaItem[] = [
+        ...(comps ?? [])
+          .filter((c: { tranche_age?: string[] }) => { const t = c.tranche_age ?? []; return t.length === 0 || (ageCategory && t.includes(ageCategory)) })
+          .map((c: { id: string; nom: string; date: string; lieu?: string; niveau?: string }) => ({
+            key: `comp:${c.id}`, sourceId: c.id, sourceType: 'competition' as const,
+            type: 'competition' as const, titre: c.nom, date: c.date, lieu: c.lieu, niveau: c.niveau,
+          })),
+        ...(evts ?? []).map((e: { id: string; type: string; titre: string; date: string; lieu?: string }) => ({
+          key: `evt:${e.id}`, sourceId: e.id, sourceType: 'evenement' as const,
+          type: e.type as AgendaItem['type'], titre: e.titre, date: e.date, lieu: e.lieu,
+        })),
+      ].sort((a, b) => a.date.localeCompare(b.date))
+      setAgendaItems(items)
+      const ids = new Set([
+        ...(compParts ?? []).map((p: { competition_id: string }) => `comp:${p.competition_id}`),
+        ...(evtParts ?? []).map((p: { evenement_id: string }) => `evt:${p.evenement_id}`),
+      ])
+      setParticipationIds(ids)
 
       setLoading(false)
     }
     load()
   }, [])
 
-  async function toggleParticipation(competitionId: string) {
+  async function toggleParticipation(item: AgendaItem) {
     if (!judokaId) return
-    if (participationIds.has(competitionId)) {
-      await supabase.from('competition_participations').delete().eq('competition_id', competitionId).eq('judoka_id', judokaId)
-      setParticipationIds(prev => { const s = new Set(prev); s.delete(competitionId); return s })
+    const key = item.key
+    if (participationIds.has(key)) {
+      if (item.sourceType === 'competition') {
+        await supabase.from('competition_participations').delete().eq('competition_id', item.sourceId).eq('judoka_id', judokaId)
+      } else {
+        await supabase.from('evenement_participations').delete().eq('evenement_id', item.sourceId).eq('judoka_id', judokaId)
+      }
+      setParticipationIds(prev => { const s = new Set(prev); s.delete(key); return s })
     } else {
-      await supabase.from('competition_participations').upsert({ competition_id: competitionId, judoka_id: judokaId }, { onConflict: 'competition_id,judoka_id' })
-      setParticipationIds(prev => new Set([...prev, competitionId]))
+      if (item.sourceType === 'competition') {
+        await supabase.from('competition_participations').upsert({ competition_id: item.sourceId, judoka_id: judokaId }, { onConflict: 'competition_id,judoka_id' })
+      } else {
+        await supabase.from('evenement_participations').upsert({ evenement_id: item.sourceId, judoka_id: judokaId }, { onConflict: 'evenement_id,judoka_id' })
+      }
+      setParticipationIds(prev => new Set([...prev, key]))
     }
   }
 
   if (loading) return <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
 
   const ageCategory = judokaBirthDate ? getAgeCategory(judokaBirthDate) : null
-  const visibleCompetitions = competitions.filter(c => {
-    const tranches = c.tranche_age ?? []
-    return tranches.length === 0 || (ageCategory && tranches.includes(ageCategory))
-  })
-
+  const confirmedCount2 = agendaItems.filter(i => participationIds.has(i.key)).length
   const firstName = name ? name.split(' ')[0] : ''
   const beltCurriculum = belt ? CURRICULUM.find(c => c.belt === belt) : null
   const nextBeltIndex = belt ? getBeltIndex(belt) + 1 : -1
@@ -278,8 +324,8 @@ export default function Accueil() {
           )}
         </div>
 
-        {/* 3 blocs stats en grille */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* 4 blocs stats en grille */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {/* Mes playlists */}
           <div
             className="bg-white rounded-xl border border-[#E5E5E5] p-5 cursor-pointer hover:border-[#CCCCCC] transition-all group"
@@ -355,6 +401,35 @@ export default function Accueil() {
               )}
             </div>
           </div>
+
+          {/* Événements — participation */}
+          <div
+            className="bg-white rounded-xl border border-[#E5E5E5] p-5 cursor-pointer hover:border-[#CCCCCC] transition-all group"
+            onClick={() => navigate('/eleve/entrainements')}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs uppercase tracking-widest text-[#999999]">Participation</span>
+              <svg className="w-3.5 h-3.5 text-[#CCCCCC] group-hover:text-[#C41230] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+            <p className="text-3xl font-bold text-[#0A0A0A]">{confirmedCount2}</p>
+            <p className="text-xs text-[#999999] mt-1">confirmé{confirmedCount2 !== 1 ? 's' : ''}</p>
+            <div className="mt-2 space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-[#999999]">À venir</span>
+                <span className="text-[#0A0A0A] font-medium">{agendaItems.length}</span>
+              </div>
+              {agendaItems.length > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-[#999999]">Taux</span>
+                  <span className={`font-semibold ${confirmedCount2 > 0 ? 'text-[#C41230]' : 'text-[#CCCCCC]'}`}>
+                    {Math.round((confirmedCount2 / agendaItems.length) * 100)}%
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Graph heures : possible vs réalisé */}
@@ -399,40 +474,42 @@ export default function Accueil() {
           </ResponsiveContainer>
         </div>
 
-        {/* Compétitions à venir */}
-        {visibleCompetitions.length > 0 && (
+        {/* Agenda à venir */}
+        {agendaItems.length > 0 && (
           <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs uppercase tracking-widest text-[#999999]">Compétitions à venir</span>
+              <span className="text-xs uppercase tracking-widest text-[#999999]">Agenda à venir</span>
               {ageCategory && <span className="text-xs px-2 py-0.5 bg-[#FFF5F6] text-[#C41230] border border-[#C41230]/20 rounded-full capitalize">{ageCategory}</span>}
             </div>
-            <div className="space-y-3">
-              {visibleCompetitions.map(c => {
-                const daysLeft = Math.ceil((new Date(c.date).getTime() - Date.now()) / 86400000)
-                const participating = participationIds.has(c.id)
+            <div className="space-y-0">
+              {agendaItems.map(item => {
+                const daysLeft = Math.ceil((new Date(item.date).getTime() - Date.now()) / 86400000)
+                const participating = participationIds.has(item.key)
+                const cfg = AGENDA_TYPES[item.type] ?? AGENDA_TYPES.autre
                 return (
-                  <div key={c.id} className="flex items-center gap-3 py-2 border-b border-[#F5F5F5] last:border-0">
+                  <div key={item.key} className="flex items-center gap-3 py-2.5 border-b border-[#F5F5F5] last:border-0">
                     <div className="text-center w-10 flex-shrink-0">
-                      <p className="text-base font-bold text-[#0A0A0A] leading-none">{new Date(c.date).getDate()}</p>
-                      <p className="text-[10px] text-[#999999] uppercase">{new Date(c.date).toLocaleDateString('fr-FR', { month: 'short' })}</p>
+                      <p className="text-base font-bold text-[#0A0A0A] leading-none">{new Date(item.date).getDate()}</p>
+                      <p className="text-[10px] text-[#999999] uppercase">{new Date(item.date).toLocaleDateString('fr-FR', { month: 'short' })}</p>
                     </div>
+                    <span className="text-base flex-shrink-0">{cfg.icon}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#0A0A0A] truncate">{c.nom}</p>
+                      <p className="text-sm font-medium text-[#0A0A0A] truncate">{item.titre}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        {c.lieu && <span className="text-xs text-[#999999] truncate">{c.lieu}</span>}
-                        {c.niveau && <span className="text-xs px-1.5 py-0.5 bg-[#F5F5F5] text-[#666666] rounded capitalize">{c.niveau}</span>}
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded border ${cfg.color}`}>{cfg.label}</span>
+                        {item.lieu && <span className="text-xs text-[#999999] truncate">{item.lieu}</span>}
                       </div>
                     </div>
                     <span className={`text-xs flex-shrink-0 ${daysLeft <= 7 ? 'text-[#C41230] font-medium' : 'text-[#CCCCCC]'}`}>J-{daysLeft}</span>
                     <button
-                      onClick={() => toggleParticipation(c.id)}
+                      onClick={() => toggleParticipation(item)}
                       className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border transition-all ${
                         participating
                           ? 'bg-[#C41230] border-[#C41230] text-white'
                           : 'border-[#E5E5E5] text-[#999999] hover:border-[#C41230] hover:text-[#C41230]'
                       }`}
                     >
-                      {participating ? '✓ Je participe' : 'Je participe'}
+                      {participating ? '✓ Confirmé' : 'Je participe'}
                     </button>
                   </div>
                 )

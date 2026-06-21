@@ -2,6 +2,25 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import type { Belt } from '../../types'
 
+const TRANCHES: [string, number, number, string][] = [
+  ['poussins', 8, 9, '8–9 ans'], ['benjamins', 10, 11, '10–11 ans'], ['minimes', 12, 13, '12–13 ans'],
+  ['cadets', 14, 15, '14–15 ans'], ['juniors', 16, 20, '16–20 ans'], ['seniors', 21, 34, '21–34 ans'], ['vétérans', 35, 99, '35 ans et +'],
+]
+
+function getAgeCategory(birthDate: string): string {
+  const birth = new Date(birthDate)
+  const now = new Date()
+  let age = now.getFullYear() - birth.getFullYear()
+  if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--
+  for (const [cat, min, max] of TRANCHES) if (age >= min && age <= max) return cat
+  return 'seniors'
+}
+
+function getAgeCategoryLabel(birthDate: string): string {
+  const cat = getAgeCategory(birthDate)
+  return TRANCHES.find(t => t[0] === cat)?.[3] ?? ''
+}
+
 const BELTS: { value: Belt; label: string; color: string }[] = [
   { value: 'blanche', label: 'Blanche', color: '#FFFFFF' },
   { value: 'jaune', label: 'Jaune', color: '#FFD700' },
@@ -178,6 +197,22 @@ export default function Profil() {
                 <span className="text-xs text-[#666666]">{b.label}</span>
               </button>
             ))}
+          </div>
+        </Section>
+
+        <Section title="Mon niveau">
+          <div className="space-y-3">
+            <p className="text-xs text-[#999999]">Catégorie déterminée automatiquement à partir de votre date de naissance.</p>
+            {data.birth_date ? (
+              <div className="flex items-center gap-3">
+                <span className="text-2xl font-bold text-[#0A0A0A] capitalize">{getAgeCategory(data.birth_date)}</span>
+                <span className="text-xs px-3 py-1 bg-[#FFF5F6] text-[#C41230] border border-[#C41230]/20 rounded-full capitalize">
+                  {getAgeCategoryLabel(data.birth_date)}
+                </span>
+              </div>
+            ) : (
+              <p className="text-sm text-[#CCCCCC]">Renseignez votre date de naissance pour voir votre catégorie.</p>
+            )}
           </div>
         </Section>
 

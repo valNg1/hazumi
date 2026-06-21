@@ -21,6 +21,11 @@ interface CompetEvent {
   date: string
   lieu?: string
   niveau?: string
+  eventType?: string
+}
+
+const EVENT_ICONS: Record<string, string> = {
+  competition: '🏆', grade: '🥋', arbitrage: '🤝', stage: '📚', ag: '🏛️', autre: '📅',
 }
 
 type ViewMode = 'semaine' | 'mois' | 'trimestre' | 'annee'
@@ -66,7 +71,7 @@ export default function Entrainements() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setLoading(false); return }
       const { data: judoka } = await supabase.from('judokas').select('id').eq('user_id', user.id).single()
-      const [{ data: s }, { data: p }, { data: parts }] = await Promise.all([
+      const [{ data: s }, { data: p }, { data: compParts }, { data: evtParts }] = await Promise.all([
         supabase.from('seances').select('*').order('date').order('heure_debut'),
         judoka
           ? supabase.from('presences').select('seance_id').eq('judoka_id', judoka.id)
@@ -74,16 +79,24 @@ export default function Entrainements() {
         judoka
           ? supabase.from('competition_participations').select('id, competition_id, competitions(nom, date, lieu, niveau)').eq('judoka_id', judoka.id)
           : Promise.resolve({ data: [] }),
+        judoka
+          ? supabase.from('evenement_participations').select('id, evenement_id, evenements(type, titre, date, lieu)').eq('judoka_id', judoka.id)
+          : Promise.resolve({ data: [] }),
       ])
       setJudokaId(judoka?.id ?? null)
       setSeances(s ?? [])
       setConfirmedIds(new Set((p ?? []).map((x: { seance_id: string }) => x.seance_id)))
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const events: CompetEvent[] = (parts ?? []).map((x: any) => {
+      const compEvents: CompetEvent[] = (compParts ?? []).map((x: any) => {
         const c = Array.isArray(x.competitions) ? x.competitions[0] : x.competitions
-        return { id: x.id, competition_id: x.competition_id, nom: c?.nom ?? '—', date: c?.date ?? '', lieu: c?.lieu, niveau: c?.niveau }
+        return { id: x.id, competition_id: x.competition_id, nom: c?.nom ?? '—', date: c?.date ?? '', lieu: c?.lieu, niveau: c?.niveau, eventType: 'competition' as const }
       }).filter((e: CompetEvent) => e.date)
-      setCompetEvents(events)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const evtEvents: CompetEvent[] = (evtParts ?? []).map((x: any) => {
+        const e = Array.isArray(x.evenements) ? x.evenements[0] : x.evenements
+        return { id: x.id, competition_id: x.evenement_id, nom: e?.titre ?? '—', date: e?.date ?? '', lieu: e?.lieu, eventType: e?.type ?? 'autre' }
+      }).filter((e: CompetEvent) => e.date)
+      setCompetEvents([...compEvents, ...evtEvents].sort((a, b) => a.date.localeCompare(b.date)))
       setLoading(false)
     }
     load()
@@ -235,10 +248,11 @@ function RecapCard({ label, value, sub, accent }: { label: string; value: string
 }
 
 function CompetPill({ event, compact }: { event: CompetEvent; compact?: boolean }) {
+  const icon = EVENT_ICONS[event.eventType ?? 'competition'] ?? '📅'
   return (
     <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
       <div className="flex items-start gap-2">
-        <span className="text-base leading-none flex-shrink-0">🏆</span>
+        <span className="text-base leading-none flex-shrink-0">{icon}</span>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-amber-900 truncate">{event.nom}</p>
           {!compact && event.lieu && <p className="text-xs text-amber-600 mt-0.5">{event.lieu}</p>}
