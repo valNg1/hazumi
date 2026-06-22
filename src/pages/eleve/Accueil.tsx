@@ -375,7 +375,7 @@ export default function Accueil() {
           {/* Mes cours */}
           <div
             className="bg-white rounded-xl border border-[#E5E5E5] p-5 cursor-pointer hover:border-[#CCCCCC] transition-all group"
-            onClick={() => navigate('/eleve/cours')}
+            onClick={() => navigate('/eleve/progression?mode=playlist')}
           >
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs uppercase tracking-widest text-[#999999]">Mes cours</span>

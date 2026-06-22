@@ -10,7 +10,6 @@ const NAV: Record<'eleve' | 'club', { to: string; label: string }[]> = {
     { to: '/eleve/accueil', label: 'Accueil' },
     { to: '/eleve/profil', label: 'Mon profil' },
     { to: '/eleve/progression', label: 'Ma progression' },
-    { to: '/eleve/cours', label: 'Mes cours' },
     { to: '/eleve/entrainements', label: 'Mes entraînements' },
   ],
   club: [

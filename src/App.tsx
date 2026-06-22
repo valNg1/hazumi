@@ -9,7 +9,6 @@ import SpaceSelector from './pages/SpaceSelector'
 import Accueil from './pages/eleve/Accueil'
 import Profil from './pages/eleve/Profil'
 import Progression from './pages/eleve/Progression'
-import Cours from './pages/eleve/Cours'
 import Entrainements from './pages/eleve/Entrainements'
 import Effectifs from './pages/club/Effectifs'
 import EleveDetail from './pages/club/EleveDetail'
@@ -63,7 +62,6 @@ export default function App() {
               <Route path="/eleve/accueil" element={<Accueil />} />
               <Route path="/eleve/profil" element={<Profil />} />
               <Route path="/eleve/progression" element={<Progression />} />
-              <Route path="/eleve/cours" element={<Cours />} />
               <Route path="/eleve/entrainements" element={<Entrainements />} />
               <Route path="/club/effectifs" element={<Effectifs />} />
               <Route path="/club/effectifs/:id" element={<EleveDetail />} />
