@@ -72,25 +72,58 @@ interface Seance {
   _presenceCount?: number
 }
 
-type Tab = 'planning' | 'seances'
+type Tab = 'planning' | 'seances' | 'competitions'
 
 const inputClass = 'w-full bg-[#FAFAFA] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm text-[#0A0A0A] focus:outline-none focus:border-[#C41230] transition-colors'
+
+const NIVEAUX_COMP = ['club', 'départemental', 'régional', 'national', 'international']
+const TRANCHES_AGE = ['poussins', 'benjamins', 'minimes', 'cadets', 'juniors', 'seniors', 'vétérans']
+
+interface Competition {
+  id: string
+  nom: string
+  date: string
+  lieu?: string
+  niveau?: string
+  tranche_age?: string[]
+  notes?: string
+}
+
+interface CompFormData {
+  nom: string
+  date: string
+  lieu: string
+  niveau: string
+  tranche_age: string[]
+  notes: string
+}
+
+const COMP_EMPTY: CompFormData = { nom: '', date: '', lieu: '', niveau: '', tranche_age: [], notes: '' }
 
 export default function Planning() {
   const [tab, setTab] = useState<Tab>('planning')
   const [cours, setCours] = useState<Cours[]>([])
   const [seances, setSeances] = useState<Seance[]>([])
+  const [competitions, setCompetitions] = useState<Competition[]>([])
   const [loading, setLoading] = useState(true)
   const [showCoursModal, setShowCoursModal] = useState(false)
   const [showSeanceModal, setShowSeanceModal] = useState(false)
   const [showGenerateModal, setShowGenerateModal] = useState(false)
+  const [showCompModal, setShowCompModal] = useState(false)
   const [selectedCours, setSelectedCours] = useState<Cours | null>(null)
   const [selectedSeance, setSelectedSeance] = useState<Seance | null>(null)
+  const [selectedComp, setSelectedComp] = useState<Competition | null>(null)
   const [generateCours, setGenerateCours] = useState<Cours | null>(null)
+  const [compError, setCompError] = useState<string | null>(null)
 
   async function loadCours() {
     const { data } = await supabase.from('cours').select('*').order('jour').order('heure_debut')
     setCours(data ?? [])
+  }
+
+  async function loadCompetitions() {
+    const { data } = await supabase.from('competitions').select('*').order('date')
+    setCompetitions(data ?? [])
   }
 
   async function loadSeances() {
@@ -103,7 +136,7 @@ export default function Planning() {
 
   useEffect(() => {
     async function init() {
-      await Promise.all([loadCours(), loadSeances()])
+      await Promise.all([loadCours(), loadSeances(), loadCompetitions()])
       setLoading(false)
     }
     init()
@@ -185,6 +218,26 @@ export default function Planning() {
     await loadSeances()
   }
 
+  async function handleSaveComp(form: CompFormData) {
+    setCompError(null)
+    let error
+    if (selectedComp) {
+      ;({ error } = await supabase.from('competitions').update(form).eq('id', selectedComp.id))
+    } else {
+      ;({ error } = await supabase.from('competitions').insert(form))
+    }
+    if (error) { setCompError(error.message); return }
+    await loadCompetitions()
+    setShowCompModal(false)
+    setSelectedComp(null)
+  }
+
+  async function handleDeleteComp(id: string) {
+    if (!confirm('Supprimer cette compétition ?')) return
+    await supabase.from('competitions').delete().eq('id', id)
+    await loadCompetitions()
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -194,6 +247,7 @@ export default function Planning() {
         <button
           onClick={() => {
             if (tab === 'planning') { setSelectedCours(null); setShowCoursModal(true) }
+            else if (tab === 'competitions') { setSelectedComp(null); setCompError(null); setShowCompModal(true) }
             else { setSelectedSeance(null); setShowSeanceModal(true) }
           }}
           className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-5 py-2.5 rounded-lg transition-colors"
@@ -203,7 +257,7 @@ export default function Planning() {
       </div>
 
       <div className="flex gap-1 mb-6 border-b border-[#E5E5E5]">
-        {([['planning', 'Planning hebdo'], ['seances', 'Séances planifiées']] as [Tab, string][]).map(([t, label]) => (
+        {([['planning', 'Planning hebdo'], ['seances', 'Séances planifiées'], ['competitions', 'Compétitions']] as [Tab, string][]).map(([t, label]) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -242,7 +296,7 @@ export default function Planning() {
             </div>
           ))}
         </div>
-      ) : (
+      ) : tab === 'seances' ? (
         <div>
           {upcoming.length > 0 && (
             <div className="mb-8">
@@ -280,6 +334,52 @@ export default function Planning() {
             </div>
           )}
         </div>
+      ) : (
+        <div>
+          {compError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+              Erreur : {compError}
+            </div>
+          )}
+          {(() => {
+            const todayStr = new Date().toISOString().slice(0, 10)
+            const aVenir = competitions.filter(c => c.date >= todayStr)
+            const passees = competitions.filter(c => c.date < todayStr)
+            return (
+              <div className="space-y-8">
+                {aVenir.length > 0 && (
+                  <div>
+                    <h2 className="text-xs uppercase tracking-widest text-[#999999] mb-3">À venir — {aVenir.length}</h2>
+                    <div className="space-y-3">
+                      {aVenir.map(c => (
+                        <CompCard key={c.id} comp={c}
+                          onEdit={() => { setSelectedComp(c); setCompError(null); setShowCompModal(true) }}
+                          onDelete={() => handleDeleteComp(c.id)} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {passees.length > 0 && (
+                  <div>
+                    <h2 className="text-xs uppercase tracking-widest text-[#999999] mb-3">Passées — {passees.length}</h2>
+                    <div className="space-y-3 opacity-60">
+                      {[...passees].reverse().map(c => (
+                        <CompCard key={c.id} comp={c}
+                          onEdit={() => { setSelectedComp(c); setCompError(null); setShowCompModal(true) }}
+                          onDelete={() => handleDeleteComp(c.id)} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {competitions.length === 0 && (
+                  <div className="text-center py-16 text-[#CCCCCC] text-sm">
+                    Aucune compétition planifiée. Cliquez sur "+ Ajouter".
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+        </div>
       )}
 
       {showCoursModal && (
@@ -303,6 +403,13 @@ export default function Planning() {
           onSave={handleSaveSeance}
           onSaveBatch={handleSaveBatchSeances}
           onClose={() => { setShowSeanceModal(false); setSelectedSeance(null) }}
+        />
+      )}
+      {showCompModal && (
+        <CompModal
+          initial={selectedComp}
+          onSave={handleSaveComp}
+          onClose={() => { setShowCompModal(false); setSelectedComp(null) }}
         />
       )}
     </div>
@@ -741,5 +848,108 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <label className="block text-xs text-[#666666] mb-1.5">{label}</label>
       {children}
     </div>
+  )
+}
+
+function CompCard({ comp, onEdit, onDelete }: { comp: Competition; onEdit: () => void; onDelete: () => void }) {
+  const today = new Date().toISOString().slice(0, 10)
+  const daysLeft = Math.ceil((new Date(comp.date).getTime() - Date.now()) / 86400000)
+  const past = comp.date < today
+  const tranches = comp.tranche_age ?? []
+  return (
+    <div className="bg-white rounded-xl border border-[#E5E5E5] p-5 flex items-center gap-4 group">
+      <div className="text-center w-12 flex-shrink-0">
+        <p className="text-lg font-bold text-[#0A0A0A]">{new Date(comp.date + 'T12:00:00').getDate()}</p>
+        <p className="text-xs text-[#999999] uppercase">{new Date(comp.date + 'T12:00:00').toLocaleDateString('fr-FR', { month: 'short' })}</p>
+      </div>
+      <div className="w-px h-10 bg-[#F0F0F0] flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-[#0A0A0A]">{comp.nom}</p>
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
+          {comp.lieu && <span className="text-xs text-[#999999]">{comp.lieu}</span>}
+          {comp.niveau && <span className="text-xs px-2 py-0.5 bg-[#F5F5F5] text-[#666666] rounded-full capitalize">{comp.niveau}</span>}
+          {tranches.map(t => (
+            <span key={t} className="text-xs px-2 py-0.5 bg-[#FFF5F6] text-[#C41230] border border-[#C41230]/20 rounded-full capitalize">{t}</span>
+          ))}
+        </div>
+      </div>
+      {!past && daysLeft >= 0 && (
+        <span className={`text-xs font-medium flex-shrink-0 ${daysLeft <= 7 ? 'text-[#C41230]' : 'text-[#999999]'}`}>J-{daysLeft}</span>
+      )}
+      <div className="hidden group-hover:flex items-center gap-3">
+        <button onClick={onEdit} className="text-xs text-[#666666] hover:text-[#0A0A0A] transition-colors">Modifier</button>
+        <button onClick={onDelete} className="text-xs text-[#CCCCCC] hover:text-[#C41230] transition-colors">Supprimer</button>
+      </div>
+    </div>
+  )
+}
+
+function CompModal({ initial, onSave, onClose }: { initial: Competition | null; onSave: (f: CompFormData) => Promise<void>; onClose: () => void }) {
+  const [form, setForm] = useState<CompFormData>(
+    initial
+      ? { nom: initial.nom, date: initial.date, lieu: initial.lieu ?? '', niveau: initial.niveau ?? '', tranche_age: initial.tranche_age ?? [], notes: initial.notes ?? '' }
+      : COMP_EMPTY
+  )
+  const [saving, setSaving] = useState(false)
+
+  function toggleTranche(t: string) {
+    setForm(f => ({
+      ...f,
+      tranche_age: f.tranche_age.includes(t) ? f.tranche_age.filter(x => x !== t) : [...f.tranche_age, t],
+    }))
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault(); setSaving(true); await onSave(form); setSaving(false)
+  }
+
+  return (
+    <Modal title={initial ? 'Modifier la compétition' : 'Ajouter une compétition'} onClose={onClose}>
+      <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <Field label="Nom *">
+          <input required type="text" value={form.nom} onChange={e => setForm({ ...form, nom: e.target.value })} placeholder="Ex: Tournoi de Paris" className={inputClass} />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Date *">
+            <input required type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className={inputClass} />
+          </Field>
+          <Field label="Échelon">
+            <select value={form.niveau} onChange={e => setForm({ ...form, niveau: e.target.value })} className={inputClass}>
+              <option value="">—</option>
+              {NIVEAUX_COMP.map(n => <option key={n} value={n}>{n.charAt(0).toUpperCase() + n.slice(1)}</option>)}
+            </select>
+          </Field>
+        </div>
+        <Field label="Lieu">
+          <input type="text" value={form.lieu} onChange={e => setForm({ ...form, lieu: e.target.value })} placeholder="Ville, salle…" className={inputClass} />
+        </Field>
+        <div>
+          <label className="block text-xs text-[#666666] mb-2">Catégories d'âge</label>
+          <div className="flex flex-wrap gap-2">
+            {TRANCHES_AGE.map(t => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => toggleTranche(t)}
+                className={`text-xs px-3 py-1.5 rounded-full border transition-all capitalize ${
+                  form.tranche_age.includes(t)
+                    ? 'bg-[#C41230] border-[#C41230] text-white'
+                    : 'border-[#E5E5E5] text-[#666666] hover:border-[#C41230] hover:text-[#C41230]'
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+          {form.tranche_age.length === 0 && (
+            <p className="text-xs text-[#CCCCCC] mt-1.5">Aucune sélection = visible par tous les judokas</p>
+          )}
+        </div>
+        <Field label="Notes">
+          <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className={`${inputClass} resize-none`} />
+        </Field>
+        <ModalActions onClose={onClose} saving={saving} isEdit={!!initial} />
+      </form>
+    </Modal>
   )
 }

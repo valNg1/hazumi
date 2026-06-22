@@ -18,7 +18,6 @@ const NAV: Record<'eleve' | 'club', { to: string; label: string }[]> = {
     { to: '/club/rapport', label: 'Inscriptions' },
     { to: '/club/professeurs', label: 'Professeurs' },
     { to: '/club/planning', label: 'Planning' },
-    { to: '/club/competitions', label: 'Compétitions' },
     { to: '/club/agenda', label: 'Agenda' },
     { to: '/club/bureau', label: 'Le bureau' },
     { to: '/club/bibliotheque', label: 'Bibliothèque' },
