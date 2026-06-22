@@ -111,6 +111,7 @@ export default function Accueil() {
       if (!user) return
       const { data: j } = await supabase.from('judokas').select('*').eq('user_id', user.id).single()
       if (!j) { setLoading(false); return }
+      if (!j.full_name) { navigate('/eleve/onboarding', { replace: true }); return }
 
       setName(j.full_name ?? '')
       setPhotoUrl(j.photo_url ?? null)

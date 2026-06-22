@@ -20,8 +20,10 @@ import Bureau from './pages/club/Bureau'
 import Bibliotheque from './pages/club/Bibliotheque'
 import Onboarding from './pages/club/Onboarding'
 import Confidentialite from './pages/Confidentialite'
+import ResetPassword from './pages/ResetPassword'
 import Agenda from './pages/club/Agenda'
 import MonAgenda from './pages/eleve/MonAgenda'
+import OnboardingJudoka from './pages/eleve/OnboardingJudoka'
 
 function DefaultRedirect({ session: _session }: { session: Session }) {
   const space = getSpace()
@@ -53,11 +55,13 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={session ? <Navigate to="/" /> : <Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/confidentialite" element={<Confidentialite />} />
 
         {session ? (
           <>
             <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/eleve/onboarding" element={<OnboardingJudoka />} />
             <Route path="/espace" element={<SpaceSelector />} />
             <Route element={<Layout />}>
               <Route path="/eleve/accueil" element={<Accueil />} />

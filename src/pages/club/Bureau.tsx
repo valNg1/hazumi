@@ -35,6 +35,8 @@ export default function Bureau() {
   const [clubId, setClubId] = useState<string | null>(null)
   const [clubNom, setClubNom] = useState('')
   const [clubLogo, setClubLogo] = useState<string | null>(null)
+  const [clubCode, setClubCode] = useState<string | null>(null)
+  const [codeCopied, setCodeCopied] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const logoInputRef = useRef<HTMLInputElement>(null)
 
@@ -44,8 +46,27 @@ export default function Bureau() {
       supabase.from('clubs').select('*').limit(1).single(),
     ])
     setCrs(crData ?? [])
-    if (clubData) { setClubId(clubData.id); setClubNom(clubData.nom); setClubLogo(clubData.logo_url) }
+    if (clubData) {
+      setClubId(clubData.id)
+      setClubNom(clubData.nom)
+      setClubLogo(clubData.logo_url)
+      setClubCode(clubData.code_invitation ?? null)
+    }
     setLoading(false)
+  }
+
+  async function generateCode() {
+    if (!clubId) return
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase()
+    await supabase.from('clubs').update({ code_invitation: code }).eq('id', clubId)
+    setClubCode(code)
+  }
+
+  function copyCode() {
+    if (!clubCode) return
+    navigator.clipboard.writeText(clubCode)
+    setCodeCopied(true)
+    setTimeout(() => setCodeCopied(false), 2000)
   }
 
   useEffect(() => { load() }, [])
@@ -124,6 +145,44 @@ export default function Bureau() {
           </button>
         </div>
         <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+      </div>
+
+      {/* Code d'invitation judokas */}
+      <div className="bg-white rounded-xl border border-[#E5E5E5] p-5 mb-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-[#0A0A0A]">Code d'invitation</p>
+            <p className="text-xs text-[#999999] mt-0.5">Partagez ce code avec vos judokas pour qu'ils créent leur compte.</p>
+          </div>
+          {clubCode ? (
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="font-mono font-bold text-xl tracking-widest text-[#0A0A0A] bg-[#F5F5F5] px-4 py-2 rounded-lg border border-[#E5E5E5]">
+                {clubCode}
+              </span>
+              <button
+                onClick={copyCode}
+                className={`text-xs px-3 py-2 rounded-lg border transition-all ${codeCopied ? 'bg-green-50 border-green-200 text-green-700' : 'border-[#E5E5E5] text-[#666666] hover:border-[#CCCCCC]'}`}
+              >
+                {codeCopied ? '✓ Copié' : 'Copier'}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={generateCode}
+              className="text-xs bg-[#C41230] hover:bg-[#9B0E25] text-white px-4 py-2 rounded-lg transition-colors flex-shrink-0"
+            >
+              Générer un code
+            </button>
+          )}
+        </div>
+        {clubCode && (
+          <div className="mt-3 pt-3 border-t border-[#F5F5F5] flex items-center justify-between">
+            <p className="text-xs text-[#CCCCCC]">Le judoka entre ce code lors de la création de son compte sur l'app.</p>
+            <button onClick={generateCode} className="text-xs text-[#CCCCCC] hover:text-[#999999] transition-colors">
+              Régénérer
+            </button>
+          </div>
+        )}
       </div>
 
       {loading ? (
