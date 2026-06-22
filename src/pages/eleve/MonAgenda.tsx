@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
 
 type EventType = 'competition' | 'grade' | 'arbitrage' | 'stage' | 'ag' | 'autre'
@@ -41,6 +41,85 @@ function getAgeCategory(birthDate: string): string {
 
 const TYPE_ORDER: EventType[] = ['competition', 'grade', 'arbitrage', 'stage', 'ag', 'autre']
 
+type CalView = 'semaine' | 'mois' | 'trimestre' | 'annee'
+
+function addDays(date: Date, n: number): Date {
+  const d = new Date(date); d.setDate(d.getDate() + n); return d
+}
+
+function toYMD(date: Date): string {
+  return date.toISOString().slice(0, 10)
+}
+
+function startOfWeek(date: Date): Date {
+  const d = new Date(date)
+  const day = d.getDay() === 0 ? 6 : d.getDay() - 1
+  d.setDate(d.getDate() - day)
+  return d
+}
+
+function daysInMonth(year: number, month: number): number {
+  return new Date(year, month + 1, 0).getDate()
+}
+
+function MonthGrid({ year, month, itemsByDate, onClickDay }: {
+  year: number
+  month: number
+  itemsByDate: Map<string, AgendaItem[]>
+  onClickDay: (date: string, items: AgendaItem[]) => void
+}) {
+  const firstDay = new Date(year, month, 1)
+  const startOffset = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1
+  const total = daysInMonth(year, month)
+  const cells: (number | null)[] = [...Array(startOffset).fill(null), ...Array.from({ length: total }, (_, i) => i + 1)]
+  while (cells.length % 7 !== 0) cells.push(null)
+  const monthLabel = new Date(year, month, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+  const todayStr = toYMD(new Date())
+
+  return (
+    <div>
+      <p className="text-xs font-semibold text-[#0A0A0A] mb-2 capitalize">{monthLabel}</p>
+      <div className="grid grid-cols-7 gap-px text-center">
+        {['L','M','M','J','V','S','D'].map((d, i) => (
+          <div key={i} className="text-[10px] text-[#CCCCCC] pb-1">{d}</div>
+        ))}
+        {cells.map((day, i) => {
+          if (!day) return <div key={i} />
+          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+          const dayItems = itemsByDate.get(dateStr) ?? []
+          const isToday = dateStr === todayStr
+          return (
+            <div
+              key={i}
+              onClick={() => dayItems.length > 0 && onClickDay(dateStr, dayItems)}
+              className={`relative flex flex-col items-center py-1 rounded-lg transition-colors ${dayItems.length > 0 ? 'cursor-pointer hover:bg-[#F5F5F5]' : ''}`}
+            >
+              <span className={`text-xs w-6 h-6 flex items-center justify-center rounded-full leading-none ${isToday ? 'bg-[#0A0A0A] text-white font-bold' : 'text-[#333333]'}`}>
+                {day}
+              </span>
+              {dayItems.length > 0 && (
+                <div className="flex gap-0.5 mt-0.5 flex-wrap justify-center">
+                  {dayItems.slice(0, 3).map(item => (
+                    <div key={item.key} className={`w-1.5 h-1.5 rounded-full ${dotColor(item.type)}`} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function dotColor(type: EventType): string {
+  const map: Record<EventType, string> = {
+    competition: 'bg-[#C41230]', grade: 'bg-purple-500', arbitrage: 'bg-blue-500',
+    stage: 'bg-green-500', ag: 'bg-amber-500', autre: 'bg-gray-400',
+  }
+  return map[type]
+}
+
 export default function MonAgenda() {
   const [items, setItems] = useState<AgendaItem[]>([])
   const [participationIds, setParticipationIds] = useState<Set<string>>(new Set())
@@ -48,6 +127,9 @@ export default function MonAgenda() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<EventType | 'tous'>('tous')
   const [selectedItem, setSelectedItem] = useState<AgendaItem | null>(null)
+  const [calView, setCalView] = useState<CalView>('mois')
+  const [calOffset, setCalOffset] = useState(0)
+  const [calDayItems, setCalDayItems] = useState<{ date: string; items: AgendaItem[] } | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -125,6 +207,19 @@ export default function MonAgenda() {
 
   const typesPresents = TYPE_ORDER.filter(t => items.some(i => i.type === t))
   const filtered = filter === 'tous' ? items : items.filter(i => i.type === filter)
+
+  const itemsByDate = useMemo(() => {
+    const map = new Map<string, AgendaItem[]>()
+    for (const item of filtered) {
+      const list = map.get(item.date) ?? []
+      list.push(item)
+      map.set(item.date, list)
+    }
+    return map
+  }, [filtered])
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
 
   if (loading) return <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
 
@@ -229,6 +324,168 @@ export default function MonAgenda() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Planning calendaire */}
+      {items.length > 0 && (
+        <div className="mt-8 bg-white rounded-xl border border-[#E5E5E5] p-5">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xs uppercase tracking-widest text-[#999999]">Planning</span>
+            <div className="flex gap-1">
+              {(['semaine', 'mois', 'trimestre', 'annee'] as CalView[]).map(v => (
+                <button
+                  key={v}
+                  onClick={() => { setCalView(v); setCalOffset(0) }}
+                  className={`text-xs px-2.5 py-1 rounded-md transition-colors ${calView === v ? 'bg-[#0A0A0A] text-white' : 'text-[#999999] hover:text-[#0A0A0A]'}`}
+                >
+                  {v === 'semaine' ? 'Sem.' : v === 'mois' ? 'Mois' : v === 'trimestre' ? 'Trim.' : 'Année'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Navigation */}
+          {calView !== 'annee' && (
+            <div className="flex items-center justify-between mb-4">
+              <button onClick={() => setCalOffset(o => o - 1)} className="text-[#CCCCCC] hover:text-[#0A0A0A] transition-colors p-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              <button onClick={() => setCalOffset(0)} className="text-xs text-[#999999] hover:text-[#0A0A0A] transition-colors px-2">Aujourd'hui</button>
+              <button onClick={() => setCalOffset(o => o + 1)} className="text-[#CCCCCC] hover:text-[#0A0A0A] transition-colors p-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </button>
+            </div>
+          )}
+
+          {calView === 'semaine' && (() => {
+            const weekStart = addDays(startOfWeek(today), calOffset * 7)
+            const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+            const weekLabel = `${days[0].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} – ${days[6].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`
+            return (
+              <div>
+                <p className="text-xs font-semibold text-[#0A0A0A] mb-3 text-center">{weekLabel}</p>
+                <div className="space-y-1">
+                  {days.map(day => {
+                    const dateStr = toYMD(day)
+                    const dayItems = itemsByDate.get(dateStr) ?? []
+                    const isToday = dateStr === toYMD(new Date())
+                    return (
+                      <div key={dateStr} className={`flex items-start gap-3 rounded-lg px-3 py-2 ${isToday ? 'bg-[#F5F5F5]' : ''}`}>
+                        <div className="w-16 flex-shrink-0">
+                          <span className={`text-xs ${isToday ? 'font-bold text-[#C41230]' : 'text-[#999999]'}`}>
+                            {day.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          {dayItems.length === 0 ? (
+                            <div className="h-5" />
+                          ) : dayItems.map(item => {
+                            const cfg = TYPE_CONFIG[item.type]
+                            return (
+                              <button key={item.key} onClick={() => setSelectedItem(item)}
+                                className={`w-full text-left text-xs px-2 py-1 rounded border ${cfg.bg} ${cfg.border} flex items-center gap-1.5`}>
+                                <span>{cfg.icon}</span>
+                                <span className="truncate font-medium text-[#0A0A0A]">{item.titre}</span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })()}
+
+          {calView === 'mois' && (() => {
+            const ref = new Date(today.getFullYear(), today.getMonth() + calOffset, 1)
+            return (
+              <MonthGrid year={ref.getFullYear()} month={ref.getMonth()}
+                itemsByDate={itemsByDate}
+                onClickDay={(date, its) => setCalDayItems({ date, items: its })} />
+            )
+          })()}
+
+          {calView === 'trimestre' && (() => {
+            const months = Array.from({ length: 3 }, (_, i) => {
+              const d = new Date(today.getFullYear(), today.getMonth() + calOffset * 3 + i, 1)
+              return { year: d.getFullYear(), month: d.getMonth() }
+            })
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                {months.map(({ year, month }) => (
+                  <MonthGrid key={`${year}-${month}`} year={year} month={month}
+                    itemsByDate={itemsByDate}
+                    onClickDay={(date, its) => setCalDayItems({ date, items: its })} />
+                ))}
+              </div>
+            )
+          })()}
+
+          {calView === 'annee' && (() => {
+            const schoolY = today.getMonth() >= 8 ? today.getFullYear() : today.getFullYear() - 1
+            const months = Array.from({ length: 12 }, (_, i) => {
+              const mIdx = (8 + i) % 12
+              const year = mIdx >= 8 ? schoolY : schoolY + 1
+              return { year, month: mIdx }
+            })
+            return (
+              <div>
+                <p className="text-xs font-semibold text-[#0A0A0A] mb-4 text-center">Saison {schoolY}–{schoolY + 1}</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                  {months.map(({ year, month }) => (
+                    <MonthGrid key={`${year}-${month}`} year={year} month={month}
+                      itemsByDate={itemsByDate}
+                      onClickDay={(date, its) => setCalDayItems({ date, items: its })} />
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* Légende */}
+          <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-[#F5F5F5]">
+            {typesPresents.map(t => (
+              <div key={t} className="flex items-center gap-1.5">
+                <div className={`w-2 h-2 rounded-full ${dotColor(t)}`} />
+                <span className="text-[10px] text-[#999999]">{TYPE_CONFIG[t].label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Popup jour cliqué */}
+      {calDayItems && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-0 sm:px-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setCalDayItems(null)} />
+          <div className="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm p-5">
+            <button onClick={() => setCalDayItems(null)} className="absolute top-4 right-4 text-[#CCCCCC] hover:text-[#666666]">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <p className="text-sm font-semibold text-[#0A0A0A] mb-3 capitalize">
+              {new Date(calDayItems.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </p>
+            <div className="space-y-2">
+              {calDayItems.items.map(item => {
+                const cfg = TYPE_CONFIG[item.type]
+                const participating = participationIds.has(item.key)
+                return (
+                  <button key={item.key} onClick={() => { setCalDayItems(null); setSelectedItem(item) }}
+                    className={`w-full text-left p-3 rounded-xl border ${cfg.bg} ${cfg.border} flex items-center gap-3`}>
+                    <span className="text-xl">{cfg.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-[#0A0A0A] truncate">{item.titre}</p>
+                      {item.lieu && <p className="text-xs text-[#999999] truncate">{item.lieu}</p>}
+                    </div>
+                    {participating && <span className="text-[10px] text-[#C41230] font-bold flex-shrink-0">✓</span>}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
         </div>
       )}
 
