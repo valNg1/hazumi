@@ -224,7 +224,6 @@ export default function Accueil() {
 
   if (loading) return <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
 
-  const confirmedCount2 = agendaItems.filter(i => participationIds.has(i.key)).length
   const firstName = name ? name.split(' ')[0] : ''
   const beltCurriculum = belt ? CURRICULUM.find(c => c.belt === belt) : null
   const nextBeltIndex = belt ? getBeltIndex(belt) + 1 : -1
@@ -372,25 +371,56 @@ export default function Accueil() {
           </div>
 
           {/* Événements à venir */}
-          <div
-            className="bg-white rounded-xl border border-[#E5E5E5] p-5 cursor-pointer hover:border-[#CCCCCC] transition-all group"
-            onClick={() => navigate('/eleve/agenda')}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs uppercase tracking-widest text-[#999999]">Événements</span>
-              <svg className="w-3.5 h-3.5 text-[#CCCCCC] group-hover:text-[#C41230] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-            <p className="text-3xl font-bold text-[#0A0A0A]">{agendaItems.length}</p>
-            <p className="text-xs text-[#999999] mt-1">à venir</p>
-            <div className="mt-2 space-y-1">
-              <div className="flex justify-between text-xs">
-                <span className="text-[#999999]">Confirmés</span>
-                <span className={`font-semibold ${confirmedCount2 > 0 ? 'text-[#C41230]' : 'text-[#0A0A0A]'}`}>{confirmedCount2}</span>
+          {(() => {
+            const EVT_META: Record<string, { icon: string; label: string }> = {
+              competition: { icon: '🏆', label: 'Compét.' },
+              grade:       { icon: '🥋', label: 'Grade' },
+              arbitrage:   { icon: '🤝', label: 'Arbitrage' },
+              stage:       { icon: '📚', label: 'Stage' },
+              ag:          { icon: '🏛️', label: 'AG' },
+              autre:       { icon: '📅', label: 'Autre' },
+            }
+            const byType = agendaItems.reduce<Record<string, { total: number; confirmed: number }>>((acc, item) => {
+              if (!acc[item.type]) acc[item.type] = { total: 0, confirmed: 0 }
+              acc[item.type].total++
+              if (participationIds.has(item.key)) acc[item.type].confirmed++
+              return acc
+            }, {})
+            const typeEntries = Object.entries(byType)
+            return (
+              <div
+                className="bg-white rounded-xl border border-[#E5E5E5] p-5 cursor-pointer hover:border-[#CCCCCC] transition-all group"
+                onClick={() => navigate('/eleve/agenda')}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs uppercase tracking-widest text-[#999999]">Événements</span>
+                  <svg className="w-3.5 h-3.5 text-[#CCCCCC] group-hover:text-[#C41230] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+                <p className="text-3xl font-bold text-[#0A0A0A]">{agendaItems.length}</p>
+                {typeEntries.length === 0 ? (
+                  <p className="text-xs text-[#CCCCCC] mt-1">aucun à venir</p>
+                ) : (
+                  <div className="mt-2 space-y-1">
+                    {typeEntries.map(([type, counts]) => {
+                      const meta = EVT_META[type] ?? { icon: '📅', label: type }
+                      const allConfirmed = counts.confirmed === counts.total
+                      const someConfirmed = counts.confirmed > 0 && counts.confirmed < counts.total
+                      return (
+                        <div key={type} className="flex items-center justify-between text-xs">
+                          <span className="text-[#999999]">{meta.icon} {meta.label}</span>
+                          <span className={`font-semibold tabular-nums ${allConfirmed ? 'text-[#C41230]' : someConfirmed ? 'text-amber-600' : 'text-[#CCCCCC]'}`}>
+                            {counts.confirmed > 0 ? `${counts.confirmed}/` : ''}{counts.total}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
+            )
+          })()}
         </div>
 
         {/* Graph heures : possible vs réalisé */}
