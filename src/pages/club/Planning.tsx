@@ -115,6 +115,7 @@ export default function Planning() {
   const [selectedComp, setSelectedComp] = useState<Competition | null>(null)
   const [generateCours, setGenerateCours] = useState<Cours | null>(null)
   const [compError, setCompError] = useState<string | null>(null)
+  const [clubId, setClubId] = useState<string | null>(null)
 
   async function loadCours() {
     const { data } = await supabase.from('cours').select('*').order('jour').order('heure_debut')
@@ -136,6 +137,11 @@ export default function Planning() {
 
   useEffect(() => {
     async function init() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: j } = await supabase.from('judokas').select('club_id').eq('user_id', user.id).single()
+        setClubId(j?.club_id ?? null)
+      }
       await Promise.all([loadCours(), loadSeances(), loadCompetitions()])
       setLoading(false)
     }
@@ -173,7 +179,7 @@ export default function Planning() {
         }).eq('cours_id', selectedCours.id).gte('date', today)
       }
     } else {
-      await supabase.from('cours').insert(form)
+      await supabase.from('cours').insert({ ...form, club_id: clubId })
     }
     await Promise.all([loadCours(), loadSeances()])
     setShowCoursModal(false)
@@ -196,7 +202,7 @@ export default function Planning() {
     if (selectedSeance) {
       await supabase.from('seances').update(form).eq('id', selectedSeance.id)
     } else {
-      await supabase.from('seances').insert(form)
+      await supabase.from('seances').insert({ ...form, club_id: clubId })
     }
     await loadSeances()
     setShowSeanceModal(false)
@@ -205,7 +211,7 @@ export default function Planning() {
 
   async function handleSaveBatchSeances(rows: SeanceFormData[], closeGenerate = false) {
     if (rows.length === 0) return
-    const { error } = await supabase.from('seances').insert(rows)
+    const { error } = await supabase.from('seances').insert(rows.map(r => ({ ...r, club_id: clubId })))
     if (error) { alert(`Erreur lors de la création : ${error.message}`); return }
     await loadSeances()
     if (closeGenerate) { setShowGenerateModal(false); setGenerateCours(null) }
@@ -224,7 +230,7 @@ export default function Planning() {
     if (selectedComp) {
       ;({ error } = await supabase.from('competitions').update(form).eq('id', selectedComp.id))
     } else {
-      ;({ error } = await supabase.from('competitions').insert(form))
+      ;({ error } = await supabase.from('competitions').insert({ ...form, club_id: clubId }))
     }
     if (error) { setCompError(error.message); return }
     await loadCompetitions()

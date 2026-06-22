@@ -94,7 +94,7 @@ export default function Bureau() {
     if (selected) {
       await supabase.from('bureau_cr').update(form).eq('id', selected.id)
     } else {
-      await supabase.from('bureau_cr').insert(form)
+      await supabase.from('bureau_cr').insert({ ...form, club_id: clubId })
     }
     await load()
     setShowModal(false)

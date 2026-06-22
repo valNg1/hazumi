@@ -70,6 +70,7 @@ export default function Effectifs() {
   const [filterBelt, setFilterBelt] = useState<Belt | ''>('')
   const [showModal, setShowModal] = useState(false)
   const [selected, setSelected] = useState<JudokaExt | null>(null)
+  const [clubId, setClubId] = useState<string | null>(null)
 
   async function load() {
     const { data } = await supabase.from('judokas').select('*').order('full_name')
@@ -77,7 +78,17 @@ export default function Effectifs() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: j } = await supabase.from('judokas').select('club_id').eq('user_id', user.id).single()
+        setClubId(j?.club_id ?? null)
+      }
+      await load()
+    }
+    init()
+  }, [])
 
   const filtered = judokas.filter(j => {
     const matchSearch = j.full_name.toLowerCase().includes(search.toLowerCase())
@@ -95,8 +106,7 @@ export default function Effectifs() {
     if (selected) {
       await supabase.from('judokas').update(form).eq('id', selected.id)
     } else {
-      // Ajout manuel par le bureau : pas de user_id
-      await supabase.from('judokas').insert(form)
+      await supabase.from('judokas').insert({ ...form, club_id: clubId, role: 'judoka' })
     }
     await load()
     closeModal()
