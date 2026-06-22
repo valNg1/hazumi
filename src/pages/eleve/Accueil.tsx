@@ -17,15 +17,6 @@ interface AgendaItem {
   niveau?: string
 }
 
-const AGENDA_TYPES: Record<string, { icon: string; label: string; color: string }> = {
-  competition: { icon: '🏆', label: 'Compétition',     color: 'bg-[#FFF5F6] text-[#C41230] border-[#C41230]/20' },
-  grade:       { icon: '🥋', label: 'Passage de grade', color: 'bg-purple-50 text-purple-700 border-purple-200' },
-  arbitrage:   { icon: '🤝', label: 'Arbitrage',        color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  stage:       { icon: '📚', label: 'Stage',            color: 'bg-green-50 text-green-700 border-green-200' },
-  ag:          { icon: '🏛️', label: 'AG du club',       color: 'bg-amber-50 text-amber-700 border-amber-200' },
-  autre:       { icon: '📅', label: 'Événement',        color: 'bg-[#F5F5F5] text-[#666666] border-[#E5E5E5]' },
-}
-
 const TRANCHES_AGE_BOUNDS: [string, number, number][] = [
   ['poussins', 8, 9], ['benjamins', 10, 11], ['minimes', 12, 13],
   ['cadets', 14, 15], ['juniors', 16, 20], ['seniors', 21, 34], ['vétérans', 35, 99],
@@ -111,8 +102,6 @@ export default function Accueil() {
   const [coursNouveaux, setCoursNouveaux] = useState(0)
   const [dossierDone, setDossierDone] = useState(0)
   const [dossierTotal] = useState(3)
-  const [judokaId, setJudokaId] = useState<string | null>(null)
-  const [judokaBirthDate, setJudokaBirthDate] = useState<string | null>(null)
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([])
   const [participationIds, setParticipationIds] = useState<Set<string>>(new Set()) // "src:id"
 
@@ -127,8 +116,7 @@ export default function Accueil() {
       setPhotoUrl(j.photo_url ?? null)
       setClub(j.club ?? '')
       setBelt(j.belt ?? null)
-      setJudokaId(j.id)
-      setJudokaBirthDate(j.birth_date ?? null)
+
 
       // Dossier
       const done = [!!(j.full_name && j.birth_date && j.phone), !!j.cert_medical_url, !!j.virement_url].filter(Boolean).length
@@ -232,29 +220,10 @@ export default function Accueil() {
     load()
   }, [])
 
-  async function toggleParticipation(item: AgendaItem) {
-    if (!judokaId) return
-    const key = item.key
-    if (participationIds.has(key)) {
-      if (item.sourceType === 'competition') {
-        await supabase.from('competition_participations').delete().eq('competition_id', item.sourceId).eq('judoka_id', judokaId)
-      } else {
-        await supabase.from('evenement_participations').delete().eq('evenement_id', item.sourceId).eq('judoka_id', judokaId)
-      }
-      setParticipationIds(prev => { const s = new Set(prev); s.delete(key); return s })
-    } else {
-      if (item.sourceType === 'competition') {
-        await supabase.from('competition_participations').upsert({ competition_id: item.sourceId, judoka_id: judokaId }, { onConflict: 'competition_id,judoka_id' })
-      } else {
-        await supabase.from('evenement_participations').upsert({ evenement_id: item.sourceId, judoka_id: judokaId }, { onConflict: 'evenement_id,judoka_id' })
-      }
-      setParticipationIds(prev => new Set([...prev, key]))
-    }
-  }
+
 
   if (loading) return <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
 
-  const ageCategory = judokaBirthDate ? getAgeCategory(judokaBirthDate) : null
   const confirmedCount2 = agendaItems.filter(i => participationIds.has(i.key)).length
   const firstName = name ? name.split(' ')[0] : ''
   const beltCurriculum = belt ? CURRICULUM.find(c => c.belt === belt) : null
@@ -402,32 +371,24 @@ export default function Accueil() {
             </div>
           </div>
 
-          {/* Événements — participation */}
+          {/* Événements à venir */}
           <div
             className="bg-white rounded-xl border border-[#E5E5E5] p-5 cursor-pointer hover:border-[#CCCCCC] transition-all group"
-            onClick={() => navigate('/eleve/entrainements')}
+            onClick={() => navigate('/eleve/agenda')}
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs uppercase tracking-widest text-[#999999]">Participation</span>
+              <span className="text-xs uppercase tracking-widest text-[#999999]">Événements</span>
               <svg className="w-3.5 h-3.5 text-[#CCCCCC] group-hover:text-[#C41230] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </div>
-            <p className="text-3xl font-bold text-[#0A0A0A]">{confirmedCount2}</p>
-            <p className="text-xs text-[#999999] mt-1">confirmé{confirmedCount2 !== 1 ? 's' : ''}</p>
+            <p className="text-3xl font-bold text-[#0A0A0A]">{agendaItems.length}</p>
+            <p className="text-xs text-[#999999] mt-1">à venir</p>
             <div className="mt-2 space-y-1">
               <div className="flex justify-between text-xs">
-                <span className="text-[#999999]">À venir</span>
-                <span className="text-[#0A0A0A] font-medium">{agendaItems.length}</span>
+                <span className="text-[#999999]">Confirmés</span>
+                <span className={`font-semibold ${confirmedCount2 > 0 ? 'text-[#C41230]' : 'text-[#0A0A0A]'}`}>{confirmedCount2}</span>
               </div>
-              {agendaItems.length > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-[#999999]">Taux</span>
-                  <span className={`font-semibold ${confirmedCount2 > 0 ? 'text-[#C41230]' : 'text-[#CCCCCC]'}`}>
-                    {Math.round((confirmedCount2 / agendaItems.length) * 100)}%
-                  </span>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -473,50 +434,6 @@ export default function Accueil() {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-
-        {/* Agenda à venir */}
-        {agendaItems.length > 0 && (
-          <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs uppercase tracking-widest text-[#999999]">Agenda à venir</span>
-              {ageCategory && <span className="text-xs px-2 py-0.5 bg-[#FFF5F6] text-[#C41230] border border-[#C41230]/20 rounded-full capitalize">{ageCategory}</span>}
-            </div>
-            <div className="space-y-0">
-              {agendaItems.map(item => {
-                const daysLeft = Math.ceil((new Date(item.date).getTime() - Date.now()) / 86400000)
-                const participating = participationIds.has(item.key)
-                const cfg = AGENDA_TYPES[item.type] ?? AGENDA_TYPES.autre
-                return (
-                  <div key={item.key} className="flex items-center gap-3 py-2.5 border-b border-[#F5F5F5] last:border-0">
-                    <div className="text-center w-10 flex-shrink-0">
-                      <p className="text-base font-bold text-[#0A0A0A] leading-none">{new Date(item.date).getDate()}</p>
-                      <p className="text-[10px] text-[#999999] uppercase">{new Date(item.date).toLocaleDateString('fr-FR', { month: 'short' })}</p>
-                    </div>
-                    <span className="text-base flex-shrink-0">{cfg.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#0A0A0A] truncate">{item.titre}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded border ${cfg.color}`}>{cfg.label}</span>
-                        {item.lieu && <span className="text-xs text-[#999999] truncate">{item.lieu}</span>}
-                      </div>
-                    </div>
-                    <span className={`text-xs flex-shrink-0 ${daysLeft <= 7 ? 'text-[#C41230] font-medium' : 'text-[#CCCCCC]'}`}>J-{daysLeft}</span>
-                    <button
-                      onClick={() => toggleParticipation(item)}
-                      className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border transition-all ${
-                        participating
-                          ? 'bg-[#C41230] border-[#C41230] text-white'
-                          : 'border-[#E5E5E5] text-[#999999] hover:border-[#C41230] hover:text-[#C41230]'
-                      }`}
-                    >
-                      {participating ? '✓ Confirmé' : 'Je participe'}
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
 
         {/* Dossier d'inscription — secondaire */}
         <div
