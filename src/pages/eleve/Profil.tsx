@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import type { Belt } from '../../types'
 
@@ -48,6 +49,8 @@ interface ProfilData {
   cert_medical_url?: string
   cert_medical_ok?: boolean
   virement_url?: string
+  cotisation_paid?: boolean
+  cotisation_paid_at?: string
 }
 
 const EMPTY: ProfilData = {
@@ -56,12 +59,24 @@ const EMPTY: ProfilData = {
 }
 
 export default function Profil() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [_judokaId, setJudokaId] = useState<string | null>(null)
   const [data, setData] = useState<ProfilData>(EMPTY)
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState<string | null>(null)
+  const [paymentLoading, setPaymentLoading] = useState(false)
+  const [paymentError, setPaymentError] = useState<string | null>(null)
+  const [justPaid, setJustPaid] = useState(false)
   const photoRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    // Retour depuis Stripe Checkout
+    if (searchParams.get('paid') === '1') {
+      setJustPaid(true)
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   useEffect(() => {
     async function load() {
@@ -83,6 +98,8 @@ export default function Profil() {
           cert_medical_url: judoka.cert_medical_url,
           cert_medical_ok: judoka.cert_medical_ok,
           virement_url: judoka.virement_url,
+          cotisation_paid: judoka.cotisation_paid ?? false,
+          cotisation_paid_at: judoka.cotisation_paid_at,
         })
       }
       setLoading(false)
@@ -116,8 +133,35 @@ export default function Profil() {
     setUploading(null)
   }
 
+  async function handlePay() {
+    setPaymentLoading(true)
+    setPaymentError(null)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ amount: 12000 }),
+      })
+      const json = await res.json()
+      if (json.url) {
+        window.location.href = json.url
+      } else {
+        setPaymentError(json.error ?? 'Erreur lors du paiement')
+      }
+    } catch {
+      setPaymentError('Erreur réseau, réessayez.')
+    } finally {
+      setPaymentLoading(false)
+    }
+  }
+
   const currentBelt = BELTS.find(b => b.value === data.belt)
-  const dossierComplet = !!data.cert_medical_url && !!data.virement_url && !!data.full_name && !!data.birth_date
+  const dossierComplet = !!data.cert_medical_url && !!data.cotisation_paid && !!data.full_name && !!data.birth_date
 
   if (loading) return <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
 
@@ -232,6 +276,52 @@ export default function Profil() {
       </form>
 
       <div className="mt-6 space-y-4">
+        <Section title="Cotisation">
+          {justPaid && (
+            <div className="mb-4 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700 flex items-center gap-2">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Paiement reçu — merci ! Votre cotisation est validée.
+            </div>
+          )}
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-[#0A0A0A]">Cotisation annuelle</p>
+              <p className="text-xs text-[#999999] mt-0.5">
+                {data.cotisation_paid && data.cotisation_paid_at
+                  ? `Réglée le ${new Date(data.cotisation_paid_at).toLocaleDateString('fr-FR')}`
+                  : 'Paiement en ligne sécurisé par Stripe'}
+              </p>
+            </div>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              {data.cotisation_paid ? (
+                <span className="text-xs px-3 py-1.5 rounded-full bg-green-50 text-green-700 font-medium">
+                  Payée ✓
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handlePay}
+                  disabled={paymentLoading}
+                  className="flex items-center gap-2 bg-[#0A0A0A] hover:bg-[#222] text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-60"
+                >
+                  {paymentLoading
+                    ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                    : <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      </svg>
+                  }
+                  Payer — 120 €
+                </button>
+              )}
+            </div>
+          </div>
+          {paymentError && (
+            <p className="mt-3 text-xs text-red-600">{paymentError}</p>
+          )}
+        </Section>
+
         <Section title="Documents d'inscription">
           <div className="space-y-4">
             <UploadRow
@@ -243,16 +333,6 @@ export default function Profil() {
               koLabel="Non déposé"
               loading={uploading === 'cert_medical_url'}
               onUpload={f => uploadFile(f, 'cert_medical_url')}
-            />
-            <UploadRow
-              label="Preuve de virement"
-              sublabel="Justificatif de paiement de la cotisation"
-              url={data.virement_url}
-              ok={!!data.virement_url}
-              okLabel="Déposé"
-              koLabel="Non déposé"
-              loading={uploading === 'virement_url'}
-              onUpload={f => uploadFile(f, 'virement_url')}
             />
           </div>
         </Section>
