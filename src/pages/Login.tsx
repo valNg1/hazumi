@@ -225,7 +225,10 @@ export default function Login() {
                       <Link to="/confidentialite" target="_blank" className="text-[#C41230] hover:underline">
                         politique de confidentialité
                       </Link>
-                      {' '}du club.
+                      {' '}et les{' '}
+                      <Link to="/mentions-legales" target="_blank" className="text-[#C41230] hover:underline">
+                        mentions légales
+                      </Link>.
                     </span>
                   </label>
                 </>

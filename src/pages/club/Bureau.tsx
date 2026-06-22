@@ -38,6 +38,8 @@ export default function Bureau() {
   const [clubCode, setClubCode] = useState<string | null>(null)
   const [codeCopied, setCodeCopied] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [clubPlan, setClubPlan] = useState<string>('basic')
+  const [payLoading, setPayLoading] = useState(false)
   const logoInputRef = useRef<HTMLInputElement>(null)
 
   async function load() {
@@ -51,8 +53,32 @@ export default function Bureau() {
       setClubNom(clubData.nom)
       setClubLogo(clubData.logo_url)
       setClubCode(clubData.code_invitation ?? null)
+      setClubPlan(clubData.plan ?? 'basic')
     }
     setLoading(false)
+  }
+
+  async function handleClubPay() {
+    setPayLoading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          priceId: import.meta.env.VITE_STRIPE_PRICE_CLUB,
+          type: 'club',
+        }),
+      })
+      const json = await res.json()
+      if (json.url) window.location.href = json.url
+    } finally {
+      setPayLoading(false)
+    }
   }
 
   async function generateCode() {
@@ -120,6 +146,33 @@ export default function Bureau() {
         >
           + Nouveau CR
         </button>
+      </div>
+
+      {/* Abonnement club */}
+      <div className="bg-white rounded-xl border border-[#E5E5E5] p-5 mb-6 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-[#0A0A0A]">
+            {clubPlan === 'pro' ? '✦ Hazumi Pro Club' : 'Hazumi Club — Plan Basic'}
+          </p>
+          <p className="text-xs text-[#999999] mt-0.5">
+            {clubPlan === 'pro'
+              ? 'Effectif illimité · Toutes les fonctionnalités activées'
+              : 'Jusqu\'à 10 judokas inclus — passez Pro pour un effectif illimité'}
+          </p>
+        </div>
+        {clubPlan !== 'pro' && (
+          <button
+            onClick={handleClubPay}
+            disabled={payLoading}
+            className="flex-shrink-0 flex items-center gap-2 bg-[#0A0A0A] hover:bg-[#222] text-white text-xs font-medium px-4 py-2.5 rounded-lg transition-colors disabled:opacity-60"
+          >
+            {payLoading
+              ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+              : '✦'
+            }
+            Passer Pro — 10€/mois
+          </button>
+        )}
       </div>
 
       {/* Identité du club */}

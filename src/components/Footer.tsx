@@ -8,6 +8,10 @@ export default function Footer({ dark = false }: { dark?: boolean }) {
         <p>Projeté par <span className={sub}>Hazumi</span> — L'école du Ippon</p>
       </div>
       <p>Groupe DAKOTAlab · 59, rue de Ponthieu · 75008 Paris · SIREN 951 717 925</p>
+      <div className="flex gap-4 mt-2">
+        <a href="/mentions-legales" className="hover:underline opacity-70">Mentions légales</a>
+        <a href="/confidentialite" className="hover:underline opacity-70">Confidentialité</a>
+      </div>
     </footer>
   )
 }

@@ -62,6 +62,8 @@ function alertes(judokas: JudokaExt[]) {
   return items
 }
 
+const FREE_LIMIT = 10
+
 export default function Effectifs() {
   const navigate = useNavigate()
   const [judokas, setJudokas] = useState<JudokaExt[]>([])
@@ -71,6 +73,7 @@ export default function Effectifs() {
   const [showModal, setShowModal] = useState(false)
   const [selected, setSelected] = useState<JudokaExt | null>(null)
   const [clubId, setClubId] = useState<string | null>(null)
+  const [clubPlan, setClubPlan] = useState<string>('basic')
 
   async function load() {
     const { data } = await supabase.from('judokas').select('*').order('full_name')
@@ -84,6 +87,10 @@ export default function Effectifs() {
       if (user) {
         const { data: j } = await supabase.from('judokas').select('club_id').eq('user_id', user.id).single()
         setClubId(j?.club_id ?? null)
+        if (j?.club_id) {
+          const { data: club } = await supabase.from('clubs').select('plan').eq('id', j.club_id).single()
+          setClubPlan(club?.plan ?? 'basic')
+        }
       }
       await load()
     }
@@ -125,13 +132,37 @@ export default function Effectifs() {
           <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Effectifs</h1>
           <p className="text-[#666666] text-sm mt-1">{judokas.length} élève{judokas.length !== 1 ? 's' : ''}</p>
         </div>
-        <button
-          onClick={openAdd}
-          className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-5 py-2.5 rounded-lg transition-colors"
-        >
-          + Ajouter
-        </button>
+        {clubPlan === 'basic' && judokas.length >= FREE_LIMIT ? (
+          <button
+            onClick={() => navigate('/club/bureau')}
+            className="flex items-center gap-2 bg-[#0A0A0A] hover:bg-[#222] text-white text-xs font-medium px-4 py-2.5 rounded-lg transition-colors"
+          >
+            🔒 Passer Pro pour ajouter
+          </button>
+        ) : (
+          <button
+            onClick={openAdd}
+            className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-5 py-2.5 rounded-lg transition-colors"
+          >
+            + Ajouter
+          </button>
+        )}
       </div>
+
+      {clubPlan === 'basic' && judokas.length >= FREE_LIMIT && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-amber-800">Limite de {FREE_LIMIT} judokas atteinte</p>
+            <p className="text-xs text-amber-700 mt-0.5">Passez en Pro pour gérer un effectif illimité — 10€/mois.</p>
+          </div>
+          <button
+            onClick={() => navigate('/club/bureau')}
+            className="flex-shrink-0 bg-[#0A0A0A] text-white text-xs font-medium px-4 py-2 rounded-lg"
+          >
+            Passer Pro
+          </button>
+        </div>
+      )}
 
       {todoList.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">

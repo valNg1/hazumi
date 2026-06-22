@@ -20,6 +20,7 @@ import Bureau from './pages/club/Bureau'
 import Bibliotheque from './pages/club/Bibliotheque'
 import Onboarding from './pages/club/Onboarding'
 import Confidentialite from './pages/Confidentialite'
+import MentionsLegales from './pages/MentionsLegales'
 import ResetPassword from './pages/ResetPassword'
 import Agenda from './pages/club/Agenda'
 import MonAgenda from './pages/eleve/MonAgenda'
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="/login" element={session ? <Navigate to="/" /> : <Login />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/confidentialite" element={<Confidentialite />} />
+        <Route path="/mentions-legales" element={<MentionsLegales />} />
 
         {session ? (
           <>
