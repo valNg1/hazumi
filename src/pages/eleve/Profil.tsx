@@ -199,7 +199,25 @@ export default function Profil() {
             <span className="text-[#666666] text-sm capitalize">Ceinture {data.belt}</span>
           </div>
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex flex-col items-end gap-2">
+          {data.cotisation_paid ? (
+            <span className="text-xs px-3 py-1.5 rounded-full bg-[#0A0A0A] text-white font-medium">
+              ✦ Pro
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={handlePay}
+              disabled={paymentLoading}
+              className="flex items-center gap-1.5 bg-[#0A0A0A] hover:bg-[#222] text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors disabled:opacity-60"
+            >
+              {paymentLoading
+                ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                : '✦'
+              }
+              Passer Pro — 1€/mois
+            </button>
+          )}
           <span className={`text-xs px-3 py-1.5 rounded-full ${dossierComplet ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
             {dossierComplet ? 'Dossier complet' : 'Dossier incomplet'}
           </span>
