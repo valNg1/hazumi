@@ -145,7 +145,10 @@ export default function Profil() {
           Authorization: `Bearer ${session?.access_token}`,
           apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
         },
-        body: JSON.stringify({ amount: 12000 }),
+        body: JSON.stringify({
+          priceId: import.meta.env.VITE_STRIPE_PRICE_JUDOKA,
+          type: 'judoka',
+        }),
       })
       const json = await res.json()
       if (json.url) {
@@ -287,11 +290,11 @@ export default function Profil() {
           )}
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-[#0A0A0A]">Cotisation annuelle</p>
+              <p className="text-sm font-medium text-[#0A0A0A]">Hazumi Pro</p>
               <p className="text-xs text-[#999999] mt-0.5">
                 {data.cotisation_paid && data.cotisation_paid_at
-                  ? `Réglée le ${new Date(data.cotisation_paid_at).toLocaleDateString('fr-FR')}`
-                  : 'Paiement en ligne sécurisé par Stripe'}
+                  ? `Actif depuis le ${new Date(data.cotisation_paid_at).toLocaleDateString('fr-FR')}`
+                  : 'Abonnement 1€/mois — résiliable à tout moment'}
               </p>
             </div>
             <div className="flex items-center gap-3 flex-shrink-0">
@@ -312,7 +315,7 @@ export default function Profil() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                       </svg>
                   }
-                  Payer — 120 €
+                  Passer Pro — 1€/mois
                 </button>
               )}
             </div>

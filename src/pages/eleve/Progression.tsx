@@ -5,6 +5,7 @@ import { CURRICULUM, getCategorieLabel, getBeltIndex } from '../../lib/curriculu
 import type { Belt } from '../../types'
 import type { TechniqueStatus } from '../../lib/curriculum'
 import MesPlaylists from './MesPlaylists'
+import ProGate from '../../components/ProGate'
 import { getThumbnailUrl, getEmbedUrl, getVideoLabel, detectVideoType } from '../../lib/video'
 
 interface BibVideo {
@@ -55,17 +56,19 @@ export default function Progression() {
   const [bibVideos, setBibVideos] = useState<BibVideo[]>([])
   const [playerVideo, setPlayerVideo] = useState<BibVideo | null>(null)
   const [videoViewMode, setVideoViewMode] = useState<'grid' | 'list'>('list')
+  const [isPro, setIsPro] = useState(false)
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      const { data: judoka } = await supabase.from('judokas').select('id, belt, objectif').eq('user_id', user.id).single()
+      const { data: judoka } = await supabase.from('judokas').select('id, belt, objectif, cotisation_paid').eq('user_id', user.id).single()
       if (!judoka) { setLoading(false); return }
       setJudokaId(judoka.id)
       setCurrentBelt(judoka.belt)
       setObjectif(judoka.objectif ?? '')
       setSelectedBelt(judoka.belt)
+      setIsPro(judoka.cotisation_paid ?? false)
       const { data: items } = await supabase.from('technique_mastery').select('technique_key, status').eq('judoka_id', judoka.id)
       const map: Record<string, TechniqueStatus> = {}
       for (const item of items ?? []) map[item.technique_key] = item.status as TechniqueStatus
@@ -161,7 +164,11 @@ export default function Progression() {
         </div>
       </div>
 
-      {mode === 'playlist' && <MesPlaylists />}
+      {mode === 'playlist' && (
+        <ProGate isPro={isPro} type="judoka" feature="Mes playlists">
+          <MesPlaylists />
+        </ProGate>
+      )}
       {mode === 'grade' && <>
 
       {/* Toast encouragement */}
@@ -265,6 +272,7 @@ export default function Progression() {
           </div>
 
           {/* Techniques par catégorie */}
+          <ProGate isPro={isPro} type="judoka" feature="Suivi de progression détaillé">
           <div className="space-y-3">
             {Object.entries(byCategorie).map(([cat, techs]) => {
               const catAcquis = techs.filter(t => mastery[t.key] === 'acquis').length
@@ -328,6 +336,7 @@ export default function Progression() {
           <p className="text-xs text-[#CCCCCC] text-center mt-4">
             Cliquez sur une technique pour faire tourner son statut : À travailler → En cours → Acquis
           </p>
+          </ProGate>
 
           {bibVideos.length > 0 && (
             <div className="mt-6">

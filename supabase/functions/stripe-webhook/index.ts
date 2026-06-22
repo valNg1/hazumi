@@ -5,6 +5,10 @@ import Stripe from 'https://esm.sh/stripe@14?target=deno'
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, { apiVersion: '2023-10-16' })
 const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!
 
+function getSupabase() {
+  return createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SERVICE_ROLE_KEY')!)
+}
+
 serve(async (req) => {
   const body = await req.text()
   const sig = req.headers.get('stripe-signature')!
@@ -17,24 +21,58 @@ serve(async (req) => {
     return new Response('Webhook Error', { status: 400 })
   }
 
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as Stripe.Checkout.Session
-    if (session.payment_status !== 'paid') return new Response('ok')
+  const supabase = getSupabase()
 
-    const userId = session.metadata?.user_id
-    if (!userId) return new Response('ok')
+  // Abonnement créé ou renouvelé → activer l'accès
+  if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.created') {
+    const sub = event.data.object as Stripe.Subscription
+    const active = sub.status === 'active' || sub.status === 'trialing'
+    const customerId = sub.customer as string
+    const type = sub.metadata?.type
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
+    if (type === 'judoka') {
+      const userId = sub.metadata?.user_id
+      if (userId) {
+        await supabase.from('judokas').update({
+          cotisation_paid: active,
+          cotisation_paid_at: active ? new Date().toISOString() : null,
+          stripe_customer_id: customerId,
+          stripe_subscription_id: sub.id,
+        }).eq('user_id', userId)
+      }
+    }
 
-    await supabase.from('judokas').update({
-      cotisation_paid: true,
-      cotisation_paid_at: new Date().toISOString(),
-    }).eq('user_id', userId)
+    if (type === 'club') {
+      const clubId = sub.metadata?.club_id
+      if (clubId) {
+        await supabase.from('clubs').update({
+          plan: active ? 'pro' : 'basic',
+          stripe_customer_id: customerId,
+          stripe_subscription_id: sub.id,
+        }).eq('id', clubId)
+      }
+    }
+  }
 
-    console.log(`Cotisation marquée payée pour user ${userId}`)
+  // Abonnement annulé ou impayé → couper l'accès
+  if (event.type === 'customer.subscription.deleted') {
+    const sub = event.data.object as Stripe.Subscription
+    const type = sub.metadata?.type
+
+    if (type === 'judoka') {
+      const userId = sub.metadata?.user_id
+      if (userId) await supabase.from('judokas').update({ cotisation_paid: false }).eq('user_id', userId)
+    }
+
+    if (type === 'club') {
+      const clubId = sub.metadata?.club_id
+      if (clubId) await supabase.from('clubs').update({ plan: 'basic' }).eq('id', clubId)
+    }
+  }
+
+  // Paiement échoué → notifier (on coupe à subscription.deleted)
+  if (event.type === 'invoice.payment_failed') {
+    console.log('Paiement échoué pour customer:', (event.data.object as Stripe.Invoice).customer)
   }
 
   return new Response('ok')
