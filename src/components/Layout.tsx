@@ -113,21 +113,21 @@ export default function Layout() {
         <div className="hidden lg:flex items-center gap-3 py-3 ml-auto flex-shrink-0">
           {space === 'eleve' && (
             cotisationPaid === true ? (
-              <span className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-yellow-100 text-yellow-800">
-                ✦ Compte Pro
+              <span className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-yellow-100 text-yellow-800 whitespace-nowrap">
+                ✦ Pro
               </span>
             ) : (
               <button
                 type="button"
                 onClick={handlePay}
                 disabled={paymentLoading}
-                className="flex items-center gap-1.5 bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors disabled:opacity-60"
+                className="flex items-center gap-1.5 bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors disabled:opacity-60 whitespace-nowrap"
               >
                 {paymentLoading
                   ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
                   : '✦'
                 }
-                Passer Pro — 1€/mois
+                Pro — 1€
               </button>
             )
           )}
@@ -188,7 +188,7 @@ export default function Layout() {
                     ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
                     : '✦'
                   }
-                  Passer Pro — 1€/mois
+                  Passer Pro — 1€
                 </button>
               )
             )}
