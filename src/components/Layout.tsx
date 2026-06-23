@@ -35,16 +35,18 @@ export default function Layout() {
   const navItems = space ? NAV[space] : []
 
   useEffect(() => {
+    console.log('[Layout] Mounted - Space:', space)
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
+      console.log('[Layout] User loaded:', user.email)
       supabase.from('judokas').select('cotisation_paid').eq('user_id', user.id).single()
         .then(({ data, error }) => {
           if (error) {
-            console.log('Error loading cotisation:', error)
+            console.log('[Layout] Error loading cotisation:', error)
             setCotisationPaid(false)
           } else {
             const paid = data?.cotisation_paid ?? false
-            console.log('Cotisation paid:', paid, 'Space:', space)
+            console.log('[Layout] Cotisation loaded - paid:', paid, 'Will show Pro button:', space === 'eleve' && paid !== true)
             setCotisationPaid(paid)
           }
         })
