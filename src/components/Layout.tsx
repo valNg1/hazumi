@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabase'
 import { signOut } from '../lib/auth'
 import { clearSpace, getSpace } from '../lib/space'
 import Footer from './Footer'
@@ -29,7 +30,17 @@ export default function Layout() {
   const navigate = useNavigate()
   const space = getSpace() as 'eleve' | 'club'
   const [menuOpen, setMenuOpen] = useState(false)
+  const [cotisationPaid, setCotisationPaid] = useState<boolean | null>(null)
+  const [paymentLoading, setPaymentLoading] = useState(false)
   const navItems = NAV[space] ?? []
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase.from('judokas').select('cotisation_paid').eq('user_id', user.id).single()
+        .then(({ data }) => setCotisationPaid(data?.cotisation_paid ?? false))
+    })
+  }, [])
 
   async function handleSignOut() {
     clearSpace()
@@ -40,6 +51,31 @@ export default function Layout() {
   function switchSpace() {
     clearSpace()
     navigate('/espace')
+  }
+
+  async function handlePay() {
+    setPaymentLoading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          priceId: import.meta.env.VITE_STRIPE_PRICE_JUDOKA,
+          type: 'judoka',
+        }),
+      })
+      const json = await res.json()
+      if (json.url) {
+        window.location.href = json.url
+      }
+    } finally {
+      setPaymentLoading(false)
+    }
   }
 
   return (
@@ -66,6 +102,20 @@ export default function Layout() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-3 py-3 ml-auto flex-shrink-0">
+          {space === 'eleve' && !cotisationPaid && (
+            <button
+              type="button"
+              onClick={handlePay}
+              disabled={paymentLoading}
+              className="flex items-center gap-1.5 bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors disabled:opacity-60"
+            >
+              {paymentLoading
+                ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                : '✦'
+              }
+              Passer Pro — 1€/mois
+            </button>
+          )}
           <button
             onClick={switchSpace}
             className="flex items-center gap-1.5 text-xs text-[#666666] hover:text-white transition-colors border border-[#2A2A2A] hover:border-[#444444] rounded-full px-3 py-1.5"
@@ -106,14 +156,30 @@ export default function Layout() {
               </NavLink>
             ))}
           </nav>
-          <div className="px-4 py-3 border-t border-[#1A1A1A] flex items-center justify-between">
-            <button onClick={switchSpace} className="flex items-center gap-2 text-xs text-[#666666]">
-              <span className={`w-2 h-2 rounded-full ${space === 'eleve' ? 'bg-[#C41230]' : 'bg-blue-400'}`} />
-              {SPACE_LABEL[space]}
-            </button>
-            <button onClick={handleSignOut} className="text-xs text-[#666666] uppercase tracking-widest">
-              Déconnexion
-            </button>
+          <div className="px-4 py-3 border-t border-[#1A1A1A] space-y-2">
+            {space === 'eleve' && !cotisationPaid && (
+              <button
+                type="button"
+                onClick={handlePay}
+                disabled={paymentLoading}
+                className="w-full flex items-center justify-center gap-1.5 bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors disabled:opacity-60"
+              >
+                {paymentLoading
+                  ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                  : '✦'
+                }
+                Passer Pro — 1€/mois
+              </button>
+            )}
+            <div className="flex items-center justify-between">
+              <button onClick={switchSpace} className="flex items-center gap-2 text-xs text-[#666666]">
+                <span className={`w-2 h-2 rounded-full ${space === 'eleve' ? 'bg-[#C41230]' : 'bg-blue-400'}`} />
+                {SPACE_LABEL[space]}
+              </button>
+              <button onClick={handleSignOut} className="text-xs text-[#666666] uppercase tracking-widest">
+                Déconnexion
+              </button>
+            </div>
           </div>
         </div>
       )}
