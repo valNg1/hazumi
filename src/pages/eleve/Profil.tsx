@@ -100,7 +100,7 @@ export default function Profil() {
           cert_medical_url: judoka.cert_medical_url,
           cert_medical_ok: judoka.cert_medical_ok,
           virement_url: judoka.virement_url,
-          cotisation_paid: isBen || judoka.cotisation_paid ?? false,
+          cotisation_paid: isBen || (judoka.cotisation_paid ?? false),
           cotisation_paid_at: judoka.cotisation_paid_at,
         })
       }
