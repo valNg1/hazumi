@@ -5,7 +5,7 @@ interface ClubAccessModalProps {
   onVerified: () => void
 }
 
-export default function ClubAccessModal({ clubId, onVerified }: ClubAccessModalProps) {
+export default function ClubAccessModal({ onVerified }: ClubAccessModalProps) {
   const [numero, setNumero] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
