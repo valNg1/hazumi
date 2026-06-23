@@ -110,22 +110,14 @@ export default function Layout() {
               {item.label}
             </NavLink>
           ))}
-          {space === 'eleve' && (
-            cotisationPaid === true ? (
-              <span className="flex items-center px-3 xl:px-4 text-xs font-medium border-b-2 border-transparent text-yellow-500">
-                ✦ Compte Pro
-              </span>
-            ) : (
-              <button
-                type="button"
-                onClick={handlePay}
-                disabled={paymentLoading}
-                className="flex items-center px-3 xl:px-4 text-xs font-medium border-b-2 border-transparent hover:text-[#C41230] transition-colors text-[#666666]"
-              >
-                {paymentLoading ? '⏳' : '✦'} Passer Pro
-              </button>
-            )
-          )}
+          <button
+            type="button"
+            onClick={handlePay}
+            disabled={paymentLoading}
+            className="flex items-center px-3 xl:px-4 text-xs font-medium border-b-2 border-[#C41230] hover:text-[#C41230] transition-colors text-white bg-[#C41230] rounded"
+          >
+            TEST ✦ Pro
+          </button>
         </nav>
 
         <div className="hidden lg:flex items-center gap-3 py-3 ml-auto flex-shrink-0">
