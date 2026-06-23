@@ -38,7 +38,11 @@ export default function Layout() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
       supabase.from('judokas').select('cotisation_paid').eq('user_id', user.id).single()
-        .then(({ data }) => setCotisationPaid(data?.cotisation_paid ?? false))
+        .then(({ data }) => {
+          const paid = data?.cotisation_paid ?? false
+          console.log('Cotisation paid:', paid, 'User:', user.email)
+          setCotisationPaid(paid)
+        })
     })
   }, [])
 
@@ -102,7 +106,7 @@ export default function Layout() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-3 py-3 ml-auto flex-shrink-0">
-          {space === 'eleve' && !cotisationPaid && (
+          {space === 'eleve' && cotisationPaid !== true && (
             <button
               type="button"
               onClick={handlePay}
@@ -157,7 +161,7 @@ export default function Layout() {
             ))}
           </nav>
           <div className="px-4 py-3 border-t border-[#1A1A1A] space-y-2">
-            {space === 'eleve' && !cotisationPaid && (
+            {space === 'eleve' && cotisationPaid !== true && (
               <button
                 type="button"
                 onClick={handlePay}
