@@ -38,10 +38,15 @@ export default function Layout() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
       supabase.from('judokas').select('cotisation_paid').eq('user_id', user.id).single()
-        .then(({ data }) => {
-          const paid = data?.cotisation_paid ?? false
-          console.log('Cotisation paid:', paid, 'User:', user.email)
-          setCotisationPaid(paid)
+        .then(({ data, error }) => {
+          if (error) {
+            console.log('Error loading cotisation:', error)
+            setCotisationPaid(false)
+          } else {
+            const paid = data?.cotisation_paid ?? false
+            console.log('Cotisation paid:', paid, 'Space:', space)
+            setCotisationPaid(paid)
+          }
         })
     })
   }, [])
@@ -106,19 +111,25 @@ export default function Layout() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-3 py-3 ml-auto flex-shrink-0">
-          {space === 'eleve' && cotisationPaid !== true && (
-            <button
-              type="button"
-              onClick={handlePay}
-              disabled={paymentLoading}
-              className="flex items-center gap-1.5 bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors disabled:opacity-60"
-            >
-              {paymentLoading
-                ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
-                : '✦'
-              }
-              Passer Pro — 1€/mois
-            </button>
+          {space === 'eleve' && (
+            cotisationPaid === true ? (
+              <span className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-yellow-100 text-yellow-800">
+                ✦ Compte Pro
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={handlePay}
+                disabled={paymentLoading}
+                className="flex items-center gap-1.5 bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors disabled:opacity-60"
+              >
+                {paymentLoading
+                  ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                  : '✦'
+                }
+                Passer Pro — 1€/mois
+              </button>
+            )
           )}
           <button
             onClick={switchSpace}
@@ -161,19 +172,25 @@ export default function Layout() {
             ))}
           </nav>
           <div className="px-4 py-3 border-t border-[#1A1A1A] space-y-2">
-            {space === 'eleve' && cotisationPaid !== true && (
-              <button
-                type="button"
-                onClick={handlePay}
-                disabled={paymentLoading}
-                className="w-full flex items-center justify-center gap-1.5 bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors disabled:opacity-60"
-              >
-                {paymentLoading
-                  ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
-                  : '✦'
-                }
-                Passer Pro — 1€/mois
-              </button>
+            {space === 'eleve' && (
+              cotisationPaid === true ? (
+                <div className="w-full flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-yellow-100 text-yellow-800">
+                  ✦ Compte Pro
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handlePay}
+                  disabled={paymentLoading}
+                  className="w-full flex items-center justify-center gap-1.5 bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors disabled:opacity-60"
+                >
+                  {paymentLoading
+                    ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                    : '✦'
+                  }
+                  Passer Pro — 1€/mois
+                </button>
+              )
             )}
             <div className="flex items-center justify-between">
               <button onClick={switchSpace} className="flex items-center gap-2 text-xs text-[#666666]">
