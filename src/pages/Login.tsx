@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { signIn, signUp } from '../lib/auth'
 import { supabase } from '../lib/supabase'
-import { useClubIdentity } from '../lib/useClubIdentity'
 import Footer from '../components/Footer'
 
 type Mode = 'login' | 'signup' | 'forgot'
@@ -23,13 +22,11 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [birthDate, setBirthDate] = useState('')
-  const [clubCode, setClubCode] = useState('')
   const [privacyAccepted, setPrivacyAccepted] = useState(false)
   const [guardianConfirmed, setGuardianConfirmed] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const { logo, clubNom } = useClubIdentity()
 
   const minor = mode === 'signup' && isMinorAge(birthDate)
 
@@ -61,11 +58,6 @@ export default function Login() {
     }
 
     // signup
-    if (!clubCode.trim()) {
-      setError('Entrez le code de votre club (fourni par votre responsable).')
-      setLoading(false)
-      return
-    }
     if (!privacyAccepted) {
       setError('Vous devez accepter la politique de confidentialité.')
       setLoading(false)
@@ -73,17 +65,6 @@ export default function Login() {
     }
     if (minor && !guardianConfirmed) {
       setError('La confirmation du parent ou tuteur légal est requise pour les moins de 15 ans.')
-      setLoading(false)
-      return
-    }
-
-    const { data: clubData, error: clubError } = await supabase
-      .from('clubs')
-      .select('id')
-      .eq('code_invitation', clubCode.trim().toUpperCase())
-      .single()
-    if (clubError || !clubData) {
-      setError('Code club invalide. Vérifiez auprès de votre responsable.')
       setLoading(false)
       return
     }
@@ -100,7 +81,8 @@ export default function Login() {
         user_id: data.user.id,
         email,
         birth_date: birthDate || null,
-        club_id: clubData.id,
+        club_id: null,
+        role: 'judoka',
         is_minor: minor,
         guardian_confirmed: minor ? guardianConfirmed : false,
         privacy_accepted_at: new Date().toISOString(),
@@ -126,8 +108,7 @@ export default function Login() {
       <div className="flex-1 flex flex-col items-center justify-center w-full">
         <div className="w-full max-w-sm">
           <div className="flex flex-col items-center mb-10">
-            <img src={logo} alt={clubNom ?? 'Hazumi'} className="h-20 w-20 object-contain mb-4" />
-            {clubNom && <h1 className="text-white text-xl font-bold tracking-widest uppercase">{clubNom}</h1>}
+            <img src="/logo.png" alt="Hazumi" className="h-20 w-20 object-contain mb-4" />
           </div>
 
           {mode !== 'forgot' && (
@@ -191,13 +172,6 @@ export default function Login() {
 
               {mode === 'signup' && (
                 <>
-                  <div>
-                    <label className="block text-[#999999] text-xs uppercase tracking-widest mb-2">Code du club *</label>
-                    <input type="text" value={clubCode} onChange={e => setClubCode(e.target.value.toUpperCase())} required
-                      maxLength={6} placeholder="Ex: AB12CD"
-                      className="w-full bg-[#1A1A1A] border border-[#2A2A2A] text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#C41230] transition-colors tracking-widest font-mono" />
-                    <p className="text-[#444444] text-xs mt-1">Fourni par votre responsable de club.</p>
-                  </div>
                   <div>
                     <label className="block text-[#999999] text-xs uppercase tracking-widest mb-2">Date de naissance</label>
                     <input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)}

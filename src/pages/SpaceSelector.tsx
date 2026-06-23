@@ -10,13 +10,20 @@ export default function SpaceSelector() {
   const { logo, clubNom } = useClubIdentity()
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [userName, setUserName] = useState<string | null>(null)
+  const [role, setRole] = useState<string | null>(null)
+  const [clubId, setClubId] = useState<string | null>(null)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
-      supabase.from('judokas').select('full_name, photo_url').eq('user_id', user.id).single()
+      supabase.from('judokas').select('full_name, photo_url, role, club_id').eq('user_id', user.id).single()
         .then(({ data }) => {
-          if (data) { setPhotoUrl(data.photo_url ?? null); setUserName(data.full_name ?? null) }
+          if (data) {
+            setPhotoUrl(data.photo_url ?? null)
+            setUserName(data.full_name ?? null)
+            setRole(data.role ?? null)
+            setClubId(data.club_id ?? null)
+          }
         })
     })
   }, [])
@@ -31,7 +38,7 @@ export default function SpaceSelector() {
       <div className="flex-1 flex flex-col items-center justify-center w-full">
         <div className="w-full max-w-2xl">
           <div className="flex flex-col items-center mb-12">
-            <div className="flex items-center gap-5 mb-6">
+            <div className={`flex items-center ${clubId ? 'gap-5' : 'gap-0'} mb-6`}>
               {photoUrl ? (
                 <img src={photoUrl} alt={userName ?? ''} className="h-16 w-16 rounded-full object-cover border-2 border-[#2A2A2A]" />
               ) : (
@@ -39,13 +46,13 @@ export default function SpaceSelector() {
                   {userName ? userName[0].toUpperCase() : '?'}
                 </div>
               )}
-              <img src={logo} alt={clubNom ?? 'Hazumi'} className="h-16 w-16 object-contain" />
+              {clubId && <img src={logo} alt={clubNom ?? 'Hazumi'} className="h-16 w-16 object-contain" />}
             </div>
             {userName && <p className="text-[#666666] text-sm mb-1">Bonjour, <span className="text-white font-medium">{userName.split(' ')[0]}</span></p>}
             <p className="text-[#444444] tracking-wider text-sm">Choisissez votre espace</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className={`grid gap-6 ${role === 'judoka' ? 'grid-cols-1 max-w-sm mx-auto' : 'grid-cols-2'}`}>
             <SpaceCard
               title="Espace Élève"
               description="Ma progression, mes cours, mes entraînements"
@@ -57,17 +64,19 @@ export default function SpaceSelector() {
               }
               onClick={() => choose('eleve')}
             />
-            <SpaceCard
-              title="Espace Club"
-              description="Effectifs, planning, direction technique"
-              icon={
-                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              }
-              onClick={() => choose('club')}
-            />
+            {role !== 'judoka' && (
+              <SpaceCard
+                title="Espace Club"
+                description="Effectifs, planning, direction technique"
+                icon={
+                  <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                }
+                onClick={() => choose('club')}
+              />
+            )}
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { getSpace } from './lib/space'
 import type { Session } from '@supabase/supabase-js'
@@ -25,6 +25,21 @@ import ResetPassword from './pages/ResetPassword'
 import Agenda from './pages/club/Agenda'
 import MonAgenda from './pages/eleve/MonAgenda'
 import OnboardingJudoka from './pages/eleve/OnboardingJudoka'
+
+function ClubGuard() {
+  const [allowed, setAllowed] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) { setAllowed(false); return }
+      supabase.from('judokas').select('role').eq('user_id', user.id).single()
+        .then(({ data }) => setAllowed(data?.role === 'prof' || data?.role === 'responsable'))
+    })
+  }, [])
+
+  if (allowed === null) return null
+  return allowed ? <Outlet /> : <Navigate to="/eleve/accueil" replace />
+}
 
 function DefaultRedirect({ session: _session }: { session: Session }) {
   const space = getSpace()
@@ -70,15 +85,17 @@ export default function App() {
               <Route path="/eleve/profil" element={<Profil />} />
               <Route path="/eleve/progression" element={<Progression />} />
               <Route path="/eleve/entrainements" element={<Entrainements />} />
-              <Route path="/club/effectifs" element={<Effectifs />} />
-              <Route path="/club/effectifs/:id" element={<EleveDetail />} />
-              <Route path="/club/rapport" element={<Rapport />} />
-              <Route path="/club/professeurs" element={<Professeurs />} />
-              <Route path="/club/planning" element={<Planning />} />
-              <Route path="/club/competitions" element={<Competitions />} />
-              <Route path="/club/bureau" element={<Bureau />} />
-              <Route path="/club/bibliotheque" element={<Bibliotheque />} />
-              <Route path="/club/agenda" element={<Agenda />} />
+              <Route element={<ClubGuard />}>
+                <Route path="/club/effectifs" element={<Effectifs />} />
+                <Route path="/club/effectifs/:id" element={<EleveDetail />} />
+                <Route path="/club/rapport" element={<Rapport />} />
+                <Route path="/club/professeurs" element={<Professeurs />} />
+                <Route path="/club/planning" element={<Planning />} />
+                <Route path="/club/competitions" element={<Competitions />} />
+                <Route path="/club/bureau" element={<Bureau />} />
+                <Route path="/club/bibliotheque" element={<Bibliotheque />} />
+                <Route path="/club/agenda" element={<Agenda />} />
+              </Route>
               <Route path="/eleve/agenda" element={<MonAgenda />} />
             </Route>
             <Route path="*" element={<DefaultRedirect session={session} />} />
