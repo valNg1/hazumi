@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { getSpace } from './lib/space'
+import ClubAccessModal from './components/ClubAccessModal'
 import type { Session } from '@supabase/supabase-js'
 import Layout from './components/Layout'
 import Login from './pages/Login'
@@ -28,17 +29,52 @@ import OnboardingJudoka from './pages/eleve/OnboardingJudoka'
 
 function ClubGuard() {
   const [allowed, setAllowed] = useState<boolean | null>(null)
+  const [clubId, setClubId] = useState<string | null>(null)
+  const [showModal, setShowModal] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
+
+  const BEN_USER_ID = 'b82ef0ba-6c53-48c7-ac28-073c28fbc999'
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) { setAllowed(false); return }
-      supabase.from('judokas').select('role').eq('user_id', user.id).single()
-        .then(({ data }) => setAllowed(data?.role === 'prof' || data?.role === 'responsable'))
+      setUserId(user.id)
+
+      supabase.from('judokas').select('role, club_id').eq('user_id', user.id).single()
+        .then(({ data }) => {
+          const isProf = data?.role === 'prof' || data?.role === 'responsable'
+          const isAllowed = isProf || user.id === BEN_USER_ID
+
+          if (!isAllowed) {
+            setAllowed(false)
+            return
+          }
+
+          setClubId(data?.club_id ?? null)
+
+          if (user.id === BEN_USER_ID) {
+            setAllowed(true)
+            return
+          }
+
+          const verified = localStorage.getItem('club_numero_verified')
+          if (!verified) {
+            setShowModal(true)
+          } else {
+            setAllowed(true)
+          }
+        })
     })
   }, [])
 
   if (allowed === null) return null
-  return allowed ? <Outlet /> : <Navigate to="/eleve/accueil" replace />
+  if (!allowed) return <Navigate to="/eleve/accueil" replace />
+
+  if (showModal && userId !== BEN_USER_ID) {
+    return <ClubAccessModal clubId={clubId} onVerified={() => { setShowModal(false); setAllowed(true) }} />
+  }
+
+  return <Outlet />
 }
 
 function DefaultRedirect({ session: _session }: { session: Session }) {
