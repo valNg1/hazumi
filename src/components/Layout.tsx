@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom'
 import { useState } from 'react'
 import { signOut } from '../lib/auth'
 import { clearSpace, getSpace } from '../lib/space'
@@ -45,9 +45,9 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-[#F5F5F5] flex flex-col">
       <header className="bg-[#0A0A0A] px-4 sm:px-6 flex items-stretch sticky top-0 z-40">
-        <div className="flex items-center gap-2 sm:gap-3 py-3 mr-4 sm:mr-8 flex-shrink-0">
+        <Link to="/" className="flex items-center gap-2 sm:gap-3 py-3 mr-4 sm:mr-8 flex-shrink-0 hover:opacity-80 transition-opacity">
           <img src="/logo.png" alt="Hazumi" className="h-6 w-6 sm:h-7 sm:w-7 object-contain rounded" />
-        </div>
+        </Link>
 
         <nav className="hidden lg:flex items-stretch gap-0.5 flex-1 overflow-x-auto">
           {navItems.map(item => (
