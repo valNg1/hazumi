@@ -28,11 +28,11 @@ const SPACE_LABEL = { eleve: 'Espace Élève', club: 'Espace Club' }
 
 export default function Layout() {
   const navigate = useNavigate()
-  const space = getSpace() as 'eleve' | 'club'
+  const space = getSpace()
   const [menuOpen, setMenuOpen] = useState(false)
   const [cotisationPaid, setCotisationPaid] = useState<boolean | null>(null)
   const [paymentLoading, setPaymentLoading] = useState(false)
-  const navItems = NAV[space] ?? []
+  const navItems = space ? NAV[space] : []
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
