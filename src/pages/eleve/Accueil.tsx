@@ -82,7 +82,6 @@ export default function Accueil() {
   const navigate = useNavigate()
   const [name, setName] = useState('')
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
-  const [club, setClub] = useState('')
   const [belt, setBelt] = useState<Belt | null>(null)
   const [loading, setLoading] = useState(true)
   const [pctGrade, setPctGrade] = useState(0)
@@ -114,7 +113,6 @@ export default function Accueil() {
 
       setName(j.full_name ?? '')
       setPhotoUrl(j.photo_url ?? null)
-      setClub(j.club ?? '')
       setBelt(j.belt ?? null)
 
 
