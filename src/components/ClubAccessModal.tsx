@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 interface ClubAccessModalProps {
-  clubId: string | null
   onVerified: () => void
 }
 

@@ -29,7 +29,6 @@ import OnboardingJudoka from './pages/eleve/OnboardingJudoka'
 
 function ClubGuard() {
   const [allowed, setAllowed] = useState<boolean | null>(null)
-  const [clubId, setClubId] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
 
@@ -50,7 +49,6 @@ function ClubGuard() {
             return
           }
 
-          setClubId(data?.club_id ?? null)
 
           if (user.id === BEN_USER_ID) {
             setAllowed(true)
@@ -71,7 +69,7 @@ function ClubGuard() {
   if (!allowed) return <Navigate to="/eleve/accueil" replace />
 
   if (showModal && userId !== BEN_USER_ID) {
-    return <ClubAccessModal clubId={clubId} onVerified={() => { setShowModal(false); setAllowed(true) }} />
+    return <ClubAccessModal onVerified={() => { setShowModal(false); setAllowed(true) }} />
   }
 
   return <Outlet />
