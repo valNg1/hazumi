@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { setSpace } from '../lib/space'
 import { supabase } from '../lib/supabase'
+import { isBenDemoAccount } from '../lib/demo'
 import { useClubIdentity } from '../lib/useClubIdentity'
 import Footer from '../components/Footer'
 
@@ -12,10 +13,13 @@ export default function SpaceSelector() {
   const [userName, setUserName] = useState<string | null>(null)
   const [role, setRole] = useState<string | null>(null)
   const [clubId, setClubId] = useState<string | null>(null)
+  const [isBen, setIsBen] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return
+      const ben = await isBenDemoAccount(user.email)
+      setIsBen(ben)
       supabase.from('judokas').select('full_name, photo_url, role, club_id').eq('user_id', user.id).single()
         .then(({ data }) => {
           if (data) {
@@ -52,7 +56,7 @@ export default function SpaceSelector() {
             <p className="text-[#444444] tracking-wider text-sm">Choisissez votre espace</p>
           </div>
 
-          <div className={`grid gap-6 ${role === 'judoka' ? 'grid-cols-1 max-w-sm mx-auto' : 'grid-cols-2'}`}>
+          <div className={`grid gap-6 ${role === 'judoka' && !isBen ? 'grid-cols-1 max-w-sm mx-auto' : 'grid-cols-2'}`}>
             <SpaceCard
               title="Espace Élève"
               description="Ma progression, mes cours, mes entraînements"
@@ -64,7 +68,7 @@ export default function SpaceSelector() {
               }
               onClick={() => choose('eleve')}
             />
-            {role !== 'judoka' && (
+            {(role !== 'judoka' || isBen) && (
               <SpaceCard
                 title="Espace Club"
                 description="Effectifs, planning, direction technique"
