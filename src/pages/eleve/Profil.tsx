@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { isBenDemoAccount } from '../../lib/demo'
 import type { Belt } from '../../types'
 
 const TRANCHES: [string, number, number, string][] = [
@@ -85,6 +86,7 @@ export default function Profil() {
       const { data: judoka } = await supabase.from('judokas').select('*').eq('user_id', user.id).single()
       if (judoka) {
         setJudokaId(judoka.id)
+        const isBen = await isBenDemoAccount(judoka.email)
         setData({
           full_name: judoka.full_name ?? '',
           belt: judoka.belt ?? 'blanche',
@@ -98,7 +100,7 @@ export default function Profil() {
           cert_medical_url: judoka.cert_medical_url,
           cert_medical_ok: judoka.cert_medical_ok,
           virement_url: judoka.virement_url,
-          cotisation_paid: judoka.cotisation_paid ?? false,
+          cotisation_paid: isBen || judoka.cotisation_paid ?? false,
           cotisation_paid_at: judoka.cotisation_paid_at,
         })
       }
