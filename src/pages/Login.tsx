@@ -100,7 +100,6 @@ export default function Login() {
     setPrivacyAccepted(false)
     setGuardianConfirmed(false)
     setBirthDate('')
-    setClubCode('')
   }
 
   return (
