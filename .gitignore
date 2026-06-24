@@ -21,3 +21,8 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 .vercel
+
+# Playwright test results
+playwright-report/
+test-results/
+.playwright/
