@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 
 interface ClubForm {
@@ -189,7 +189,11 @@ export default function Onboarding() {
               <input type="checkbox" checked={dpaAccepted} onChange={e => setDpaAccepted(e.target.checked)}
                 className="mt-0.5 w-4 h-4 accent-[#C41230] flex-shrink-0" />
               <span className="text-sm text-[#333333]">
-                En tant que représentant légal de <strong>{form.nom}</strong>, j'ai lu et j'accepte le contrat de sous-traitance de données ci-dessus. J'atteste être habilité(e) à engager mon organisation.
+                En tant que représentant légal de <strong>{form.nom}</strong>, j'ai lu et j'accepte le{' '}
+                <Link to="/dpa" target="_blank" className="text-[#C41230] hover:underline">
+                  contrat de sous-traitance de données
+                </Link>
+                {' '}ci-dessus. J'atteste être habilité(e) à engager mon organisation.
               </span>
             </label>
 

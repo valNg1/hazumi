@@ -199,8 +199,8 @@ export default function Login() {
                         politique de confidentialité
                       </Link>
                       {' '}et les{' '}
-                      <Link to="/mentions-legales" target="_blank" className="text-[#C41230] hover:underline">
-                        mentions légales
+                      <Link to="/cgu" target="_blank" className="text-[#C41230] hover:underline">
+                        conditions générales d'utilisation
                       </Link>.
                     </span>
                   </label>

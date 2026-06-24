@@ -23,6 +23,8 @@ import Bibliotheque from './pages/club/Bibliotheque'
 import Onboarding from './pages/club/Onboarding'
 import Confidentialite from './pages/Confidentialite'
 import MentionsLegales from './pages/MentionsLegales'
+import CGU from './pages/CGU'
+import DPA from './pages/DPA'
 import ResetPassword from './pages/ResetPassword'
 import Agenda from './pages/club/Agenda'
 import MonAgenda from './pages/eleve/MonAgenda'
@@ -111,6 +113,8 @@ export default function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/confidentialite" element={<Confidentialite />} />
         <Route path="/mentions-legales" element={<MentionsLegales />} />
+        <Route path="/cgu" element={<CGU />} />
+        <Route path="/dpa" element={<DPA />} />
 
         {session ? (
           <>
