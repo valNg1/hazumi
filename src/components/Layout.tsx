@@ -32,7 +32,7 @@ export default function Layout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [cotisationPaid, setCotisationPaid] = useState<boolean | null>(null)
   const [paymentLoading, setPaymentLoading] = useState(false)
-  const navItems = space ? NAV[space] : []
+  const navItems = space !== null ? NAV[space as keyof typeof NAV] : []
 
   useEffect(() => {
     console.log('[Layout] Mounted - Space:', space)
@@ -138,7 +138,7 @@ export default function Layout() {
             className="flex items-center gap-1.5 text-xs text-[#666666] hover:text-white transition-colors border border-[#2A2A2A] hover:border-[#444444] rounded-full px-3 py-1.5"
           >
             <span className={`w-1.5 h-1.5 rounded-full ${space === 'eleve' ? 'bg-[#C41230]' : 'bg-blue-400'}`} />
-            {SPACE_LABEL[space]}
+            {space !== null ? SPACE_LABEL[space as keyof typeof SPACE_LABEL] : ''}
           </button>
           <button onClick={handleSignOut} className="text-[#666666] hover:text-white transition-colors" title="Se déconnecter">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -197,7 +197,7 @@ export default function Layout() {
             <div className="flex items-center justify-between">
               <button onClick={switchSpace} className="flex items-center gap-2 text-xs text-[#666666]">
                 <span className={`w-2 h-2 rounded-full ${space === 'eleve' ? 'bg-[#C41230]' : 'bg-blue-400'}`} />
-                {SPACE_LABEL[space]}
+                {space !== null ? SPACE_LABEL[space as keyof typeof SPACE_LABEL] : ''}
               </button>
               <button onClick={handleSignOut} className="text-xs text-[#666666] uppercase tracking-widest">
                 Déconnexion
