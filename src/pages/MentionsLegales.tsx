@@ -12,9 +12,10 @@ export default function MentionsLegales() {
           <Section title="Éditeur du site">
             <p>Le service Hazumi est édité par :</p>
             <p className="mt-2">
-              <strong>Valéry Nguyen-Ba</strong><br />
-              Micro-entrepreneur<br />
-              Email : contact@hazumi.app
+              <strong>DAKOTAlab (SAS)</strong><br />
+              59, rue de Ponthieu, 75008 Paris<br />
+              SIREN 951 717 925<br />
+              Email : <a href="mailto:contact@hazumi.org" className="text-[#C41230] hover:underline">contact@hazumi.org</a>
             </p>
           </Section>
 
@@ -65,7 +66,7 @@ export default function MentionsLegales() {
               <li><strong>Droit d'opposition</strong> : vous opposer au traitement de vos données</li>
             </ul>
             <p className="mt-3">
-              Pour exercer ces droits, contactez-nous à : <a href="mailto:contact@hazumi.app" className="text-[#C41230] hover:underline">contact@hazumi.app</a>
+              Pour exercer ces droits, contactez-nous à : <a href="mailto:contact@hazumi.org" className="text-[#C41230] hover:underline">contact@hazumi.org</a>
             </p>
             <p className="mt-2">
               Vous pouvez également introduire une réclamation auprès de la CNIL : <a href="https://www.cnil.fr" target="_blank" rel="noreferrer" className="text-[#C41230] hover:underline">www.cnil.fr</a>
@@ -81,7 +82,7 @@ export default function MentionsLegales() {
           <Section title="Contact">
             <p>
               Pour toute question relative à la présente politique ou à vos données personnelles :<br />
-              <a href="mailto:contact@hazumi.app" className="text-[#C41230] hover:underline">contact@hazumi.app</a>
+              <a href="mailto:contact@hazumi.org" className="text-[#C41230] hover:underline">contact@hazumi.org</a>
             </p>
           </Section>
 
