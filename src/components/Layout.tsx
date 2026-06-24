@@ -110,14 +110,6 @@ export default function Layout() {
               {item.label}
             </NavLink>
           ))}
-          <button
-            type="button"
-            onClick={handlePay}
-            disabled={paymentLoading}
-            className="flex items-center px-3 xl:px-4 text-xs font-medium border-b-2 border-[#C41230] hover:text-[#C41230] transition-colors text-white bg-[#C41230] rounded"
-          >
-            TEST ✦ Pro
-          </button>
         </nav>
 
         <div className="hidden lg:flex items-center gap-3 py-3 ml-auto flex-shrink-0">
