@@ -38,46 +38,46 @@ function ClubGuard() {
   const BEN_USER_ID = 'b82ef0ba-6c53-48c7-ac28-073c28fbc999'
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) { setAllowed(false); return }
-      setUserId(user.id)
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) { setAllowed(false); return }
+        setUserId(user.id)
 
-      const isBen = await isBenDemoAccount(user.email)
+        const isBen = await isBenDemoAccount(user.email)
 
-      supabase.from('judokas').select('role, club_id').eq('user_id', user.id).single()
-        .then(({ data, error }) => {
-          if (error) {
-            console.warn('ClubGuard: Cannot fetch judoka data:', error.message)
-            setAllowed(false)
-            return
-          }
+        const { data, error } = await supabase.from('judokas').select('role, club_id').eq('user_id', user.id).single()
 
-          const isProf = data?.role === 'prof' || data?.role === 'responsable'
-          const isAllowed = isProf || user.id === BEN_USER_ID || isBen
-
-          if (!isAllowed) {
-            setAllowed(false)
-            return
-          }
-
-
-          if (user.id === BEN_USER_ID || isBen) {
-            setAllowed(true)
-            return
-          }
-
-          const verified = localStorage.getItem('club_numero_verified')
-          if (!verified) {
-            setShowModal(true)
-          } else {
-            setAllowed(true)
-          }
-        })
-        .catch(err => {
-          console.warn('ClubGuard: Unexpected error:', err)
+        if (error) {
+          console.warn('ClubGuard: Cannot fetch judoka data:', error.message)
           setAllowed(false)
-        })
-    })
+          return
+        }
+
+        const isProf = data?.role === 'prof' || data?.role === 'responsable'
+        const isAllowed = isProf || user.id === BEN_USER_ID || isBen
+
+        if (!isAllowed) {
+          setAllowed(false)
+          return
+        }
+
+        if (user.id === BEN_USER_ID || isBen) {
+          setAllowed(true)
+          return
+        }
+
+        const verified = localStorage.getItem('club_numero_verified')
+        if (!verified) {
+          setShowModal(true)
+        } else {
+          setAllowed(true)
+        }
+      } catch (err) {
+        console.warn('ClubGuard: Unexpected error:', err)
+        setAllowed(false)
+      }
+    })()
   }, [])
 
   if (allowed === null) return null
