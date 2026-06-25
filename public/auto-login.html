@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Connexion automatique...</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background: #0A0A0A;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: white;
+    }
+    .container {
+      text-align: center;
+    }
+    .spinner {
+      border: 3px solid #C41230;
+      border-top: 3px solid transparent;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="spinner"></div>
+    <p>Connexion au compte demo...</p>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://tjcydtzgfojtdywnwkfb.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_oO9BTBfNS1bsL9X9u1iMxQ_Jn17tH2g';
+
+    const { createClient } = window.supabase;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function autoLogin() {
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: 'demo@hazumi.org',
+          password: 'demo1234'
+        });
+
+        if (error) {
+          document.body.innerHTML = `<div class="container"><p style="color: red;">❌ Erreur: ${error.message}</p></div>`;
+          return;
+        }
+
+        if (data?.session) {
+          // Attendre 1 sec puis rediriger
+          setTimeout(() => {
+            window.location.href = '/espace';
+          }, 1000);
+        }
+      } catch (err) {
+        document.body.innerHTML = `<div class="container"><p style="color: red;">❌ Erreur: ${err.message}</p></div>`;
+      }
+    }
+
+    autoLogin();
+  </script>
+</body>
+</html>
