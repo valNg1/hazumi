@@ -75,8 +75,13 @@ export default function Effectifs() {
   const [clubId, setClubId] = useState<string | null>(null)
   const [clubPlan, setClubPlan] = useState<string>('basic')
 
-  async function load() {
-    const { data } = await supabase.from('judokas').select('*').order('full_name')
+  async function load(cId: string | null) {
+    if (!cId) {
+      setJudokas([])
+      setLoading(false)
+      return
+    }
+    const { data } = await supabase.from('judokas').select('*').eq('club_id', cId).order('full_name')
     setJudokas(data ?? [])
     setLoading(false)
   }
@@ -86,13 +91,16 @@ export default function Effectifs() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         const { data: j } = await supabase.from('judokas').select('club_id').eq('user_id', user.id).single()
-        setClubId(j?.club_id ?? null)
-        if (j?.club_id) {
-          const { data: club } = await supabase.from('clubs').select('plan').eq('id', j.club_id).single()
+        const cId = j?.club_id ?? null
+        setClubId(cId)
+        if (cId) {
+          const { data: club } = await supabase.from('clubs').select('plan').eq('id', cId).single()
           setClubPlan(club?.plan ?? 'basic')
+          await load(cId)
+        } else {
+          setLoading(false)
         }
       }
-      await load()
     }
     init()
   }, [])
@@ -115,14 +123,14 @@ export default function Effectifs() {
     } else {
       await supabase.from('judokas').insert({ ...form, club_id: clubId, role: 'judoka' })
     }
-    await load()
+    await load(clubId)
     closeModal()
   }
 
   async function handleDelete(id: string) {
     if (!confirm('Supprimer cet élève ?')) return
     await supabase.from('judokas').delete().eq('id', id)
-    await load()
+    await load(clubId)
   }
 
   return (
