@@ -52,7 +52,7 @@ export default function SpaceSelector() {
               )}
               {clubId && <img src={logo} alt={clubNom ?? 'Hazumi'} className="h-16 w-16 object-contain" />}
             </div>
-            {userName && <p className="text-[#666666] text-sm mb-1">Bonjour, <span className="text-white font-medium">{userName.split(' ')[0]}</span></p>}
+            {userName && <p className="text-[#C41230] text-xl font-bold mb-2">Konnichiwa! 👋</p>}
             <p className="text-[#444444] tracking-wider text-sm">Choisissez votre espace</p>
           </div>
 

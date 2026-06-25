@@ -235,9 +235,9 @@ export default function Accueil() {
           )}
           <div>
             <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">
-              {firstName ? `Bonjour, ${firstName}` : 'Bienvenue sur Hazumi'}
+              Coup d'œil sur ta progression! 📊
             </h1>
-            <p className="text-[#999999] text-sm mt-0.5">Voici un résumé de ta progression.</p>
+            <p className="text-[#999999] text-sm mt-0.5">Découvre où tu en es.</p>
           </div>
         </div>
         <img src="/logo.png" alt="Hazumi" title="Hazumi" className="h-12 w-12 object-contain opacity-80" />
