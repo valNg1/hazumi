@@ -45,7 +45,13 @@ function ClubGuard() {
       const isBen = await isBenDemoAccount(user.email)
 
       supabase.from('judokas').select('role, club_id').eq('user_id', user.id).single()
-        .then(({ data }) => {
+        .then(({ data, error }) => {
+          if (error) {
+            console.warn('ClubGuard: Cannot fetch judoka data:', error.message)
+            setAllowed(false)
+            return
+          }
+
           const isProf = data?.role === 'prof' || data?.role === 'responsable'
           const isAllowed = isProf || user.id === BEN_USER_ID || isBen
 
@@ -66,6 +72,10 @@ function ClubGuard() {
           } else {
             setAllowed(true)
           }
+        })
+        .catch(err => {
+          console.warn('ClubGuard: Unexpected error:', err)
+          setAllowed(false)
         })
     })
   }, [])
