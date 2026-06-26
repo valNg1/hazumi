@@ -43,8 +43,10 @@ function ClubGuard() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { setAllowed(false); return }
         setUserId(user.id)
+        console.log('[ClubGuard] User:', user.email)
 
         const isBen = await isBenDemoAccount(user.email)
+        console.log('[ClubGuard] isBen:', isBen)
 
         const { data, error } = await supabase.from('judokas').select('role, club_id').eq('user_id', user.id).single()
 
@@ -55,22 +57,28 @@ function ClubGuard() {
         }
 
         const isProf = data?.role === 'prof' || data?.role === 'responsable'
+        console.log('[ClubGuard] Role:', data?.role, 'isProf:', isProf)
         const isAllowed = isProf || user.id === BEN_USER_ID || isBen
 
         if (!isAllowed) {
+          console.log('[ClubGuard] Not allowed')
           setAllowed(false)
           return
         }
 
         if (user.id === BEN_USER_ID || isBen) {
+          console.log('[ClubGuard] Granted (Ben or demo account)')
           setAllowed(true)
           return
         }
 
         const verified = localStorage.getItem('club_numero_verified')
+        console.log('[ClubGuard] Verified in localStorage:', !!verified)
         if (!verified) {
+          console.log('[ClubGuard] Showing modal')
           setShowModal(true)
         } else {
+          console.log('[ClubGuard] Granted (verified)')
           setAllowed(true)
         }
       } catch (err) {

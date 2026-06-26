@@ -65,6 +65,7 @@ function alertes(judokas: JudokaExt[]) {
 const FREE_LIMIT = 10
 
 export default function Effectifs() {
+  console.log('[Effectifs] composant monté')
   const navigate = useNavigate()
   const [judokas, setJudokas] = useState<JudokaExt[]>([])
   const [loading, setLoading] = useState(true)
