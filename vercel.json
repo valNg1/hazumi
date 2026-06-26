@@ -1,12 +1,11 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "cleanUrls": true,
-  "trailingSlash": false,
-  "routes": [
+  "cleanUrls": false,
+  "rewrites": [
     {
-      "src": "^/(?!.*\\.)(.*)",
-      "dest": "/index.html"
+      "source": "/(?!(?:manifest\\.json|favicon\\..*|sw\\.js|icons/|apple-touch-icon.*|assets/|.*\\..*)$)(.*)",
+      "destination": "/index.html"
     }
   ]
 }
