@@ -1,0 +1,10 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "^/(?!manifest\\.json$|favicon|sw\\.js$|icons/|apple-touch-icon|assets/|[^/]*\\.[^/]*).*$",
+      "destination": "/index.html"
+    }
+  ]
+}
