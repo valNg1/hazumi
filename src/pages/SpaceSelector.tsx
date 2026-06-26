@@ -20,15 +20,24 @@ export default function SpaceSelector() {
       if (!user) return
       const ben = await isBenDemoAccount(user.email)
       setIsBen(ben)
-      supabase.from('judokas').select('full_name, photo_url, role, club_id').eq('user_id', user.id).single()
-        .then(({ data }) => {
-          if (data) {
-            setPhotoUrl(data.photo_url ?? null)
-            setUserName(data.full_name ?? null)
-            setRole(data.role ?? null)
-            setClubId(data.club_id ?? null)
-          }
-        })
+
+      const { data, error } = await supabase
+        .from('judokas')
+        .select('full_name, photo_url, role, club_id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (error) {
+        console.warn('[SpaceSelector] Erreur chargement judoka:', error.message)
+        setRole(null)
+        setClubId(null)
+      } else if (data) {
+        console.log('[SpaceSelector] Judoka chargé:', data.role, 'Club:', data.club_id)
+        setPhotoUrl(data.photo_url ?? null)
+        setUserName(data.full_name ?? null)
+        setRole(data.role ?? null)
+        setClubId(data.club_id ?? null)
+      }
     })
   }, [])
 
