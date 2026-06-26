@@ -48,3 +48,19 @@ npm run dev      # Serveur de développement
 npm run build    # Build de production
 npm run preview  # Prévisualisation du build
 ```
+
+## Mode autonome (Claude)
+
+⚡ **Fonctionnement automatique** — Pas de demande de confirmation pour:
+- Modifications de fichiers (Edit, Write)
+- Commits et push sur main
+- Installations de packages (npm/pip)
+- Redéploiement en production via Vercel
+
+**Action directe + rapport** — Je fais et je dis ce que j'ai fait.
+
+**Exceptions** (confirmation requise):
+- Suppressions de données en base de données
+- Modifications de variables d'environnement (`.env`, secrets)
+
+Ce mode s'applique à cette session et toutes les suivantes.
