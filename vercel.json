@@ -1,3 +1,8 @@
 {
-  "rewrites": [{ "source": "/:path*", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "source": "/(?!manifest\\.json$|favicon|icons/|apple-touch-icon)(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
