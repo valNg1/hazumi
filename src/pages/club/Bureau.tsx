@@ -39,21 +39,36 @@ export default function Bureau() {
   const [payLoading, setPayLoading] = useState(false)
 
   async function load() {
+    console.log('[Bureau] load() appelé')
     const { data: { user } } = await supabase.auth.getUser()
-    const [{ data: crData }, { data: clubData }] = await Promise.all([
+    console.log('[Bureau] user:', user?.email)
+
+    const judokaPromise = user ? supabase.from('judokas').select('club_id').eq('user_id', user.id).single().then(async ({ data: j, error: jErr }) => {
+      console.log('[Bureau] judoka data:', j, 'error:', jErr?.message)
+      if (j?.club_id) {
+        return await supabase.from('clubs').select('*').eq('id', j.club_id).single()
+      }
+      return { data: null, error: null }
+    }) : Promise.resolve({ data: null, error: null })
+
+    const [{ data: crData }, clubDataResult] = await Promise.all([
       supabase.from('bureau_cr').select('*').order('date', { ascending: false }),
-      user ? supabase.from('judokas').select('club_id').eq('user_id', user.id).single().then(async ({ data: j }) => {
-        if (j?.club_id) {
-          return await supabase.from('clubs').select('*').eq('id', j.club_id).single()
-        }
-        return { data: null, error: null }
-      }) : Promise.resolve({ data: null, error: null }),
+      judokaPromise,
     ])
+
+    const clubData = clubDataResult && clubDataResult.data ? clubDataResult.data : null
+    const clubError = clubDataResult && clubDataResult.error ? clubDataResult.error : null
+
+    console.log('[Bureau] clubData:', clubData)
+    console.log('[Bureau] clubError:', clubError?.message)
+    console.log('[Bureau] plan reçu:', clubData?.plan)
+
     setCrs(crData ?? [])
-    if (clubData && clubData.data) {
-      setClubId(clubData.data.id)
-      setClubCode(clubData.data.code_invitation ?? null)
-      setClubPlan(clubData.data.plan ?? 'basic')
+    if (clubData) {
+      setClubId(clubData.id)
+      setClubCode(clubData.code_invitation ?? null)
+      setClubPlan(clubData.plan ?? 'basic')
+      console.log('[Bureau] clubPlan mis à jour à:', clubData.plan ?? 'basic')
     }
     setLoading(false)
   }
