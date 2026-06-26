@@ -1,6 +1,6 @@
 {
   "routes": [
-    { "src": "/manifest.json", "dest": "/manifest.json" },
+    { "src": "/app.webmanifest", "dest": "/app.webmanifest" },
     { "src": "/sw.js", "dest": "/sw.js" },
     { "src": "/favicon.ico", "dest": "/favicon.ico" },
     { "src": "/favicon.svg", "dest": "/favicon.svg" },
