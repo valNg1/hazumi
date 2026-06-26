@@ -1,9 +1,20 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "headers": [
+    {
+      "source": "/manifest.json",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
-      "source": "^(?!.*\\.(js|css|map|json|svg|png|jpg|jpeg|gif|ico|webp|woff|woff2|ttf|eot)$).*",
+      "source": "/(?!manifest\\.json|favicon|sw\\.js|icons/|apple-touch-icon|assets/)(.*)",
       "destination": "/index.html"
     }
   ]
