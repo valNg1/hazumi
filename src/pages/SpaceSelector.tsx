@@ -10,7 +10,6 @@ export default function SpaceSelector() {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [userName, setUserName] = useState<string | null>(null)
   const [role, setRole] = useState<string | null>(null)
-  const [clubId, setClubId] = useState<string | null>(null)
   const [isBen, setIsBen] = useState(false)
 
   useEffect(() => {
@@ -28,13 +27,11 @@ export default function SpaceSelector() {
       if (error) {
         console.warn('[SpaceSelector] Erreur chargement judoka:', error.message)
         setRole(null)
-        setClubId(null)
       } else if (data) {
-        console.log('[SpaceSelector] Judoka chargé:', data.role, 'Club:', data.club_id)
+        console.log('[SpaceSelector] Judoka chargé:', data.role)
         setPhotoUrl(data.photo_url ?? null)
         setUserName(data.full_name ?? null)
         setRole(data.role ?? null)
-        setClubId(data.club_id ?? null)
       }
     })
   }, [])
