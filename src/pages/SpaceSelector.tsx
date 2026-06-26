@@ -3,12 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { setSpace } from '../lib/space'
 import { supabase } from '../lib/supabase'
 import { isBenDemoAccount } from '../lib/demo'
-import { useClubIdentity } from '../lib/useClubIdentity'
 import Footer from '../components/Footer'
 
 export default function SpaceSelector() {
   const navigate = useNavigate()
-  const { logo, clubNom } = useClubIdentity()
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [userName, setUserName] = useState<string | null>(null)
   const [role, setRole] = useState<string | null>(null)
@@ -51,7 +49,7 @@ export default function SpaceSelector() {
       <div className="flex-1 flex flex-col items-center justify-center w-full">
         <div className="w-full max-w-2xl">
           <div className="flex flex-col items-center mb-12">
-            <div className={`flex items-center ${clubId ? 'gap-5' : 'gap-0'} mb-6`}>
+            <div className="flex items-center gap-0 mb-6">
               {photoUrl ? (
                 <img src={photoUrl} alt={userName ?? ''} className="h-16 w-16 rounded-full object-cover border-2 border-[#2A2A2A]" />
               ) : (
@@ -59,7 +57,6 @@ export default function SpaceSelector() {
                   {userName ? userName[0].toUpperCase() : '?'}
                 </div>
               )}
-              {clubId && <img src={logo} alt={clubNom ?? 'Hazumi'} className="h-16 w-16 object-contain" />}
             </div>
             {userName && <p className="text-[#C41230] text-xl font-bold mb-2">Konnichiwa! 👋</p>}
             <p className="text-[#444444] tracking-wider text-sm">Choisissez votre espace</p>
