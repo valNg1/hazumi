@@ -1,6 +1,5 @@
 export default function Footer({ dark = false }: { dark?: boolean }) {
   const text = dark ? 'text-[#444444]' : 'text-[#AAAAAA]'
-  const sub = dark ? 'text-[#666666]' : 'text-[#888888]'
   return (
     <footer className={`flex flex-col items-center ${text} text-xs leading-relaxed py-6`}>
       <p>Hazumi - l'Ecole du Ippon · Projeté par DAKOTAlab · <a href="mailto:contact@hazumi.org" className="hover:underline">contact@hazumi.org</a></p>
