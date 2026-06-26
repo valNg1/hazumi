@@ -65,7 +65,6 @@ function alertes(judokas: JudokaExt[]) {
 const FREE_LIMIT = 10
 
 export default function Effectifs() {
-  console.log('[Effectifs] composant monté')
   const navigate = useNavigate()
   const [judokas, setJudokas] = useState<JudokaExt[]>([])
   const [loading, setLoading] = useState(true)
@@ -83,12 +82,7 @@ export default function Effectifs() {
       setLoading(false)
       return
     }
-    console.log('[Effectifs] Loading judokas for club:', cId)
     const { data, error } = await supabase.from('judokas').select('*').eq('club_id', cId).order('full_name')
-    console.log('[Effectifs] club_id utilisé:', cId)
-    console.log('[Effectifs] résultat requête:', data)
-    console.log('[Effectifs] erreur:', error)
-    console.log('[Effectifs] Data loaded:', data?.length ?? 0, 'items. Error:', error?.message)
     if (error) {
       console.error('[Effectifs] Error loading judokas:', error)
     }
@@ -99,20 +93,15 @@ export default function Effectifs() {
   useEffect(() => {
     async function init() {
       const { data: { user } } = await supabase.auth.getUser()
-      console.log('[Effectifs] User:', user?.email)
       if (user) {
-        const { data: j, error } = await supabase.from('judokas').select('club_id').eq('user_id', user.id).single()
-        console.log('[Effectifs] Judoka data:', j, 'Error:', error)
+        const { data: j } = await supabase.from('judokas').select('club_id').eq('user_id', user.id).single()
         const cId = j?.club_id ?? null
-        console.log('[Effectifs] Club ID:', cId)
         setClubId(cId)
         if (cId) {
           const { data: club } = await supabase.from('clubs').select('plan').eq('id', cId).single()
-          console.log('[Effectifs] Club plan:', club?.plan)
           setClubPlan(club?.plan ?? 'basic')
           await load(cId)
         } else {
-          console.log('[Effectifs] No club ID, setting loading to false')
           setLoading(false)
         }
       }
