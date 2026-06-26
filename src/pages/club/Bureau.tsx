@@ -40,9 +40,8 @@ export default function Bureau() {
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
-    const [{ data: crData }, { data: judokaData }, { data: clubData }] = await Promise.all([
+    const [{ data: crData }, { data: clubData }] = await Promise.all([
       supabase.from('bureau_cr').select('*').order('date', { ascending: false }),
-      user ? supabase.from('judokas').select('club_id').eq('user_id', user.id).single() : Promise.resolve({ data: null, error: null }),
       user ? supabase.from('judokas').select('club_id').eq('user_id', user.id).single().then(async ({ data: j }) => {
         if (j?.club_id) {
           return await supabase.from('clubs').select('*').eq('id', j.club_id).single()
