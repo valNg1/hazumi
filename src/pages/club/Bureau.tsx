@@ -39,15 +39,22 @@ export default function Bureau() {
   const [payLoading, setPayLoading] = useState(false)
 
   async function load() {
-    const [{ data: crData }, { data: clubData }] = await Promise.all([
+    const { data: { user } } = await supabase.auth.getUser()
+    const [{ data: crData }, { data: judokaData }, { data: clubData }] = await Promise.all([
       supabase.from('bureau_cr').select('*').order('date', { ascending: false }),
-      supabase.from('clubs').select('*').limit(1).single(),
+      user ? supabase.from('judokas').select('club_id').eq('user_id', user.id).single() : Promise.resolve({ data: null, error: null }),
+      user ? supabase.from('judokas').select('club_id').eq('user_id', user.id).single().then(async ({ data: j }) => {
+        if (j?.club_id) {
+          return await supabase.from('clubs').select('*').eq('id', j.club_id).single()
+        }
+        return { data: null, error: null }
+      }) : Promise.resolve({ data: null, error: null }),
     ])
     setCrs(crData ?? [])
-    if (clubData) {
-      setClubId(clubData.id)
-      setClubCode(clubData.code_invitation ?? null)
-      setClubPlan(clubData.plan ?? 'basic')
+    if (clubData && clubData.data) {
+      setClubId(clubData.data.id)
+      setClubCode(clubData.data.code_invitation ?? null)
+      setClubPlan(clubData.data.plan ?? 'basic')
     }
     setLoading(false)
   }
@@ -145,7 +152,7 @@ export default function Bureau() {
               ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
               : '✦'
             }
-            Passer Pro — 10€/mois
+            Passer Pro — Contactez-nous
           </button>
         )}
       </div>
