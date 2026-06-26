@@ -1,37 +1,10 @@
 {
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/manifest.json",
-      "dest": "/manifest.json",
-      "headers": {
-        "Content-Type": "application/manifest+json"
-      }
-    },
-    {
-      "src": "/favicon.svg",
-      "dest": "/favicon.svg"
-    },
-    {
-      "src": "/icons/(.*)",
-      "dest": "/icons/$1"
-    },
-    {
-      "src": "/apple-touch-icon.png",
-      "dest": "/apple-touch-icon.png"
-    },
-    {
-      "src": "/favicon-.*\\.png",
-      "dest": "/$0"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "^(?!.*\\.(js|css|map|json|svg|png|jpg|jpeg|gif|ico|webp|woff|woff2|ttf|eot)$).*",
+      "destination": "/index.html"
     }
   ]
 }
