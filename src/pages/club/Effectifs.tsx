@@ -84,6 +84,9 @@ export default function Effectifs() {
     }
     console.log('[Effectifs] Loading judokas for club:', cId)
     const { data, error } = await supabase.from('judokas').select('*').eq('club_id', cId).order('full_name')
+    console.log('[Effectifs] club_id utilisé:', cId)
+    console.log('[Effectifs] résultat requête:', data)
+    console.log('[Effectifs] erreur:', error)
     console.log('[Effectifs] Data loaded:', data?.length ?? 0, 'items. Error:', error?.message)
     if (error) {
       console.error('[Effectifs] Error loading judokas:', error)
