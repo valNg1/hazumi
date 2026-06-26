@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 
 interface CR {
@@ -33,14 +33,10 @@ export default function Bureau() {
   const [selected, setSelected] = useState<CR | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [clubId, setClubId] = useState<string | null>(null)
-  const [clubNom, setClubNom] = useState('')
-  const [clubLogo, setClubLogo] = useState<string | null>(null)
   const [clubCode, setClubCode] = useState<string | null>(null)
   const [codeCopied, setCodeCopied] = useState(false)
-  const [uploadingLogo, setUploadingLogo] = useState(false)
   const [clubPlan, setClubPlan] = useState<string>('basic')
   const [payLoading, setPayLoading] = useState(false)
-  const logoInputRef = useRef<HTMLInputElement>(null)
 
   async function load() {
     const [{ data: crData }, { data: clubData }] = await Promise.all([
@@ -50,8 +46,6 @@ export default function Bureau() {
     setCrs(crData ?? [])
     if (clubData) {
       setClubId(clubData.id)
-      setClubNom(clubData.nom)
-      setClubLogo(clubData.logo_url)
       setClubCode(clubData.code_invitation ?? null)
       setClubPlan(clubData.plan ?? 'basic')
     }
@@ -96,25 +90,6 @@ export default function Bureau() {
   }
 
   useEffect(() => { load() }, [])
-
-  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploadingLogo(true)
-    const ext = file.name.split('.').pop()
-    const path = `club/logo.${ext}`
-    const { error: upErr } = await supabase.storage.from('club').upload(path, file, { upsert: true })
-    if (upErr) { alert(`Erreur upload : ${upErr.message}`); setUploadingLogo(false); return }
-    const { data: { publicUrl } } = supabase.storage.from('club').getPublicUrl(path)
-    if (clubId) {
-      await supabase.from('clubs').update({ logo_url: publicUrl }).eq('id', clubId)
-    } else {
-      const { data } = await supabase.from('clubs').insert({ nom: clubNom || 'Mon club', logo_url: publicUrl }).select().single()
-      if (data) setClubId(data.id)
-    }
-    setClubLogo(publicUrl)
-    setUploadingLogo(false)
-  }
 
   async function handleSave(form: FormData) {
     if (selected) {
@@ -271,51 +246,6 @@ export default function Bureau() {
       {showModal && (
         <CRModal initial={selected} onSave={handleSave} onClose={() => { setShowModal(false); setSelected(null) }} />
       )}
-    </div>
-  )
-}
-
-function NomClubEditor({ clubId, clubNom, onSaved }: { clubId: string | null; clubNom: string; onSaved: (nom: string) => void }) {
-  const [editing, setEditing] = useState(false)
-  const [value, setValue] = useState(clubNom)
-  const [saving, setSaving] = useState(false)
-
-  async function save() {
-    if (!value.trim()) return
-    setSaving(true)
-    if (clubId) {
-      await supabase.from('clubs').update({ nom: value.trim() }).eq('id', clubId)
-    } else {
-      await supabase.from('clubs').insert({ nom: value.trim() })
-    }
-    onSaved(value.trim())
-    setSaving(false)
-    setEditing(false)
-  }
-
-  if (editing) {
-    return (
-      <div className="flex items-center gap-2">
-        <input
-          autoFocus
-          value={value}
-          onChange={e => setValue(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false) }}
-          className="text-sm font-semibold text-[#0A0A0A] border-b border-[#C41230] bg-transparent outline-none flex-1"
-        />
-        <button onClick={save} disabled={saving} className="text-xs text-[#C41230] font-medium hover:underline disabled:opacity-50">
-          {saving ? '…' : 'OK'}
-        </button>
-        <button onClick={() => setEditing(false)} className="text-xs text-[#999999] hover:underline">Annuler</button>
-      </div>
-    )
-  }
-  return (
-    <div className="flex items-center gap-2 group">
-      <p className="text-sm font-semibold text-[#0A0A0A]">{clubNom || 'Nom du club'}</p>
-      <button onClick={() => { setValue(clubNom); setEditing(true) }} className="text-xs text-[#CCCCCC] hover:text-[#C41230] opacity-0 group-hover:opacity-100 transition-opacity">
-        Modifier
-      </button>
     </div>
   )
 }
