@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { isBenDemoAccount } from '../../lib/demo'
 import type { Belt } from '../../types'
 
 const TRANCHES: [string, number, number, string][] = [
@@ -40,7 +39,6 @@ const BELTS: { value: Belt; label: string; color: string }[] = [
 interface ProfilData {
   full_name: string
   belt: Belt
-  club: string
   birth_date: string
   license_number: string
   email: string
@@ -49,13 +47,11 @@ interface ProfilData {
   photo_url?: string
   cert_medical_url?: string
   cert_medical_ok?: boolean
-  virement_url?: string
-  cotisation_paid?: boolean
-  cotisation_paid_at?: string
+  subscription_active?: boolean
 }
 
 const EMPTY: ProfilData = {
-  full_name: '', belt: 'blanche', club: '', birth_date: '',
+  full_name: '', belt: 'blanche', birth_date: '',
   license_number: '', email: '', phone: '', objectif: '',
 }
 
@@ -73,7 +69,7 @@ export default function Profil() {
 
   useEffect(() => {
     // Retour depuis Stripe Checkout
-    if (searchParams.get('paid') === '1') {
+    if (searchParams.get('payment') === 'success') {
       setJustPaid(true)
       setSearchParams({}, { replace: true })
     }
@@ -86,11 +82,9 @@ export default function Profil() {
       const { data: judoka } = await supabase.from('judokas').select('*').eq('user_id', user.id).single()
       if (judoka) {
         setJudokaId(judoka.id)
-        const isBen = await isBenDemoAccount(judoka.email)
         setData({
           full_name: judoka.full_name ?? '',
           belt: judoka.belt ?? 'blanche',
-          club: judoka.club ?? '',
           birth_date: judoka.birth_date ?? '',
           license_number: judoka.license_number ?? '',
           email: judoka.email ?? '',
@@ -99,9 +93,7 @@ export default function Profil() {
           photo_url: judoka.photo_url,
           cert_medical_url: judoka.cert_medical_url,
           cert_medical_ok: judoka.cert_medical_ok,
-          virement_url: judoka.virement_url,
-          cotisation_paid: isBen || (judoka.cotisation_paid ?? false),
-          cotisation_paid_at: judoka.cotisation_paid_at,
+          subscription_active: judoka.subscription_active ?? false,
         })
       }
       setLoading(false)
@@ -166,7 +158,7 @@ export default function Profil() {
   }
 
   const currentBelt = BELTS.find(b => b.value === data.belt)
-  const dossierComplet = !!data.cert_medical_url && !!data.cotisation_paid && !!data.full_name && !!data.birth_date
+  const dossierComplet = !!data.cert_medical_url && !!data.subscription_active && !!data.full_name && !!data.birth_date
 
   if (loading) return <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
 
@@ -202,7 +194,7 @@ export default function Profil() {
           </div>
         </div>
         <div className="ml-auto flex flex-col items-end gap-2">
-          {data.cotisation_paid ? (
+          {data.subscription_active ? (
             <span className="text-xs px-3 py-1.5 rounded-full bg-[#0A0A0A] text-white font-medium">
               ✦ Pro
             </span>
@@ -243,10 +235,6 @@ export default function Profil() {
             <Field label="Téléphone">
               <input type="tel" value={data.phone} onChange={e => setData({ ...data, phone: e.target.value })}
                 placeholder="06 00 00 00 00" className={inputClass} />
-            </Field>
-            <Field label="Club">
-              <input type="text" value={data.club} onChange={e => setData({ ...data, club: e.target.value })}
-                placeholder="Nom de votre club" className={inputClass} />
             </Field>
             <Field label="N° de licence FFJDA">
               <input type="text" value={data.license_number} onChange={e => setData({ ...data, license_number: e.target.value })}
@@ -312,13 +300,13 @@ export default function Profil() {
             <div>
               <p className="text-sm font-medium text-[#0A0A0A]">Hazumi Pro</p>
               <p className="text-xs text-[#999999] mt-0.5">
-                {data.cotisation_paid && data.cotisation_paid_at
-                  ? `Actif depuis le ${new Date(data.cotisation_paid_at).toLocaleDateString('fr-FR')}`
+                {data.subscription_active
+                  ? 'Abonnement actif'
                   : 'Abonnement 1€/mois — résiliable à tout moment'}
               </p>
             </div>
             <div className="flex items-center gap-3 flex-shrink-0">
-              {data.cotisation_paid ? (
+              {data.subscription_active ? (
                 <span className="text-xs px-3 py-1.5 rounded-full bg-green-50 text-green-700 font-medium">
                   Payée ✓
                 </span>

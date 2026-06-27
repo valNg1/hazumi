@@ -34,10 +34,9 @@ serve(async (req) => {
       const userId = sub.metadata?.user_id
       if (userId) {
         await supabase.from('judokas').update({
-          cotisation_paid: active,
-          cotisation_paid_at: active ? new Date().toISOString() : null,
+          subscription_active: active,
+          subscription_expires_at: active ? null : new Date().toISOString(),
           stripe_customer_id: customerId,
-          stripe_subscription_id: sub.id,
         }).eq('user_id', userId)
       }
     }
@@ -61,7 +60,7 @@ serve(async (req) => {
 
     if (type === 'judoka') {
       const userId = sub.metadata?.user_id
-      if (userId) await supabase.from('judokas').update({ cotisation_paid: false }).eq('user_id', userId)
+      if (userId) await supabase.from('judokas').update({ subscription_active: false }).eq('user_id', userId)
     }
 
     if (type === 'club') {

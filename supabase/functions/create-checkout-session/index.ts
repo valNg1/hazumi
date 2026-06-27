@@ -31,44 +31,21 @@ serve(async (req) => {
     let metadata: Record<string, string> = { user_id: user.id, type }
 
     if (type === 'judoka') {
-      const { data: judoka } = await supabase.from('judokas').select('id, full_name, email, stripe_customer_id').eq('user_id', user.id).single()
-      if (judoka?.email) customerEmail = judoka.email
-      metadata.judoka_id = judoka?.id ?? ''
+      const { data: judoka } = await supabase.from('judokas').select('id, stripe_customer_id').eq('user_id', user.id).single()
+      if (!judoka) return new Response(JSON.stringify({ error: 'Judoka introuvable' }), { status: 400, headers: corsHeaders })
+      metadata.judoka_id = judoka.id
 
-      // Réutiliser le customer Stripe existant si dispo
       const sessionParams: Stripe.Checkout.SessionCreateParams = {
         mode: 'subscription',
         line_items: [{ price: priceId, quantity: 1 }],
         metadata,
-        success_url: `${origin}/eleve/profil?paid=1`,
-        cancel_url: `${origin}/eleve/profil?cancelled=1`,
+        success_url: `${origin}/eleve/accueil?payment=success`,
+        cancel_url: `${origin}/eleve/accueil?payment=cancelled`,
       }
-      if (judoka?.stripe_customer_id) {
+      if (judoka.stripe_customer_id) {
         sessionParams.customer = judoka.stripe_customer_id
       } else {
-        sessionParams.customer_email = customerEmail
-      }
-      const session = await stripe.checkout.sessions.create(sessionParams)
-      return new Response(JSON.stringify({ url: session.url }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-    }
-
-    if (type === 'club') {
-      const { data: judoka } = await supabase.from('judokas').select('club_id').eq('user_id', user.id).single()
-      if (!judoka?.club_id) return new Response(JSON.stringify({ error: 'Club introuvable' }), { status: 400, headers: corsHeaders })
-      const { data: club } = await supabase.from('clubs').select('id, stripe_customer_id').eq('id', judoka.club_id).single()
-      metadata.club_id = club?.id ?? ''
-
-      const sessionParams: Stripe.Checkout.SessionCreateParams = {
-        mode: 'subscription',
-        line_items: [{ price: priceId, quantity: 1 }],
-        metadata,
-        success_url: `${origin}/club/bureau?paid=1`,
-        cancel_url: `${origin}/club/bureau?cancelled=1`,
-      }
-      if (club?.stripe_customer_id) {
-        sessionParams.customer = club.stripe_customer_id
-      } else {
-        sessionParams.customer_email = customerEmail
+        sessionParams.customer_email = user.email ?? customerEmail
       }
       const session = await stripe.checkout.sessions.create(sessionParams)
       return new Response(JSON.stringify({ url: session.url }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })

@@ -60,7 +60,7 @@ export default function Progression() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      const { data: judoka } = await supabase.from('judokas').select('id, belt, objectif, cotisation_paid').eq('user_id', user.id).single()
+      const { data: judoka } = await supabase.from('judokas').select('id, belt, objectif').eq('user_id', user.id).single()
       if (!judoka) { setLoading(false); return }
       setJudokaId(judoka.id)
       setCurrentBelt(judoka.belt)
