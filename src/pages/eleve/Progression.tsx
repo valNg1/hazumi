@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { isBenDemoAccount } from '../../lib/demo'
 import { CURRICULUM, getCategorieLabel, getBeltIndex } from '../../lib/curriculum'
 import type { Belt } from '../../types'
 import type { TechniqueStatus } from '../../lib/curriculum'
@@ -56,7 +55,6 @@ export default function Progression() {
   const [bibVideos, setBibVideos] = useState<BibVideo[]>([])
   const [playerVideo, setPlayerVideo] = useState<BibVideo | null>(null)
   const [videoViewMode, setVideoViewMode] = useState<'grid' | 'list'>('list')
-  const [isPro, setIsPro] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -68,8 +66,6 @@ export default function Progression() {
       setCurrentBelt(judoka.belt)
       setObjectif(judoka.objectif ?? '')
       setSelectedBelt(judoka.belt)
-      const isBen = await isBenDemoAccount(user.email)
-      setIsPro(isBen || (judoka.cotisation_paid ?? false))
       const { data: items } = await supabase.from('technique_mastery').select('technique_key, status').eq('judoka_id', judoka.id)
       const map: Record<string, TechniqueStatus> = {}
       for (const item of items ?? []) map[item.technique_key] = item.status as TechniqueStatus
