@@ -34,32 +34,7 @@ export default function Layout() {
     setSpace('eleve')
   }
   const [menuOpen, setMenuOpen] = useState(false)
-  const [cotisationPaid, setCotisationPaid] = useState<boolean | null>(null)
-  const [paymentLoading, setPaymentLoading] = useState(false)
-  const [isAdmin, setIsAdmin] = useState(false)
   const navItems = space !== null ? NAV[space as keyof typeof NAV] : []
-
-  useEffect(() => {
-    console.log('[Layout] Mounted - Space:', space)
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return
-      console.log('[Layout] User loaded:', user.email)
-      supabase.from('judokas').select('cotisation_paid, role').eq('user_id', user.id).single()
-        .then(({ data, error }) => {
-          if (error) {
-            console.log('[Layout] Error loading cotisation:', error)
-            setCotisationPaid(false)
-            setIsAdmin(false)
-          } else {
-            const paid = data?.cotisation_paid ?? false
-            const admin = data?.role === 'admin'
-            console.log('[Layout] Cotisation loaded - paid:', paid, 'Will show Pro button:', space === 'eleve' && paid !== true)
-            setCotisationPaid(paid)
-            setIsAdmin(admin)
-          }
-        })
-    })
-  }, [])
 
   async function handleSignOut() {
     clearSpace()
@@ -70,31 +45,6 @@ export default function Layout() {
   function switchSpace() {
     clearSpace()
     navigate('/espace')
-  }
-
-  async function handlePay() {
-    setPaymentLoading(true)
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({
-          priceId: import.meta.env.VITE_STRIPE_PRICE_JUDOKA,
-          type: 'judoka',
-        }),
-      })
-      const json = await res.json()
-      if (json.url) {
-        window.location.href = json.url
-      }
-    } finally {
-      setPaymentLoading(false)
-    }
   }
 
   return (
@@ -121,34 +71,6 @@ export default function Layout() {
         </nav>
 
         <div className="flex items-center gap-3 py-3 ml-auto flex-shrink-0">
-          {isAdmin && (
-            <button
-              onClick={() => navigate('/admin/dashboard')}
-              className="px-3 py-2 text-xs bg-[#C41230] hover:bg-[#9B0E25] text-white rounded font-semibold transition-colors"
-            >
-              Dashboard Admin
-            </button>
-          )}
-          {space === 'eleve' && (
-            cotisationPaid === true ? (
-              <span className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-yellow-100 text-yellow-800 whitespace-nowrap">
-                ✦ Pro
-              </span>
-            ) : (
-              <button
-                type="button"
-                onClick={handlePay}
-                disabled={paymentLoading}
-                className="flex items-center gap-1.5 bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors disabled:opacity-60 whitespace-nowrap"
-              >
-                {paymentLoading
-                  ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
-                  : '✦'
-                }
-                Pro — 1€
-              </button>
-            )
-          )}
           <button
             onClick={switchSpace}
             className="flex items-center gap-1.5 text-xs text-[#666666] hover:text-white transition-colors border border-[#2A2A2A] hover:border-[#444444] rounded-full px-3 py-1.5"
@@ -190,26 +112,6 @@ export default function Layout() {
             ))}
           </nav>
           <div className="px-4 py-3 border-t border-[#1A1A1A] space-y-2">
-            {space === 'eleve' && (
-              cotisationPaid === true ? (
-                <div className="w-full flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-yellow-100 text-yellow-800">
-                  ✦ Compte Pro
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handlePay}
-                  disabled={paymentLoading}
-                  className="w-full flex items-center justify-center gap-1.5 bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors disabled:opacity-60"
-                >
-                  {paymentLoading
-                    ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
-                    : '✦'
-                  }
-                  Passer Pro — 1€
-                </button>
-              )
-            )}
             <div className="flex items-center justify-between">
               <button onClick={switchSpace} className="flex items-center gap-2 text-xs text-[#666666]">
                 <span className={`w-2 h-2 rounded-full ${space === 'eleve' ? 'bg-[#C41230]' : 'bg-blue-400'}`} />

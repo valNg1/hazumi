@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import type { Session } from '@supabase/supabase-js'
 import Layout from './components/Layout'
+import AdminLayout from './components/AdminLayout'
 import Login from './pages/Login'
 import Accueil from './pages/eleve/Accueil'
 import Profil from './pages/eleve/Profil'
@@ -16,6 +17,7 @@ import CGU from './pages/CGU'
 import DPA from './pages/DPA'
 import ResetPassword from './pages/ResetPassword'
 import AdminDashboard from './pages/admin/Dashboard'
+import AdminMessages from './pages/admin/Messages'
 import AdminSetup from './pages/admin/Setup'
 
 function SmartRedirect() {
@@ -89,7 +91,10 @@ export default function App() {
         {session ? (
           <>
             <Route path="/eleve/onboarding" element={<OnboardingJudoka />} />
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route element={<AdminLayout />}>
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/messages/:judokaId" element={<AdminMessages />} />
+            </Route>
             <Route element={<Layout />}>
               <Route path="/eleve/accueil" element={<Accueil />} />
               <Route path="/eleve/profil" element={<Profil />} />

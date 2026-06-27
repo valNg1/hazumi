@@ -11,30 +11,19 @@ interface Judoka {
   birth_date: string | null
   subscription_active: boolean
   subscription_expires_at: string | null
-  stripe_customer_id: string | null
-  role: string
-}
-
-interface AdminUser {
-  id: string
-  role: string
 }
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const [judokas, setJudokas] = useState<Judoka[]>([])
-  const [adminUser, setAdminUser] = useState<AdminUser | null>(null)
   const [loading, setLoading] = useState(true)
-  const [selectedJudoka, setSelectedJudoka] = useState<Judoka | null>(null)
-  const [subscriptionExpiry, setSubscriptionExpiry] = useState('')
-  const [actionLoading, setActionLoading] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [hasAccess, setHasAccess] = useState(false)
 
   useEffect(() => {
-    loadAdminCheck()
+    loadData()
   }, [])
 
-  async function loadAdminCheck() {
+  async function loadData() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       navigate('/login')
@@ -43,239 +32,121 @@ export default function AdminDashboard() {
 
     const { data: judoka } = await supabase
       .from('judokas')
-      .select('id, role')
+      .select('role')
       .eq('user_id', user.id)
       .single()
 
     if (!judoka || judoka.role !== 'admin') {
-      setMessage({ type: 'error', text: 'Accès refusé. Vous devez être admin.' })
       setLoading(false)
       return
     }
 
-    setAdminUser(judoka)
-    loadJudokas()
-  }
+    setHasAccess(true)
 
-  async function loadJudokas() {
     const { data, error } = await supabase
       .from('judokas')
-      .select('id, user_id, first_name, last_name, email, birth_date, subscription_active, subscription_expires_at, stripe_customer_id, role')
+      .select('id, user_id, first_name, last_name, email, birth_date, subscription_active, subscription_expires_at')
       .eq('role', 'judoka')
       .order('first_name')
 
-    if (error) {
-      setMessage({ type: 'error', text: `Erreur : ${error.message}` })
-    } else {
-      setJudokas(data || [])
+    if (!error && data) {
+      setJudokas(data)
     }
     setLoading(false)
   }
 
-  async function activateSubscription(judoka: Judoka) {
-    if (!subscriptionExpiry) {
-      setMessage({ type: 'error', text: 'Veuillez sélectionner une date d\'expiration' })
-      return
-    }
-
-    setActionLoading(true)
-    const { error } = await supabase
-      .from('judokas')
-      .update({
-        subscription_active: true,
-        subscription_expires_at: new Date(subscriptionExpiry).toISOString(),
-      })
-      .eq('id', judoka.id)
-
-    if (error) {
-      setMessage({ type: 'error', text: `Erreur : ${error.message}` })
-    } else {
-      setMessage({ type: 'success', text: 'Abonnement activé !' })
-      setSubscriptionExpiry('')
-      setSelectedJudoka(null)
-      loadJudokas()
-    }
-    setActionLoading(false)
-  }
-
-  async function revokeSubscription(judoka: Judoka) {
-    setActionLoading(true)
-    const { error } = await supabase
-      .from('judokas')
-      .update({
-        subscription_active: false,
-        subscription_expires_at: null,
-      })
-      .eq('id', judoka.id)
-
-    if (error) {
-      setMessage({ type: 'error', text: `Erreur : ${error.message}` })
-    } else {
-      setMessage({ type: 'success', text: 'Abonnement révoqué.' })
-      loadJudokas()
-    }
-    setActionLoading(false)
-  }
-
-  async function generatePaymentLink(judoka: Judoka) {
-    if (!subscriptionExpiry) {
-      setMessage({ type: 'error', text: 'Veuillez sélectionner une date d\'expiration' })
-      return
-    }
-
-    setActionLoading(true)
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({
-          priceId: import.meta.env.VITE_STRIPE_PRICE_JUDOKA,
-          type: 'judoka',
-          judokaId: judoka.id,
-        }),
-      })
-      const json = await res.json()
-      if (json.error) {
-        setMessage({ type: 'error', text: `Erreur Stripe : ${json.error}` })
-      } else if (json.url) {
-        const link = json.url
-        navigator.clipboard.writeText(link)
-        setMessage({ type: 'success', text: 'Lien copié dans le presse-papiers !' })
-        setSubscriptionExpiry('')
-        setSelectedJudoka(null)
-      }
-    } catch (err) {
-      setMessage({ type: 'error', text: `Erreur : ${String(err)}` })
-    }
-    setActionLoading(false)
-  }
-
-  if (!adminUser) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4">
-        <div className="max-w-md text-center">
-          <p className="text-white mb-4">
-            {loading ? 'Vérification...' : 'Accès refusé'}
-          </p>
-          {message && (
-            <div className={`p-3 rounded text-sm ${message.type === 'error' ? 'bg-red-900 text-white' : 'bg-green-900 text-white'}`}>
-              {message.text}
-            </div>
-          )}
-        </div>
+      <div className="flex items-center justify-center h-96">
+        <div className="w-6 h-6 border-2 border-[#C41230] border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (!hasAccess) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+        <p className="text-red-800 font-semibold">Accès refusé</p>
+        <p className="text-red-600 text-sm mt-2">Vous devez être admin pour accéder à cette page.</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] py-8 px-4">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-white mb-2">Dashboard Admin</h1>
-        <p className="text-[#999999] mb-6">Gestion des abonnements</p>
+    <div>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-[#0A0A0A] mb-1">Dashboard Admin</h1>
+        <p className="text-[#666666]">Gestion des élèves et des interactions</p>
+      </div>
 
-        {message && (
-          <div className={`p-4 rounded-lg mb-6 ${message.type === 'error' ? 'bg-red-900/30 border border-red-700 text-red-200' : 'bg-green-900/30 border border-green-700 text-green-200'}`}>
-            {message.text}
+      {/* Statistiques */}
+      <div className="bg-white rounded-lg p-6 mb-8 border border-[#E5E5E5] shadow-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <p className="text-[#999999] text-sm uppercase tracking-widest mb-1">Total des élèves</p>
+            <p className="text-4xl font-bold text-[#0A0A0A]">{judokas.length}</p>
           </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Liste des judokas */}
-          <div className="lg:col-span-2 bg-[#1a1a1a] rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Judokas ({judokas.length})</h2>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {judokas.map(judoka => (
-                <div
-                  key={judoka.id}
-                  onClick={() => setSelectedJudoka(judoka)}
-                  className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                    selectedJudoka?.id === judoka.id
-                      ? 'bg-[#C41230] text-white'
-                      : 'bg-[#0A0A0A] text-white hover:bg-[#333333]'
-                  }`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-semibold">{judoka.first_name} {judoka.last_name}</p>
-                      <p className="text-xs opacity-75">{judoka.email}</p>
-                    </div>
-                    <div className="text-right text-xs">
-                      {judoka.subscription_active ? (
-                        <span className="bg-green-600 px-2 py-1 rounded">Actif</span>
-                      ) : (
-                        <span className="bg-gray-600 px-2 py-1 rounded">Inactif</span>
-                      )}
-                    </div>
-                  </div>
-                  {judoka.subscription_expires_at && (
-                    <p className="text-xs mt-2 opacity-75">
-                      Expire: {new Date(judoka.subscription_expires_at).toLocaleDateString('fr-FR')}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Formulaire d'action */}
-          <div className="bg-[#1a1a1a] rounded-lg p-6 h-fit">
-            <h2 className="text-xl font-semibold text-white mb-4">Actions</h2>
-            {selectedJudoka ? (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-white font-semibold mb-2">{selectedJudoka.first_name} {selectedJudoka.last_name}</p>
-                  <p className="text-[#999999] text-sm mb-4">{selectedJudoka.email}</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs uppercase tracking-widest text-[#999999] mb-2">
-                    Date d'expiration
-                  </label>
-                  <input
-                    type="date"
-                    value={subscriptionExpiry}
-                    onChange={(e) => setSubscriptionExpiry(e.target.value)}
-                    className="w-full bg-[#0A0A0A] border border-[#E5E5E5] rounded px-3 py-2 text-white text-sm"
-                  />
-                </div>
-
-                {selectedJudoka.subscription_active ? (
-                  <button
-                    onClick={() => revokeSubscription(selectedJudoka)}
-                    disabled={actionLoading}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded text-sm font-semibold disabled:opacity-50"
-                  >
-                    {actionLoading ? '…' : 'Révoquer abonnement'}
-                  </button>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => activateSubscription(selectedJudoka)}
-                      disabled={actionLoading || !subscriptionExpiry}
-                      className="w-full bg-[#C41230] hover:bg-[#9B0E25] text-white py-2 rounded text-sm font-semibold disabled:opacity-50"
-                    >
-                      {actionLoading ? '…' : 'Activer abonnement'}
-                    </button>
-                    <button
-                      onClick={() => generatePaymentLink(selectedJudoka)}
-                      disabled={actionLoading || !subscriptionExpiry}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded text-sm font-semibold disabled:opacity-50"
-                    >
-                      {actionLoading ? '…' : 'Copier lien Stripe'}
-                    </button>
-                  </>
-                )}
-              </div>
-            ) : (
-              <p className="text-[#999999] text-sm">Sélectionnez un judoka</p>
-            )}
+          <div>
+            <p className="text-[#999999] text-sm uppercase tracking-widest mb-1">Abonnés actifs</p>
+            <p className="text-4xl font-bold text-[#C41230]">{judokas.filter(j => j.subscription_active).length}</p>
           </div>
         </div>
+      </div>
+
+      {/* Liste des judokas */}
+      <div className="bg-white rounded-lg border border-[#E5E5E5] shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-[#F5F5F5] border-b border-[#E5E5E5]">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[#666666] uppercase tracking-widest">Nom</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[#666666] uppercase tracking-widest">Email</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[#666666] uppercase tracking-widest">Abonnement</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[#666666] uppercase tracking-widest">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#E5E5E5]">
+              {judokas.map(judoka => (
+                <tr key={judoka.id} className="hover:bg-[#F5F5F5] transition-colors">
+                  <td className="px-6 py-4 text-sm font-medium text-[#0A0A0A]">
+                    {judoka.first_name} {judoka.last_name}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-[#666666]">{judoka.email}</td>
+                  <td className="px-6 py-4 text-sm">
+                    <div className="flex flex-col gap-1">
+                      <span className={`inline-flex w-fit px-2 py-1 rounded text-xs font-medium ${
+                        judoka.subscription_active
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {judoka.subscription_active ? '✓ Actif' : 'Inactif'}
+                      </span>
+                      {judoka.subscription_expires_at && (
+                        <span className="text-xs text-[#999999]">
+                          Expire: {new Date(judoka.subscription_expires_at).toLocaleDateString('fr-FR')}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm">
+                    <button
+                      onClick={() => navigate(`/admin/messages/${judoka.id}`)}
+                      className="px-3 py-1.5 bg-[#C41230] hover:bg-[#9B0E25] text-white rounded text-xs font-semibold transition-colors"
+                    >
+                      Messagerie
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {judokas.length === 0 && (
+          <div className="px-6 py-12 text-center">
+            <p className="text-[#999999]">Aucun élève inscrit</p>
+          </div>
+        )}
       </div>
     </div>
   )
