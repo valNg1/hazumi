@@ -6,29 +6,18 @@ import Footer from '../components/Footer'
 
 type Mode = 'login' | 'signup' | 'forgot'
 
-function isMinorAge(birthDate: string): boolean {
-  if (!birthDate) return false
-  const birth = new Date(birthDate)
-  const now = new Date()
-  let age = now.getFullYear() - birth.getFullYear()
-  const m = now.getMonth() - birth.getMonth()
-  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--
-  return age < 15
-}
-
 export default function Login() {
   const navigate = useNavigate()
   const [mode, setMode] = useState<Mode>('login')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [birthDate, setBirthDate] = useState('')
   const [privacyAccepted, setPrivacyAccepted] = useState(false)
-  const [guardianConfirmed, setGuardianConfirmed] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-
-  const minor = mode === 'signup' && isMinorAge(birthDate)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -58,13 +47,13 @@ export default function Login() {
     }
 
     // signup
-    if (!privacyAccepted) {
-      setError('Vous devez accepter la politique de confidentialité.')
+    if (!firstName.trim() || !lastName.trim()) {
+      setError('Nom et prénom requis.')
       setLoading(false)
       return
     }
-    if (minor && !guardianConfirmed) {
-      setError('La confirmation du parent ou tuteur légal est requise pour les moins de 15 ans.')
+    if (!privacyAccepted) {
+      setError('Vous devez accepter la politique de confidentialité.')
       setLoading(false)
       return
     }
@@ -79,18 +68,16 @@ export default function Login() {
     if (data.user) {
       await supabase.from('judokas').upsert({
         user_id: data.user.id,
-        email,
+        first_name: firstName,
+        last_name: lastName,
         birth_date: birthDate || null,
-        club_id: null,
-        role: 'judoka',
-        is_minor: minor,
-        guardian_confirmed: minor ? guardianConfirmed : false,
-        privacy_accepted_at: new Date().toISOString(),
+        subscription_active: false,
       }, { onConflict: 'user_id' })
     }
 
-    setSuccess('Compte créé ! Vérifiez votre email pour confirmer votre inscription, puis connectez-vous.')
+    setSuccess('Compte créé ! Vérifiez votre email pour confirmer votre inscription. Vous serez redirigé vers le paiement (1€/mois).')
     setLoading(false)
+    setTimeout(() => navigate('/eleve/onboarding'), 2000)
   }
 
   function switchMode(m: Mode) {
@@ -98,7 +85,8 @@ export default function Login() {
     setError(null)
     setSuccess(null)
     setPrivacyAccepted(false)
-    setGuardianConfirmed(false)
+    setFirstName('')
+    setLastName('')
     setBirthDate('')
   }
 
@@ -149,6 +137,24 @@ export default function Login() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
+              {mode === 'signup' && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[#999999] text-xs uppercase tracking-widest mb-2">Prénom</label>
+                      <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} required={mode === 'signup'}
+                        className="w-full bg-[#1A1A1A] border border-[#2A2A2A] text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#C41230] transition-colors"
+                        placeholder="Jean" />
+                    </div>
+                    <div>
+                      <label className="block text-[#999999] text-xs uppercase tracking-widest mb-2">Nom</label>
+                      <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} required={mode === 'signup'}
+                        className="w-full bg-[#1A1A1A] border border-[#2A2A2A] text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#C41230] transition-colors"
+                        placeholder="Dupont" />
+                    </div>
+                  </div>
+                </>
+              )}
               <div>
                 <label className="block text-[#999999] text-xs uppercase tracking-widest mb-2">Email</label>
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
@@ -176,19 +182,6 @@ export default function Login() {
                     <input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)}
                       className="w-full bg-[#1A1A1A] border border-[#2A2A2A] text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#C41230] transition-colors" />
                   </div>
-
-                  {minor && (
-                    <div className="bg-amber-900/20 border border-amber-700/40 rounded-lg p-3">
-                      <p className="text-amber-400 text-xs mb-2 font-medium">⚠ Judoka de moins de 15 ans</p>
-                      <label className="flex items-start gap-2 cursor-pointer">
-                        <input type="checkbox" checked={guardianConfirmed} onChange={e => setGuardianConfirmed(e.target.checked)}
-                          className="mt-0.5 w-4 h-4 accent-[#C41230] flex-shrink-0" />
-                        <span className="text-amber-200 text-xs leading-relaxed">
-                          Je confirme créer ce compte en tant que parent ou tuteur légal de ce judoka mineur et consent au traitement de ses données personnelles.
-                        </span>
-                      </label>
-                    </div>
-                  )}
 
                   <label className="flex items-start gap-2 cursor-pointer">
                     <input type="checkbox" checked={privacyAccepted} onChange={e => setPrivacyAccepted(e.target.checked)}
