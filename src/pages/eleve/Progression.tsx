@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { CURRICULUM, getCategorieLabel, getBeltIndex } from '../../lib/curriculum'
+import SubscriptionGate from '../../components/SubscriptionGate'
 import type { Belt } from '../../types'
 import type { TechniqueStatus } from '../../lib/curriculum'
 import MesPlaylists from './MesPlaylists'
@@ -135,7 +136,8 @@ export default function Progression() {
   const pct = techniques.length > 0 ? Math.round((acquis / techniques.length) * 100) : 0
 
   return (
-    <div>
+    <SubscriptionGate featureName="ma progression">
+      <div>
       {/* Titre + onglets */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight mb-4">Ma progression</h1>
@@ -443,6 +445,7 @@ export default function Progression() {
         </div>
       )}
       </>}
-    </div>
+      </div>
+    </SubscriptionGate>
   )
 }
