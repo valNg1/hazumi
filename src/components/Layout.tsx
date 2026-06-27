@@ -32,6 +32,7 @@ export default function Layout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [cotisationPaid, setCotisationPaid] = useState<boolean | null>(null)
   const [paymentLoading, setPaymentLoading] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const navItems = space !== null ? NAV[space as keyof typeof NAV] : []
 
   useEffect(() => {
@@ -39,15 +40,18 @@ export default function Layout() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
       console.log('[Layout] User loaded:', user.email)
-      supabase.from('judokas').select('cotisation_paid').eq('user_id', user.id).single()
+      supabase.from('judokas').select('cotisation_paid, role').eq('user_id', user.id).single()
         .then(({ data, error }) => {
           if (error) {
             console.log('[Layout] Error loading cotisation:', error)
             setCotisationPaid(false)
+            setIsAdmin(false)
           } else {
             const paid = data?.cotisation_paid ?? false
+            const admin = data?.role === 'admin'
             console.log('[Layout] Cotisation loaded - paid:', paid, 'Will show Pro button:', space === 'eleve' && paid !== true)
             setCotisationPaid(paid)
+            setIsAdmin(admin)
           }
         })
     })
@@ -113,6 +117,14 @@ export default function Layout() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-3 py-3 ml-auto flex-shrink-0">
+          {isAdmin && (
+            <button
+              onClick={() => navigate('/admin/dashboard')}
+              className="px-3 py-2 text-xs bg-[#C41230] hover:bg-[#9B0E25] text-white rounded font-semibold transition-colors"
+            >
+              Dashboard Admin
+            </button>
+          )}
           {space === 'eleve' && (
             cotisationPaid === true ? (
               <span className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-yellow-100 text-yellow-800 whitespace-nowrap">
