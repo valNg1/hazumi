@@ -18,8 +18,42 @@ import ResetPassword from './pages/ResetPassword'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminSetup from './pages/admin/Setup'
 
-function DefaultRedirect() {
-  return <Navigate to="/eleve/accueil" replace />
+function SmartRedirect() {
+  const [redirect, setRedirect] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function getRedirect() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setRedirect('/login')
+        return
+      }
+
+      const { data: judoka } = await supabase
+        .from('judokas')
+        .select('role')
+        .eq('user_id', user.id)
+        .single()
+
+      if (judoka?.role === 'admin') {
+        setRedirect('/admin/dashboard')
+      } else {
+        setRedirect('/eleve/accueil')
+      }
+    }
+
+    getRedirect()
+  }, [])
+
+  if (!redirect) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="w-5 h-5 border-2 border-[#C41230] border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  return <Navigate to={redirect} replace />
 }
 
 export default function App() {
@@ -63,7 +97,8 @@ export default function App() {
               <Route path="/eleve/entrainements" element={<Entrainements />} />
               <Route path="/eleve/agenda" element={<MonAgenda />} />
             </Route>
-            <Route path="*" element={<DefaultRedirect />} />
+            <Route path="/" element={<SmartRedirect />} />
+            <Route path="*" element={<SmartRedirect />} />
           </>
         ) : (
           <Route path="*" element={<Navigate to="/login" />} />
