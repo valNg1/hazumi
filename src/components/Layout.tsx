@@ -100,7 +100,7 @@ export default function Layout() {
           <img src="/logo.png" alt="Hazumi" className="h-6 w-6 sm:h-7 sm:w-7 object-contain rounded" />
         </Link>
 
-        <nav className="flex items-stretch gap-0.5 flex-1 overflow-x-auto">
+        <nav className="hidden lg:flex items-stretch gap-0.5 flex-1 overflow-x-auto">
           {navItems.map(item => (
             <NavLink
               key={item.to}
