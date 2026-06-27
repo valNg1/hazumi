@@ -50,11 +50,11 @@ export default function App() {
         <Route path="/mentions-legales" element={<MentionsLegales />} />
         <Route path="/cgu" element={<CGU />} />
         <Route path="/dpa" element={<DPA />} />
+        <Route path="/admin/setup" element={<AdminSetup />} />
 
         {session ? (
           <>
             <Route path="/eleve/onboarding" element={<OnboardingJudoka />} />
-            <Route path="/admin/setup" element={<AdminSetup />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route element={<Layout />}>
               <Route path="/eleve/accueil" element={<Accueil />} />
