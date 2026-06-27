@@ -1,5 +1,4 @@
 import { Outlet, useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
 import { signOut } from '../lib/auth'
 import Footer from './Footer'
 
