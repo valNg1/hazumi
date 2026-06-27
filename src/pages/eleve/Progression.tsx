@@ -6,7 +6,6 @@ import { CURRICULUM, getCategorieLabel, getBeltIndex } from '../../lib/curriculu
 import type { Belt } from '../../types'
 import type { TechniqueStatus } from '../../lib/curriculum'
 import MesPlaylists from './MesPlaylists'
-import ProGate from '../../components/ProGate'
 import { getThumbnailUrl, getEmbedUrl, getVideoLabel, detectVideoType } from '../../lib/video'
 
 interface BibVideo {
@@ -162,9 +161,7 @@ export default function Progression() {
       </div>
 
       {mode === 'playlist' && (
-        <ProGate isPro={isPro} type="judoka" feature="Mes playlists">
-          <MesPlaylists />
-        </ProGate>
+        <MesPlaylists />
       )}
       {mode === 'grade' && <>
 
@@ -269,7 +266,6 @@ export default function Progression() {
           </div>
 
           {/* Techniques par catégorie */}
-          <ProGate isPro={isPro} type="judoka" feature="Suivi de progression détaillé">
           <div className="space-y-3">
             {Object.entries(byCategorie).map(([cat, techs]) => {
               const catAcquis = techs.filter(t => mastery[t.key] === 'acquis').length
@@ -333,7 +329,6 @@ export default function Progression() {
           <p className="text-xs text-[#CCCCCC] text-center mt-4">
             Cliquez sur une technique pour faire tourner son statut : À travailler → En cours → Acquis
           </p>
-          </ProGate>
 
           {bibVideos.length > 0 && (
             <div className="mt-6">

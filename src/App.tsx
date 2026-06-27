@@ -1,100 +1,23 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
-import { getSpace } from './lib/space'
-import { isBenDemoAccount } from './lib/demo'
-import ClubAccessModal from './components/ClubAccessModal'
 import type { Session } from '@supabase/supabase-js'
 import Layout from './components/Layout'
 import Login from './pages/Login'
-import SpaceSelector from './pages/SpaceSelector'
 import Accueil from './pages/eleve/Accueil'
 import Profil from './pages/eleve/Profil'
 import Progression from './pages/eleve/Progression'
 import Entrainements from './pages/eleve/Entrainements'
-import Effectifs from './pages/club/Effectifs'
-import EleveDetail from './pages/club/EleveDetail'
-import Rapport from './pages/club/Rapport'
-import Professeurs from './pages/club/Professeurs'
-import Planning from './pages/club/Planning'
-import Competitions from './pages/club/Competitions'
-import Bureau from './pages/club/Bureau'
-import Bibliotheque from './pages/club/Bibliotheque'
-import Onboarding from './pages/club/Onboarding'
+import MonAgenda from './pages/eleve/MonAgenda'
+import OnboardingJudoka from './pages/eleve/OnboardingJudoka'
 import Confidentialite from './pages/Confidentialite'
 import MentionsLegales from './pages/MentionsLegales'
 import CGU from './pages/CGU'
 import DPA from './pages/DPA'
 import ResetPassword from './pages/ResetPassword'
-import Agenda from './pages/club/Agenda'
-import MonAgenda from './pages/eleve/MonAgenda'
-import OnboardingJudoka from './pages/eleve/OnboardingJudoka'
 
-function ClubGuard() {
-  const [allowed, setAllowed] = useState<boolean | null>(null)
-  const [showModal, setShowModal] = useState(false)
-  const [userId, setUserId] = useState<string | null>(null)
-
-  const BEN_USER_ID = 'b82ef0ba-6c53-48c7-ac28-073c28fbc999'
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) { setAllowed(false); return }
-        setUserId(user.id)
-
-        const isBen = await isBenDemoAccount(user.email)
-
-        const { data, error } = await supabase.from('judokas').select('role, club_id').eq('user_id', user.id).single()
-
-        if (error) {
-          console.warn('ClubGuard: Cannot fetch judoka data:', error.message)
-          setAllowed(false)
-          return
-        }
-
-        const isProf = data?.role === 'prof' || data?.role === 'responsable'
-        const isAllowed = isProf || user.id === BEN_USER_ID || isBen
-
-        if (!isAllowed) {
-          setAllowed(false)
-          return
-        }
-
-        if (user.id === BEN_USER_ID || isBen) {
-          setAllowed(true)
-          return
-        }
-
-        const verified = localStorage.getItem('club_numero_verified')
-        if (!verified) {
-          setShowModal(true)
-        } else {
-          setAllowed(true)
-        }
-      } catch (err) {
-        console.warn('ClubGuard: Unexpected error:', err)
-        setAllowed(false)
-      }
-    })()
-  }, [])
-
-  if (allowed === null) return null
-  if (!allowed) return <Navigate to="/eleve/accueil" replace />
-
-  if (showModal && userId !== BEN_USER_ID) {
-    return <ClubAccessModal onVerified={() => { setShowModal(false); setAllowed(true) }} />
-  }
-
-  return <Outlet />
-}
-
-function DefaultRedirect({ session: _session }: { session: Session }) {
-  const space = getSpace()
-  if (!space) return <Navigate to="/espace" />
-  if (space === 'eleve') return <Navigate to="/eleve/accueil" />
-  return <Navigate to="/club/effectifs" />
+function DefaultRedirect() {
+  return <Navigate to="/eleve/accueil" replace />
 }
 
 export default function App() {
@@ -128,28 +51,15 @@ export default function App() {
 
         {session ? (
           <>
-            <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/eleve/onboarding" element={<OnboardingJudoka />} />
-            <Route path="/espace" element={<SpaceSelector />} />
             <Route element={<Layout />}>
               <Route path="/eleve/accueil" element={<Accueil />} />
               <Route path="/eleve/profil" element={<Profil />} />
               <Route path="/eleve/progression" element={<Progression />} />
               <Route path="/eleve/entrainements" element={<Entrainements />} />
-              <Route element={<ClubGuard />}>
-                <Route path="/club/effectifs" element={<Effectifs />} />
-                <Route path="/club/effectifs/:id" element={<EleveDetail />} />
-                <Route path="/club/rapport" element={<Rapport />} />
-                <Route path="/club/professeurs" element={<Professeurs />} />
-                <Route path="/club/planning" element={<Planning />} />
-                <Route path="/club/competitions" element={<Competitions />} />
-                <Route path="/club/bureau" element={<Bureau />} />
-                <Route path="/club/bibliotheque" element={<Bibliotheque />} />
-                <Route path="/club/agenda" element={<Agenda />} />
-              </Route>
               <Route path="/eleve/agenda" element={<MonAgenda />} />
             </Route>
-            <Route path="*" element={<DefaultRedirect session={session} />} />
+            <Route path="*" element={<DefaultRedirect />} />
           </>
         ) : (
           <Route path="*" element={<Navigate to="/login" />} />
