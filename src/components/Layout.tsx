@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { signOut } from '../lib/auth'
-import { clearSpace, getSpace } from '../lib/space'
+import { clearSpace, getSpace, setSpace } from '../lib/space'
 import Footer from './Footer'
 
 const NAV: Record<'eleve' | 'club', { to: string; label: string }[]> = {
@@ -28,7 +28,11 @@ const SPACE_LABEL = { eleve: 'Espace Élève', club: 'Espace Club' }
 
 export default function Layout() {
   const navigate = useNavigate()
-  const space = getSpace()
+  let space = getSpace()
+  if (!space) {
+    space = 'eleve'
+    setSpace('eleve')
+  }
   const [menuOpen, setMenuOpen] = useState(false)
   const [cotisationPaid, setCotisationPaid] = useState<boolean | null>(null)
   const [paymentLoading, setPaymentLoading] = useState(false)
