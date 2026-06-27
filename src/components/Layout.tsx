@@ -116,7 +116,7 @@ export default function Layout() {
           ))}
         </nav>
 
-        <div className="hidden lg:flex items-center gap-3 py-3 ml-auto flex-shrink-0">
+        <div className="flex items-center gap-3 py-3 ml-auto flex-shrink-0">
           {isAdmin && (
             <button
               onClick={() => navigate('/admin/dashboard')}
