@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { supabase } from '../../lib/supabase'
 import { CURRICULUM, getBeltIndex } from '../../lib/curriculum'
-import SubscriptionGate from '../../components/SubscriptionGate'
 import type { Belt } from '../../types'
 import type { TechniqueStatus } from '../../lib/curriculum'
 
@@ -223,8 +222,7 @@ export default function Accueil() {
   const nextBelt = nextBeltIndex < CURRICULUM.length ? CURRICULUM[nextBeltIndex] : null
 
   return (
-    <SubscriptionGate featureName="le tableau de bord">
-      <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto">
       {/* Greeting */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
@@ -487,6 +485,5 @@ export default function Accueil() {
         </div>
       </div>
       </div>
-    </SubscriptionGate>
   )
 }

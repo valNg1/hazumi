@@ -15,6 +15,8 @@ import MentionsLegales from './pages/MentionsLegales'
 import CGU from './pages/CGU'
 import DPA from './pages/DPA'
 import ResetPassword from './pages/ResetPassword'
+import AdminDashboard from './pages/admin/Dashboard'
+import AdminSetup from './pages/admin/Setup'
 
 function DefaultRedirect() {
   return <Navigate to="/eleve/accueil" replace />
@@ -52,6 +54,8 @@ export default function App() {
         {session ? (
           <>
             <Route path="/eleve/onboarding" element={<OnboardingJudoka />} />
+            <Route path="/admin/setup" element={<AdminSetup />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route element={<Layout />}>
               <Route path="/eleve/accueil" element={<Accueil />} />
               <Route path="/eleve/profil" element={<Profil />} />

@@ -532,8 +532,8 @@ export default function MesPlaylists() {
 
   return (
     <div>
-      {/* Onglets Club / Mes playlists */}
-      <div className="flex gap-1 bg-[#F5F5F5] p-1 rounded-lg w-fit mb-6">
+        {/* Onglets Club / Mes playlists */}
+        <div className="flex gap-1 bg-[#F5F5F5] p-1 rounded-lg w-fit mb-6">
         <button onClick={() => setTab('club')}
           className={`px-4 py-2 text-xs rounded-md transition-all ${tab === 'club' ? 'bg-white text-[#0A0A0A] shadow-sm font-semibold' : 'text-[#999999] hover:text-[#666666]'}`}>
           Bibliothèque du club

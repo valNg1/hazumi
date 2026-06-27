@@ -187,8 +187,8 @@ export default function Entrainements() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Mes entraînements</h1>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Mes entraînements</h1>
         <p className="text-[#999999] text-sm mt-0.5">Séances planifiées par le club</p>
       </div>
 

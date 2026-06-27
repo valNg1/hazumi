@@ -225,8 +225,8 @@ export default function MonAgenda() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Mes événements</h1>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Mes événements</h1>
         <p className="text-[#999999] text-sm mt-1">{items.length} événement{items.length !== 1 ? 's' : ''} à venir · {participationIds.size} confirmé{participationIds.size !== 1 ? 's' : ''}</p>
       </div>
 

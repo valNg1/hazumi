@@ -68,9 +68,9 @@ export default function Cours() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Mes cours</h1>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Mes cours</h1>
           <p className="text-[#999999] text-sm mt-0.5">Vidéos partagées par votre professeur</p>
         </div>
         <div className="flex border border-[#E5E5E5] rounded-lg overflow-hidden">
