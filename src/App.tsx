@@ -8,6 +8,7 @@ import Login from './pages/Login'
 import Accueil from './pages/eleve/Accueil'
 import Profil from './pages/eleve/Profil'
 import Progression from './pages/eleve/Progression'
+import Shiai from './pages/eleve/Shiai'
 import Entrainements from './pages/eleve/Entrainements'
 import MonAgenda from './pages/eleve/MonAgenda'
 import OnboardingJudoka from './pages/eleve/OnboardingJudoka'
@@ -90,17 +91,15 @@ export default function App() {
         {session ? (
           <>
             <Route path="/eleve/onboarding" element={<OnboardingJudoka />} />
-<<<<<<< HEAD
-=======
             <Route element={<AdminLayout />}>
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/messages/:judokaId" element={<AdminMessages />} />
             </Route>
->>>>>>> e4b4b01 (Refactor: Admin dashboard and remove Pro button)
             <Route element={<Layout />}>
               <Route path="/eleve/accueil" element={<Accueil />} />
               <Route path="/eleve/profil" element={<Profil />} />
               <Route path="/eleve/progression" element={<Progression />} />
+              <Route path="/eleve/shiai" element={<Shiai />} />
               <Route path="/eleve/entrainements" element={<Entrainements />} />
               <Route path="/eleve/agenda" element={<MonAgenda />} />
             </Route>
