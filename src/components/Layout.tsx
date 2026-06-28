@@ -1,6 +1,5 @@
 import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { useState } from 'react'
 import { signOut } from '../lib/auth'
 import { clearSpace, getSpace } from '../lib/space'
 import Footer from './Footer'

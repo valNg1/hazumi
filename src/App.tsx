@@ -19,7 +19,6 @@ import DPA from './pages/DPA'
 import ResetPassword from './pages/ResetPassword'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminMessages from './pages/admin/Messages'
-import AdminSetup from './pages/admin/Setup'
 
 function SmartRedirect() {
   const [redirect, setRedirect] = useState<string | null>(null)
