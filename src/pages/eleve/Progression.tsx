@@ -5,6 +5,7 @@ import { CURRICULUM, getCategorieLabel, getBeltIndex } from '../../lib/curriculu
 import type { Belt } from '../../types'
 import type { TechniqueStatus } from '../../lib/curriculum'
 import MesPlaylists from './MesPlaylists'
+import ParcoursList from '../../components/ParcoursList'
 import { getThumbnailUrl, getEmbedUrl, getVideoLabel, detectVideoType } from '../../lib/video'
 
 interface BibVideo {
@@ -160,6 +161,7 @@ export default function Progression() {
         <MesPlaylists />
       )}
       {mode === 'grade' && <>
+      <ParcoursList />
 
       {/* Toast encouragement */}
       {toast && (
