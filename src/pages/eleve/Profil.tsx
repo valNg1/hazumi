@@ -113,7 +113,21 @@ export default function Profil() {
     e.preventDefault()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    await supabase.from('judokas').upsert({ user_id: user.id, ...data }, { onConflict: 'user_id' })
+    const updateData = {
+      full_name: data.full_name,
+      belt: data.belt,
+      birth_date: data.birth_date || null,
+      license_number: data.license_number || null,
+      email: data.email,
+      phone: data.phone || null,
+      objectif: data.objectif || null,
+      photo_url: data.photo_url || null,
+      cert_medical_url: data.cert_medical_url || null,
+      cert_medical_ok: data.cert_medical_ok,
+      virement_url: data.virement_url || null,
+      cotisation_paid: data.cotisation_paid,
+    }
+    await supabase.from('judokas').upsert({ user_id: user.id, ...updateData }, { onConflict: 'user_id' })
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
   }
