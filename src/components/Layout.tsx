@@ -8,7 +8,9 @@ const NAV: Record<'eleve' | 'club', { to: string; label: string }[]> = {
   eleve: [
     { to: '/eleve/accueil', label: 'Accueil' },
     { to: '/eleve/profil', label: 'Mon profil' },
-    { to: '/eleve/progression', label: 'Ma progression' },
+    { to: '/eleve/shiai', label: 'Shiai' },
+    { to: '/eleve/judoka-culture', label: 'Judo-Ka' },
+    { to: '/eleve/kyu', label: 'Kyu' },
     { to: '/eleve/entrainements', label: 'Mes entraînements' },
     { to: '/eleve/agenda', label: 'Mon agenda' },
   ],

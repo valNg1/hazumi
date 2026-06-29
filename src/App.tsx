@@ -9,6 +9,8 @@ import Accueil from './pages/eleve/Accueil'
 import Profil from './pages/eleve/Profil'
 import Progression from './pages/eleve/Progression'
 import Shiai from './pages/eleve/Shiai'
+import JudoKa from './pages/eleve/JudoKa'
+import Kyu from './pages/eleve/Kyu'
 import Entrainements from './pages/eleve/Entrainements'
 import MonAgenda from './pages/eleve/MonAgenda'
 import OnboardingJudoka from './pages/eleve/OnboardingJudoka'
@@ -99,6 +101,8 @@ export default function App() {
               <Route path="/eleve/profil" element={<Profil />} />
               <Route path="/eleve/progression" element={<Progression />} />
               <Route path="/eleve/shiai" element={<Shiai />} />
+              <Route path="/eleve/judoka-culture" element={<JudoKa />} />
+              <Route path="/eleve/kyu" element={<Kyu />} />
               <Route path="/eleve/entrainements" element={<Entrainements />} />
               <Route path="/eleve/agenda" element={<MonAgenda />} />
             </Route>
