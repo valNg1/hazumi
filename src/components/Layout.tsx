@@ -27,9 +27,9 @@ const SPACE_LABEL = { eleve: 'Espace Élève', club: 'Espace Club' }
 
 export default function Layout() {
   const navigate = useNavigate()
-  const space = getSpace()
+  const space = getSpace() ?? 'eleve'
   const [menuOpen, setMenuOpen] = useState(false)
-  const navItems = space !== null ? NAV[space as keyof typeof NAV] : []
+  const navItems = NAV[space as keyof typeof NAV]
 
   async function handleSignOut() {
     clearSpace()
