@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { isBenDemoAccount } from '../../lib/demo'
 import type { Belt } from '../../types'
 
 const TRANCHES: [string, number, number, string][] = [
   ['poussins', 8, 9, '8–9 ans'], ['benjamins', 10, 11, '10–11 ans'], ['minimes', 12, 13, '12–13 ans'],
-  ['cadets', 14, 15, '14–15 ans'], ['juniors', 16, 20, '16–20 ans'], ['seniors', 21, 34, '21–34 ans'], ['vétérans', 35, 99, '35 ans et +'],
+  ['cadets', 14, 15, '14–15 ans'], ['juniors', 16, 20, '16–20 ans'], ['seniors', 21, 30, '21–30 ans'], ['vétérans', 31, 99, '31 ans et +'],
 ]
 
 function getAgeCategory(birthDate: string): string {
@@ -60,24 +59,12 @@ const EMPTY: ProfilData = {
 }
 
 export default function Profil() {
-  const [searchParams, setSearchParams] = useSearchParams()
   const [_judokaId, setJudokaId] = useState<string | null>(null)
   const [data, setData] = useState<ProfilData>(EMPTY)
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState<string | null>(null)
-  const [paymentLoading, setPaymentLoading] = useState(false)
-  const [paymentError, setPaymentError] = useState<string | null>(null)
-  const [justPaid, setJustPaid] = useState(false)
   const photoRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    // Retour depuis Stripe Checkout
-    if (searchParams.get('paid') === '1') {
-      setJustPaid(true)
-      setSearchParams({}, { replace: true })
-    }
-  }, [searchParams, setSearchParams])
 
   useEffect(() => {
     async function load() {
@@ -149,38 +136,7 @@ export default function Profil() {
     setUploading(null)
   }
 
-  async function handlePay() {
-    setPaymentLoading(true)
-    setPaymentError(null)
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({
-          priceId: import.meta.env.VITE_STRIPE_PRICE_JUDOKA,
-          type: 'judoka',
-        }),
-      })
-      const json = await res.json()
-      if (json.url) {
-        window.location.href = json.url
-      } else {
-        setPaymentError(json.error ?? 'Erreur lors du paiement')
-      }
-    } catch {
-      setPaymentError('Erreur réseau, réessayez.')
-    } finally {
-      setPaymentLoading(false)
-    }
-  }
-
   const currentBelt = BELTS.find(b => b.value === data.belt)
-  const dossierComplet = !!data.cert_medical_url && !!data.cotisation_paid && !!data.full_name && !!data.birth_date
 
   if (loading) return <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
 
@@ -214,29 +170,6 @@ export default function Profil() {
             <span className="inline-block w-3 h-3 rounded-full border border-[#CCCCCC]" style={{ backgroundColor: currentBelt?.color }} />
             <span className="text-[#666666] text-sm capitalize">Ceinture {data.belt}</span>
           </div>
-        </div>
-        <div className="ml-auto flex flex-col items-end gap-2">
-          {data.cotisation_paid ? (
-            <span className="text-xs px-3 py-1.5 rounded-full bg-[#0A0A0A] text-white font-medium">
-              ✦ Pro
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={handlePay}
-              disabled={paymentLoading}
-              className="flex items-center gap-1.5 bg-[#0A0A0A] hover:bg-[#222] text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors disabled:opacity-60"
-            >
-              {paymentLoading
-                ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
-                : '✦'
-              }
-              Passer Pro — 1€/mois
-            </button>
-          )}
-          <span className={`text-xs px-3 py-1.5 rounded-full ${dossierComplet ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
-            {dossierComplet ? 'Dossier complet' : 'Dossier incomplet'}
-          </span>
         </div>
       </div>
 
@@ -313,105 +246,11 @@ export default function Profil() {
       </form>
 
       <div className="mt-6 space-y-4">
-        <Section title="Cotisation">
-          {justPaid && (
-            <div className="mb-4 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700 flex items-center gap-2">
-              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Paiement reçu — merci ! Votre cotisation est validée.
-            </div>
-          )}
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-[#0A0A0A]">Hazumi Pro</p>
-              <p className="text-xs text-[#999999] mt-0.5">
-                {data.cotisation_paid && data.cotisation_paid_at
-                  ? `Actif depuis le ${new Date(data.cotisation_paid_at).toLocaleDateString('fr-FR')}`
-                  : 'Abonnement 1€/mois — résiliable à tout moment'}
-              </p>
-            </div>
-            <div className="flex items-center gap-3 flex-shrink-0">
-              {data.cotisation_paid ? (
-                <span className="text-xs px-3 py-1.5 rounded-full bg-green-50 text-green-700 font-medium">
-                  Payée ✓
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handlePay}
-                  disabled={paymentLoading}
-                  className="flex items-center gap-2 bg-[#0A0A0A] hover:bg-[#222] text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-60"
-                >
-                  {paymentLoading
-                    ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
-                    : <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                      </svg>
-                  }
-                  Passer Pro — 1€/mois
-                </button>
-              )}
-            </div>
-          </div>
-          {paymentError && (
-            <p className="mt-3 text-xs text-red-600">{paymentError}</p>
-          )}
-        </Section>
-
-        <Section title="Documents d'inscription">
-          <div className="space-y-4">
-            <UploadRow
-              label="Certificat médical"
-              sublabel="PDF, JPG ou PNG"
-              url={data.cert_medical_url}
-              ok={!!data.cert_medical_ok}
-              okLabel="Déposé"
-              koLabel="Non déposé"
-              loading={uploading === 'cert_medical_url'}
-              onUpload={f => uploadFile(f, 'cert_medical_url')}
-            />
-          </div>
-        </Section>
       </div>
     </div>
   )
 }
 
-function UploadRow({ label, sublabel, url, ok, okLabel, koLabel, loading, onUpload }: {
-  label: string; sublabel: string; url?: string; ok: boolean
-  okLabel: string; koLabel: string; loading: boolean; onUpload: (f: File) => void
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 py-2">
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-[#0A0A0A]">{label}</p>
-        <p className="text-xs text-[#999999] mt-0.5">{sublabel}</p>
-      </div>
-      <div className="flex items-center gap-3 flex-shrink-0">
-        <span className={`text-xs px-2 py-1 rounded-full ${ok ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
-          {ok ? okLabel : koLabel}
-        </span>
-        {url && (
-          <a href={url} target="_blank" rel="noreferrer"
-            className="text-xs text-[#C41230] hover:underline hidden sm:inline">
-            Voir
-          </a>
-        )}
-        <label className="cursor-pointer text-xs text-[#666666] hover:text-[#0A0A0A] transition-colors">
-          {loading
-            ? <div className="w-4 h-4 border-2 border-[#C41230] border-t-transparent rounded-full animate-spin" />
-            : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-          }
-          <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden"
-            onChange={e => e.target.files?.[0] && onUpload(e.target.files[0])} />
-        </label>
-      </div>
-    </div>
-  )
-}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
