@@ -10,6 +10,8 @@ interface Video {
 }
 
 export default function Shiai() {
+  console.log('[Shiai] composant chargé - version 2')
+
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
