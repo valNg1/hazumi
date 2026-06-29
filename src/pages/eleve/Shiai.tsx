@@ -4,13 +4,12 @@ import { detectVideoType, getVideoLabel } from '../../lib/video'
 
 interface Video {
   id: string
-  url: string
-  titre: string
-  mots_cles: string
+  title: string
+  video_url: string
+  tags: string | null
 }
 
 export default function Shiai() {
-  const [judokaId, setJudokaId] = useState<string | null>(null)
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
@@ -20,34 +19,27 @@ export default function Shiai() {
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const { data: judoka } = await supabase.from('judokas').select('id').eq('user_id', user.id).single()
-      if (!judoka) { setLoading(false); return }
-      setJudokaId(judoka.id)
-      await loadVideos(judoka.id)
+      if (!user) { setLoading(false); return }
+      await loadVideos(user.id)
       setLoading(false)
     }
     load()
   }, [])
 
-  async function loadVideos(jid: string) {
+  async function loadVideos(uid: string) {
     const { data } = await supabase
-      .from('playlists')
-      .select('id, external_url, external_title, mots_cles')
-      .eq('judoka_id', jid)
+      .from('videos')
+      .select('id, title, video_url, tags')
+      .eq('uploaded_by', uid)
       .order('created_at', { ascending: false })
     if (data) {
-      setVideos(data.map(v => ({
-        id: v.id,
-        url: v.external_url || '',
-        titre: v.external_title || '',
-        mots_cles: v.mots_cles || '',
-      })))
+      setVideos(data)
     }
   }
 
   async function addVideo() {
-    if (!judokaId || !formData.url || !formData.titre) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || !formData.url || !formData.titre) {
       setError('URL et nom sont obligatoires')
       return
     }
@@ -61,27 +53,29 @@ export default function Shiai() {
       return
     }
 
-    const { error: err } = await supabase.from('playlists').insert({
-      judoka_id: judokaId,
-      name: formData.titre,
-      external_url: formData.url,
-      external_title: formData.titre,
-      mots_cles: formData.mots_cles || null,
+    const { error: err } = await supabase.from('videos').insert({
+      title: formData.titre,
+      video_url: formData.url,
+      tags: formData.mots_cles || null,
+      uploaded_by: user.id,
+      description: '',
+      belt: '',
+      technique_key: '',
     })
 
     if (err) {
-      console.log('[Shiai] Error adding video:', err)
+      console.error('[Shiai] erreur:', JSON.stringify(err))
       setError(`Erreur: ${err.message || 'Impossible d\'ajouter la vidéo'}`)
     } else {
       setFormData({ url: '', titre: '', mots_cles: '' })
-      await loadVideos(judokaId)
+      await loadVideos(user.id)
     }
     setAdding(false)
   }
 
   async function deleteVideo(videoId: string) {
     if (!window.confirm('Supprimer cette vidéo ?')) return
-    await supabase.from('playlists').delete().eq('id', videoId)
+    await supabase.from('videos').delete().eq('id', videoId)
     setVideos(prev => prev.filter(v => v.id !== videoId))
   }
 
@@ -151,13 +145,13 @@ export default function Shiai() {
       ) : (
         <div className="space-y-4">
           {videos.map(video => {
-            const videoType = detectVideoType(video.url)
+            const videoType = detectVideoType(video.video_url)
             const label = getVideoLabel(videoType)
-            const tags = video.mots_cles ? video.mots_cles.split(',').map(t => t.trim()) : []
+            const tags = video.tags ? video.tags.split(',').map(t => t.trim()) : []
 
             let thumbnailUrl = ''
             if (videoType === 'youtube') {
-              const match = video.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&/?]+)/)
+              const match = video.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&/?]+)/)
               if (match) thumbnailUrl = `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`
             }
 
@@ -168,7 +162,7 @@ export default function Shiai() {
                     <div className="flex-shrink-0">
                       <img
                         src={thumbnailUrl}
-                        alt={video.titre}
+                        alt={video.title}
                         className="w-32 h-24 rounded-lg object-cover border border-[#E5E5E5]"
                       />
                     </div>
@@ -176,7 +170,7 @@ export default function Shiai() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-3 mb-2">
-                      <h3 className="font-semibold text-[#0A0A0A] text-sm leading-snug">{video.titre}</h3>
+                      <h3 className="font-semibold text-[#0A0A0A] text-sm leading-snug">{video.title}</h3>
                       <button
                         onClick={() => deleteVideo(video.id)}
                         className="flex-shrink-0 text-[#CCCCCC] hover:text-red-500 transition-colors"
@@ -191,7 +185,9 @@ export default function Shiai() {
                       <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${
                         videoType === 'youtube' ? 'bg-red-50 text-red-600 border-red-200' :
                         videoType === 'vimeo' ? 'bg-blue-50 text-blue-600 border-blue-200' :
-                        'bg-pink-50 text-pink-600 border-pink-200'
+                        videoType === 'instagram' ? 'bg-pink-50 text-pink-600 border-pink-200' :
+                        videoType === 'gdrive' ? 'bg-green-50 text-green-600 border-green-200' :
+                        'bg-[#F5F5F5] text-[#666666] border-[#E5E5E5]'
                       }`}>
                         {label}
                       </span>
@@ -210,7 +206,7 @@ export default function Shiai() {
                 </div>
 
                 <div className="px-5 py-2 bg-[#FAFAFA] border-t border-[#E5E5E5] text-xs text-[#999999] truncate">
-                  {video.url}
+                  {video.video_url}
                 </div>
               </div>
             )
