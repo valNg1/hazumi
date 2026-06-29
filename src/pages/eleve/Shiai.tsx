@@ -55,8 +55,8 @@ export default function Shiai() {
     setError(null)
 
     const videoType = detectVideoType(formData.url)
-    if (!['youtube', 'vimeo', 'instagram'].includes(videoType)) {
-      setError('URL non supportée (YouTube, Vimeo, Instagram)')
+    if (!['youtube', 'vimeo', 'instagram', 'gdrive', 'facebook', 'tiktok', 'direct'].includes(videoType)) {
+      setError('URL non supportée')
       setAdding(false)
       return
     }
@@ -70,7 +70,8 @@ export default function Shiai() {
     })
 
     if (err) {
-      setError('Erreur lors de l\'ajout')
+      console.log('[Shiai] Error adding video:', err)
+      setError(`Erreur: ${err.message || 'Impossible d\'ajouter la vidéo'}`)
     } else {
       setFormData({ url: '', titre: '', mots_cles: '' })
       await loadVideos(judokaId)
