@@ -14,9 +14,11 @@ export function getEmbedUrl(url: string): string {
   const type = detectVideoType(url)
 
   if (type === 'youtube') {
-    const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]+)/)
+    const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
     const id = match?.[1]
-    return id ? `https://www.youtube.com/embed/${id}` : url
+    const result = id ? `https://www.youtube.com/embed/${id}` : url
+    console.log('[video.ts] YouTube - url:', url, 'id:', id, 'result:', result)
+    return result
   }
 
   if (type === 'vimeo') {
@@ -51,7 +53,7 @@ export function getEmbedUrl(url: string): string {
 export function getThumbnailUrl(url: string): string | null {
   const type = detectVideoType(url)
   if (type === 'youtube') {
-    const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]+)/)
+    const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
     const id = match?.[1]
     return id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null
   }
