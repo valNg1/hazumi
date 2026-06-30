@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import { detectVideoType, getVideoLabel } from '../../lib/video'
+import { detectVideoType, getVideoLabel, getThumbnailUrl } from '../../lib/video'
 
 interface Video {
   id: string
@@ -10,11 +10,12 @@ interface Video {
 }
 
 export default function Shiai() {
-  console.log('[Shiai] composant chargé - version 2')
+  console.log('[Shiai] composant chargé - version 3')
 
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
   const [formData, setFormData] = useState({ url: '', titre: '', mots_cles: '' })
   const [error, setError] = useState<string | null>(null)
 
@@ -70,6 +71,7 @@ export default function Shiai() {
       setError(`Erreur: ${err.message || 'Impossible d\'ajouter la vidéo'}`)
     } else {
       setFormData({ url: '', titre: '', mots_cles: '' })
+      setModalOpen(false)
       await loadVideos(user.id)
     }
     setAdding(false)
@@ -84,132 +86,151 @@ export default function Shiai() {
   if (loading) return <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#0A0A0A] tracking-tight mb-2">🥊 Shiai</h1>
-        <p className="text-[#666666] text-sm">Mes vidéos de judo — techniques, combats, conseils</p>
-      </div>
-
-      {/* Formulaire d'ajout */}
-      <div className="bg-white rounded-xl border border-[#E5E5E5] p-6 mb-8">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-[#666666] mb-4">Ajouter une vidéo</h2>
-        <div className="space-y-4">
-          <div>
-            <label className="text-xs text-[#666666] mb-1.5 block">URL (YouTube, Vimeo, Instagram)</label>
-            <input
-              type="text"
-              value={formData.url}
-              onChange={e => setFormData({ ...formData, url: e.target.value })}
-              placeholder="https://youtube.com/watch?v=..."
-              className="w-full px-3 py-2.5 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:border-[#C41230]"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs text-[#666666] mb-1.5 block">Nom de la vidéo</label>
-            <input
-              type="text"
-              value={formData.titre}
-              onChange={e => setFormData({ ...formData, titre: e.target.value })}
-              placeholder="Ex: O goshi sur judoka grand"
-              className="w-full px-3 py-2.5 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:border-[#C41230]"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs text-[#666666] mb-1.5 block">Mots-clés (optionnel)</label>
-            <input
-              type="text"
-              value={formData.mots_cles}
-              onChange={e => setFormData({ ...formData, mots_cles: e.target.value })}
-              placeholder="o goshi, judo, technique, shiai"
-              className="w-full px-3 py-2.5 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:border-[#C41230]"
-            />
-          </div>
-
-          {error && <p className="text-xs text-red-600">{error}</p>}
-
-          <button
-            onClick={addVideo}
-            disabled={adding}
-            className="w-full bg-[#C41230] hover:bg-[#9B0E25] disabled:bg-[#CCCCCC] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors"
-          >
-            {adding ? 'Ajout en cours…' : 'Ajouter la vidéo'}
-          </button>
+    <div className="max-w-5xl mx-auto">
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-[#0A0A0A] tracking-tight mb-1">🥊 Shiai</h1>
+          <p className="text-[#666666] text-sm">Mes vidéos de judo — techniques, combats, conseils</p>
         </div>
+        <button
+          onClick={() => { setModalOpen(true); setError(null) }}
+          className="flex items-center gap-2 bg-[#C41230] hover:bg-[#9B0E25] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Ajouter une vidéo
+        </button>
       </div>
+
+      {/* Modale d'ajout */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-[#0A0A0A]">Ajouter une vidéo</h2>
+              <button
+                onClick={() => setModalOpen(false)}
+                className="text-[#CCCCCC] hover:text-[#666666] transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-[#666666] mb-1 block">URL</label>
+                <input
+                  type="text"
+                  value={formData.url}
+                  onChange={e => setFormData({ ...formData, url: e.target.value })}
+                  placeholder="https://youtube.com/watch?v=..."
+                  className="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:border-[#C41230]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-[#666666] mb-1 block">Nom de la vidéo</label>
+                <input
+                  type="text"
+                  value={formData.titre}
+                  onChange={e => setFormData({ ...formData, titre: e.target.value })}
+                  placeholder="Ex: O goshi sur judoka grand"
+                  className="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:border-[#C41230]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-[#666666] mb-1 block">Mots-clés (optionnel)</label>
+                <input
+                  type="text"
+                  value={formData.mots_cles}
+                  onChange={e => setFormData({ ...formData, mots_cles: e.target.value })}
+                  placeholder="o goshi, judo, technique"
+                  className="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:border-[#C41230]"
+                />
+              </div>
+
+              {error && <p className="text-xs text-red-600">{error}</p>}
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => setModalOpen(false)}
+                  className="flex-1 px-3 py-2 border border-[#E5E5E5] text-[#666666] text-sm font-medium rounded-lg hover:bg-[#FAFAFA] transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={addVideo}
+                  disabled={adding}
+                  className="flex-1 bg-[#C41230] hover:bg-[#9B0E25] disabled:bg-[#CCCCCC] text-white text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
+                >
+                  {adding ? 'Ajout…' : 'Ajouter'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Liste des vidéos */}
       {videos.length === 0 ? (
-        <div className="text-center py-12 text-[#999999] text-sm">
-          Aucune vidéo pour le moment. Ajoutez-en une !
+        <div className="text-center py-16 text-[#999999] text-sm">
+          Aucune vidéo pour le moment.
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-2">
           {videos.map(video => {
             const videoType = detectVideoType(video.video_url)
             const label = getVideoLabel(videoType)
             const tags = video.tags ? video.tags.split(',').map(t => t.trim()) : []
-
-            let thumbnailUrl = ''
-            if (videoType === 'youtube') {
-              const match = video.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&/?]+)/)
-              if (match) thumbnailUrl = `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`
-            }
+            const thumbnailUrl = getThumbnailUrl(video.video_url)
 
             return (
-              <div key={video.id} className="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden hover:shadow-sm transition-shadow">
-                <div className="flex gap-4 p-5">
-                  {thumbnailUrl && (
-                    <div className="flex-shrink-0">
-                      <img
-                        src={thumbnailUrl}
-                        alt={video.title}
-                        className="w-32 h-24 rounded-lg object-cover border border-[#E5E5E5]"
-                      />
-                    </div>
-                  )}
+              <div key={video.id} className="bg-white rounded-lg border border-[#E5E5E5] p-3 flex gap-3 items-center hover:shadow-sm transition-shadow group">
+                {thumbnailUrl && (
+                  <div className="flex-shrink-0 w-20 h-15">
+                    <img
+                      src={thumbnailUrl}
+                      alt={video.title}
+                      className="w-full h-full rounded object-cover border border-[#E5E5E5]"
+                      onError={e => e.currentTarget.style.display = 'none'}
+                    />
+                  </div>
+                )}
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <h3 className="font-semibold text-[#0A0A0A] text-sm leading-snug">{video.title}</h3>
-                      <button
-                        onClick={() => deleteVideo(video.id)}
-                        className="flex-shrink-0 text-[#CCCCCC] hover:text-red-500 transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${
-                        videoType === 'youtube' ? 'bg-red-50 text-red-600 border-red-200' :
-                        videoType === 'vimeo' ? 'bg-blue-50 text-blue-600 border-blue-200' :
-                        videoType === 'instagram' ? 'bg-pink-50 text-pink-600 border-pink-200' :
-                        videoType === 'gdrive' ? 'bg-green-50 text-green-600 border-green-200' :
-                        'bg-[#F5F5F5] text-[#666666] border-[#E5E5E5]'
-                      }`}>
-                        {label}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-[#0A0A0A] text-sm leading-snug line-clamp-1">{video.title}</h3>
+                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded border font-medium ${
+                      videoType === 'youtube' ? 'bg-red-50 text-red-600 border-red-200' :
+                      videoType === 'vimeo' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                      videoType === 'instagram' ? 'bg-pink-50 text-pink-600 border-pink-200' :
+                      videoType === 'gdrive' ? 'bg-green-50 text-green-600 border-green-200' :
+                      videoType === 'facebook' ? 'bg-blue-100 text-blue-700 border-blue-300' :
+                      'bg-[#F5F5F5] text-[#666666] border-[#E5E5E5]'
+                    }`}>
+                      {label}
+                    </span>
+                    {tags.length > 0 && tags.slice(0, 1).map(tag => (
+                      <span key={tag} className="text-[9px] px-1.5 py-0.5 bg-[#F5F5F5] text-[#666666] rounded border border-[#E5E5E5]">
+                        {tag}
                       </span>
-                    </div>
-
-                    {tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {tags.map(tag => (
-                          <span key={tag} className="text-[10px] px-2 py-0.5 bg-[#F5F5F5] text-[#666666] rounded-full border border-[#E5E5E5]">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    ))}
                   </div>
                 </div>
 
-                <div className="px-5 py-2 bg-[#FAFAFA] border-t border-[#E5E5E5] text-xs text-[#999999] truncate">
-                  {video.video_url}
-                </div>
+                <button
+                  onClick={() => deleteVideo(video.id)}
+                  className="flex-shrink-0 text-[#CCCCCC] hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                  title="Supprimer"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
             )
           })}
