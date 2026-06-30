@@ -240,10 +240,10 @@ export default function Shiai() {
         </div>
       </div>
 
-      {/* Bouton + Filtres tags */}
+      {/* Bouton + Filtres en 2 lignes */}
       {allTags.length > 0 && (
-        <div className="mb-4">
-          <div className="flex items-center gap-2 mb-3">
+        <div className="mb-4 space-y-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setPlaylistModalOpen(true)}
               className="text-xs px-4 py-2.5 rounded-lg font-semibold bg-[#C41230] hover:bg-[#9B0E25] text-white transition-colors whitespace-nowrap"
@@ -251,6 +251,8 @@ export default function Shiai() {
               Créer une playlist
             </button>
           </div>
+
+          {/* Ligne 1 — Playlists */}
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => { setSelectedTag(null); setSelectedPlaylistId(null) }}
@@ -281,14 +283,19 @@ export default function Shiai() {
                 </button>
               </button>
             ))}
+          </div>
+
+          {/* Ligne 2 — Tags individuels */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[10px] text-[#999999] font-medium">Tags :</span>
             {allTags.map(tag => (
               <button
                 key={tag}
                 onClick={() => { setSelectedTag(tag); setSelectedPlaylistId(null) }}
-                className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
+                className={`text-[10px] px-2.5 py-1 rounded-full font-medium transition-colors border ${
                   selectedTag === tag && selectedPlaylistId === null
-                    ? 'bg-[#C41230] text-white'
-                    : 'bg-[#F5F5F5] text-[#666666] hover:bg-[#EEEEEE]'
+                    ? 'border-[#666666] text-[#0A0A0A] bg-white'
+                    : 'border-[#DDDDDD] text-[#666666] bg-white hover:border-[#CCCCCC]'
                 }`}
               >
                 {tag}
