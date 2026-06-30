@@ -191,6 +191,7 @@ export default function MonAgenda() {
 
   async function createEvent(e: React.FormEvent) {
     e.preventDefault()
+    console.log('[Agenda] createEvent appelé')
     console.log('[Agenda] formData:', createFormData)
     console.log('[Agenda] judokaId:', judokaId)
     if (!judokaId || !createFormData.titre || !createFormData.date) {
