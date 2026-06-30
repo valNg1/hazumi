@@ -40,6 +40,7 @@ export default function Shiai() {
   const [playlistSelectedTags, setPlaylistSelectedTags] = useState<string[]>([])
   const [playlistName, setPlaylistName] = useState('')
   const quickAddRef = useRef<HTMLDivElement>(null)
+  const [playingVideoUrl, setPlayingVideoUrl] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -55,6 +56,16 @@ export default function Shiai() {
     }
     load()
   }, [])
+
+  function playVideo(video: Video) {
+    console.log('[Shiai] clic sur vidéo:', video)
+    const videoType = detectVideoType(video.video_url)
+    if (videoType === 'youtube' || videoType === 'vimeo') {
+      setPlayingVideoUrl(video.video_url)
+    } else {
+      window.open(video.video_url, '_blank')
+    }
+  }
 
   async function loadVideos(uid: string) {
     const { data } = await supabase
@@ -516,7 +527,7 @@ export default function Shiai() {
             return (
               <div key={video.id} className="bg-white rounded-lg border border-[#E5E5E5] p-3 flex gap-3 items-center hover:shadow-sm transition-shadow">
                 {thumbnailUrl && (
-                  <div className="flex-shrink-0 w-20 h-15">
+                  <div className="flex-shrink-0 w-20 h-15 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => playVideo(video)}>
                     <img
                       src={thumbnailUrl}
                       alt={video.title}
@@ -564,6 +575,44 @@ export default function Shiai() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {playingVideoUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/70">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-[#E5E5E5]">
+              <h2 className="text-lg font-semibold text-[#0A0A0A]">Lecteur vidéo</h2>
+              <button
+                onClick={() => setPlayingVideoUrl(null)}
+                className="text-[#999999] hover:text-[#0A0A0A]"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="aspect-video bg-black flex items-center justify-center">
+              {playingVideoUrl && detectVideoType(playingVideoUrl) === 'youtube' && (
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src={`https://www.youtube.com/embed/${playingVideoUrl.split('v=')[1]?.split('&')[0]}`}
+                  title="YouTube video"
+                  allowFullScreen
+                  style={{ border: 'none' }}
+                />
+              )}
+              {playingVideoUrl && detectVideoType(playingVideoUrl) === 'vimeo' && (
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src={`https://player.vimeo.com/video/${playingVideoUrl.split('/').pop()}`}
+                  title="Vimeo video"
+                  allowFullScreen
+                  style={{ border: 'none' }}
+                />
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
