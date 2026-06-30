@@ -141,12 +141,15 @@ export default function Shiai() {
       <div className="mb-6 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <svg className="w-10 h-10" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="20" cy="8" r="5" fill="#0A0A0A" />
-            <rect x="12" y="14" width="16" height="10" rx="2" fill="#0A0A0A" />
-            <rect x="10" y="25" width="7" height="12" fill="#C41230" />
-            <rect x="23" y="25" width="7" height="12" fill="#0A0A0A" />
-            <path d="M12 24L8 20M28 24L32 20" stroke="#0A0A0A" strokeWidth="2" strokeLinecap="round" />
-            <rect x="16" y="14" width="8" height="6" fill="#C41230" opacity="0.3" />
+            <circle cx="10" cy="8" r="3.5" fill="#0A0A0A" />
+            <circle cx="30" cy="8" r="3.5" fill="#C41230" />
+            <rect x="5" y="12" width="10" height="8" rx="1.5" fill="#0A0A0A" />
+            <rect x="25" y="12" width="10" height="8" rx="1.5" fill="#C41230" />
+            <line x1="10" y1="20" x2="6" y2="30" stroke="#0A0A0A" strokeWidth="2" strokeLinecap="round" />
+            <line x1="10" y1="20" x2="14" y2="32" stroke="#0A0A0A" strokeWidth="2" strokeLinecap="round" />
+            <line x1="30" y1="20" x2="34" y2="30" stroke="#C41230" strokeWidth="2" strokeLinecap="round" />
+            <line x1="30" y1="20" x2="26" y2="32" stroke="#C41230" strokeWidth="2" strokeLinecap="round" />
+            <path d="M12 20 Q20 18 28 20" stroke="#999999" strokeWidth="1.5" strokeDasharray="2,2" opacity="0.5" />
           </svg>
           <div>
             <h1 className="text-3xl font-bold text-[#0A0A0A] tracking-tight mb-1">Shiai</h1>
