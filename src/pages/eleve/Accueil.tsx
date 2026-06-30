@@ -177,7 +177,7 @@ export default function Accueil() {
       const todayStr2 = new Date().toISOString().slice(0, 10)
       const [{ data: comps }, { data: evts }, { data: compParts }, { data: evtParts }] = await Promise.all([
         supabase.from('competitions').select('id, nom, date, lieu, niveau, tranche_age').gte('date', todayStr2).order('date'),
-        supabase.from('evenements').select('id, type, titre, date, lieu').gte('date', todayStr2).order('date'),
+        supabase.from('evenements').select('id, type, titre, date_debut, date_fin, lieu, notes').eq('judoka_id', j.id).gte('date_debut', todayStr2).order('date_debut'),
         supabase.from('competition_participations').select('competition_id').eq('judoka_id', j.id),
         supabase.from('evenement_participations').select('evenement_id').eq('judoka_id', j.id),
       ])
@@ -189,9 +189,9 @@ export default function Accueil() {
             key: `comp:${c.id}`, sourceId: c.id, sourceType: 'competition' as const,
             type: 'competition' as const, titre: c.nom, date: c.date, lieu: c.lieu, niveau: c.niveau,
           })),
-        ...(evts ?? []).map((e: { id: string; type: string; titre: string; date: string; lieu?: string }) => ({
+        ...(evts ?? []).map((e: { id: string; type: string; titre: string; date_debut: string; date_fin?: string; lieu?: string; notes?: string }) => ({
           key: `evt:${e.id}`, sourceId: e.id, sourceType: 'evenement' as const,
-          type: e.type as AgendaItem['type'], titre: e.titre, date: e.date, lieu: e.lieu,
+          type: e.type as AgendaItem['type'], titre: e.titre, date: e.date_debut.split('T')[0], lieu: e.lieu, description: e.notes,
         })),
       ].sort((a, b) => a.date.localeCompare(b.date))
       setAgendaItems(items)

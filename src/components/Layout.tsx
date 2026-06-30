@@ -58,7 +58,7 @@ export default function Layout() {
               to={item.to}
               className={({ isActive }) =>
                 `flex items-center px-3 xl:px-4 text-xs uppercase tracking-widest border-b-2 transition-colors whitespace-nowrap ${
-                  isActive ? 'text-white border-[#C41230]' : 'text-[#666666] border-transparent hover:text-[#CCCCCC]'
+                  isActive ? '!text-white !border-[#C41230]' : 'text-[#666666] border-transparent hover:text-[#CCCCCC]'
                 }`
               }
             >
