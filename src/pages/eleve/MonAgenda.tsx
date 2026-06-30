@@ -147,7 +147,7 @@ export default function MonAgenda() {
 
       const [{ data: comps }, { data: evts }, { data: compParts }, { data: evtParts }] = await Promise.all([
         supabase.from('competitions').select('id, nom, date, lieu, niveau, tranche_age, notes').gte('date', today).order('date'),
-        supabase.from('evenements').select('id, type, titre, date, lieu, description').gte('date', today).order('date'),
+        supabase.from('evenements').select('id, type, titre, date_debut, date_fin, lieu, notes').gte('date_debut', today).order('date_debut'),
         supabase.from('competition_participations').select('competition_id').eq('judoka_id', j.id),
         supabase.from('evenement_participations').select('evenement_id').eq('judoka_id', j.id),
       ])
@@ -167,18 +167,19 @@ export default function MonAgenda() {
             niveau: c.niveau,
             tranche_age: c.tranche_age,
           })),
-        ...(evts ?? []).map((e: { id: string; type: string; titre: string; date: string; lieu?: string; description?: string }) => ({
+        ...(evts ?? []).map((e: { id: string; type: string; titre: string; date_debut: string; date_fin?: string; lieu?: string; notes?: string }) => ({
           key: `evt:${e.id}`,
           sourceId: e.id,
           sourceType: 'evenement' as const,
           type: (e.type ?? 'autre') as EventType,
           titre: e.titre,
-          date: e.date,
+          date: e.date_debut.split('T')[0],
           lieu: e.lieu,
-          description: e.description,
+          description: e.notes,
         })),
       ].sort((a, b) => a.date.localeCompare(b.date))
 
+      console.log('[Agenda] chargement initial - événements:', evts)
       setItems(agenda)
       setParticipationIds(new Set([
         ...(compParts ?? []).map((p: { competition_id: string }) => `comp:${p.competition_id}`),
