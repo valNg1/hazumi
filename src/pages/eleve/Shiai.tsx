@@ -139,9 +139,19 @@ export default function Shiai() {
   return (
     <div className="max-w-5xl mx-auto">
       <div className="mb-6 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-[#0A0A0A] tracking-tight mb-1">🥊 Shiai</h1>
-          <p className="text-[#666666] text-sm">Mes vidéos de judo — techniques, combats, conseils</p>
+        <div className="flex items-center gap-3">
+          <svg className="w-10 h-10" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="20" cy="8" r="5" fill="#0A0A0A" />
+            <rect x="12" y="14" width="16" height="10" rx="2" fill="#0A0A0A" />
+            <rect x="10" y="25" width="7" height="12" fill="#C41230" />
+            <rect x="23" y="25" width="7" height="12" fill="#0A0A0A" />
+            <path d="M12 24L8 20M28 24L32 20" stroke="#0A0A0A" strokeWidth="2" strokeLinecap="round" />
+            <rect x="16" y="14" width="8" height="6" fill="#C41230" opacity="0.3" />
+          </svg>
+          <div>
+            <h1 className="text-3xl font-bold text-[#0A0A0A] tracking-tight mb-1">Shiai</h1>
+            <p className="text-[#666666] text-sm">Mes vidéos de judo — techniques, combats, conseils</p>
+          </div>
         </div>
         <button
           onClick={openAddModal}
