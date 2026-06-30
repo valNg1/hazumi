@@ -415,15 +415,8 @@ export default function Shiai() {
         </div>
       )}
 
-      {/* Liste des vidéos */}
-      {videos.length === 0 ? (
-        <div className="text-center py-16 text-[#999999] text-sm">
-          Aucune vidéo pour le moment. Ajoutez-en une ci-dessous.
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {/* Barre d'ajout rapide inline */}
-          <div ref={quickAddRef} className="bg-[#FAFAFA] rounded-lg border border-[#E5E5E5] p-3 flex gap-3 items-center">
+      {/* Barre d'ajout rapide inline */}
+      <div ref={quickAddRef} className="bg-[#FAFAFA] rounded-lg border border-[#E5E5E5] p-3 flex gap-3 items-center mb-2">
             <div className="flex-shrink-0 w-20 h-15 rounded bg-[#F0F0F0] border border-[#E5E5E5]" />
 
             <input
@@ -459,8 +452,14 @@ export default function Shiai() {
             </button>
           </div>
 
-          {error && <p className="text-xs text-red-600 px-2">{error}</p>}
+      {error && <p className="text-xs text-red-600 px-2 mt-2">{error}</p>}
 
+      {videos.length === 0 ? (
+        <div className="text-center py-16 text-[#999999] text-sm">
+          Aucune vidéo pour le moment. Ajoutez-en une ci-dessus.
+        </div>
+      ) : (
+        <div className="space-y-2">
           {/* Vidéos */}
           {filteredVideos.map(video => {
             const isEditing = editingId === video.id

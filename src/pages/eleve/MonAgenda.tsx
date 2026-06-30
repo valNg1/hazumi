@@ -130,6 +130,9 @@ export default function MonAgenda() {
   const [calView, setCalView] = useState<CalView>('mois')
   const [calOffset, setCalOffset] = useState(0)
   const [calDayItems, setCalDayItems] = useState<{ date: string; items: AgendaItem[] } | null>(null)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [createFormData, setCreateFormData] = useState({ titre: '', date: '', heure_debut: '', heure_fin: '', type: 'autre' as EventType, lieu: '', description: '' })
+  const [creatingEvent, setCreatingEvent] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -186,6 +189,40 @@ export default function MonAgenda() {
     load()
   }, [])
 
+  async function createEvent(e: React.FormEvent) {
+    e.preventDefault()
+    if (!judokaId || !createFormData.titre || !createFormData.date) return
+    setCreatingEvent(true)
+    const { data, error } = await supabase.from('evenements').insert({
+      type: createFormData.type,
+      titre: createFormData.titre,
+      date: createFormData.date,
+      heure_debut: createFormData.heure_debut || null,
+      heure_fin: createFormData.heure_fin || null,
+      lieu: createFormData.lieu || null,
+      description: createFormData.description || null,
+    }).select()
+    if (!error && data && data.length > 0) {
+      const eventId = data[0].id
+      await supabase.from('evenement_participations').insert({ evenement_id: eventId, judoka_id: judokaId })
+      setCreateModalOpen(false)
+      setCreateFormData({ titre: '', date: '', heure_debut: '', heure_fin: '', type: 'autre', lieu: '', description: '' })
+      const { data: evts } = await supabase.from('evenements').select('id, type, titre, date, lieu, description').gte('date', new Date().toISOString().slice(0, 10)).order('date')
+      const agenda: AgendaItem[] = items.filter(i => i.sourceType !== 'evenement').concat((evts ?? []).map(e => ({
+        key: `evt:${e.id}`,
+        sourceId: e.id,
+        sourceType: 'evenement' as const,
+        type: (e.type ?? 'autre') as EventType,
+        titre: e.titre,
+        date: e.date,
+        lieu: e.lieu,
+        description: e.description,
+      }))).sort((a, b) => a.date.localeCompare(b.date))
+      setItems(agenda)
+    }
+    setCreatingEvent(false)
+  }
+
   async function setParticipation(item: AgendaItem, viens: boolean) {
     if (!judokaId) return
     if (viens) {
@@ -231,7 +268,7 @@ export default function MonAgenda() {
           <p className="text-[#999999] text-sm mt-1">{items.length} événement{items.length !== 1 ? 's' : ''} à venir · {participationIds.size} confirmé{participationIds.size !== 1 ? 's' : ''}</p>
         </div>
         <button
-          onClick={() => alert('Créer un événement - Fonctionnalité à venir')}
+          onClick={() => setCreateModalOpen(true)}
           className="flex items-center gap-2 bg-[#C41230] hover:bg-[#9B0E25] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -505,6 +542,89 @@ export default function MonAgenda() {
         <EventDetail item={selectedItem} participating={participationIds.has(selectedItem.key)}
           onParticipate={v => setParticipation(selectedItem, v)}
           onClose={() => setSelectedItem(null)} />
+      )}
+
+      {/* Modal création événement */}
+      {createModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+            <h2 className="text-lg font-semibold text-[#0A0A0A] mb-4">Créer un événement</h2>
+            <form onSubmit={createEvent} className="space-y-3">
+              <input
+                type="text"
+                placeholder="Titre"
+                value={createFormData.titre}
+                onChange={e => setCreateFormData({ ...createFormData, titre: e.target.value })}
+                required
+                className="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:border-[#C41230]"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="date"
+                  value={createFormData.date}
+                  onChange={e => setCreateFormData({ ...createFormData, date: e.target.value })}
+                  required
+                  className="px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:border-[#C41230]"
+                />
+                <select
+                  value={createFormData.type}
+                  onChange={e => setCreateFormData({ ...createFormData, type: e.target.value as EventType })}
+                  className="px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:border-[#C41230]"
+                >
+                  {['competition', 'grade', 'arbitrage', 'stage', 'ag', 'autre'].map(t => (
+                    <option key={t} value={t}>{TYPE_CONFIG[t as EventType].label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="time"
+                  placeholder="Heure début"
+                  value={createFormData.heure_debut}
+                  onChange={e => setCreateFormData({ ...createFormData, heure_debut: e.target.value })}
+                  className="px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:border-[#C41230]"
+                />
+                <input
+                  type="time"
+                  placeholder="Heure fin"
+                  value={createFormData.heure_fin}
+                  onChange={e => setCreateFormData({ ...createFormData, heure_fin: e.target.value })}
+                  className="px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:border-[#C41230]"
+                />
+              </div>
+              <input
+                type="text"
+                placeholder="Lieu (optionnel)"
+                value={createFormData.lieu}
+                onChange={e => setCreateFormData({ ...createFormData, lieu: e.target.value })}
+                className="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:border-[#C41230]"
+              />
+              <textarea
+                placeholder="Notes/Description (optionnel)"
+                value={createFormData.description}
+                onChange={e => setCreateFormData({ ...createFormData, description: e.target.value })}
+                className="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:border-[#C41230] resize-none"
+                rows={3}
+              />
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setCreateModalOpen(false)}
+                  className="flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold bg-white border border-[#E5E5E5] text-[#666666] hover:border-[#CCCCCC] transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingEvent}
+                  className="flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold bg-[#C41230] hover:bg-[#9B0E25] disabled:bg-[#CCCCCC] text-white transition-colors"
+                >
+                  {creatingEvent ? 'Création...' : 'Créer'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   )

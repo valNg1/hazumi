@@ -70,20 +70,15 @@ export default function Entrainements() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setLoading(false); return }
-      const { data: judoka } = await supabase.from('judokas').select('id').eq('user_id', user.id).single()
+      const { data: judoka } = await supabase.from('judokas').select('id, club_id').eq('user_id', user.id).single()
+      if (!judoka) { setLoading(false); return }
       const [{ data: s }, { data: p }, { data: compParts }, { data: evtParts }] = await Promise.all([
-        supabase.from('seances').select('*').order('date').order('heure_debut'),
-        judoka
-          ? supabase.from('presences').select('seance_id').eq('judoka_id', judoka.id)
-          : Promise.resolve({ data: [] }),
-        judoka
-          ? supabase.from('competition_participations').select('id, competition_id, competitions(nom, date, lieu, niveau)').eq('judoka_id', judoka.id)
-          : Promise.resolve({ data: [] }),
-        judoka
-          ? supabase.from('evenement_participations').select('id, evenement_id, evenements(type, titre, date, lieu)').eq('judoka_id', judoka.id)
-          : Promise.resolve({ data: [] }),
+        supabase.from('seances').select('*').eq('club_id', judoka.club_id ?? '').order('date').order('heure_debut'),
+        supabase.from('presences').select('seance_id').eq('judoka_id', judoka.id),
+        supabase.from('competition_participations').select('id, competition_id, competitions(nom, date, lieu, niveau)').eq('judoka_id', judoka.id),
+        supabase.from('evenement_participations').select('id, evenement_id, evenements(type, titre, date, lieu)').eq('judoka_id', judoka.id),
       ])
-      setJudokaId(judoka?.id ?? null)
+      setJudokaId(judoka.id)
       setSeances(s ?? [])
       setConfirmedIds(new Set((p ?? []).map((x: { seance_id: string }) => x.seance_id)))
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
