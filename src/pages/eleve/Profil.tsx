@@ -103,6 +103,7 @@ export default function Profil() {
     const updateData = {
       full_name: data.full_name,
       belt: data.belt,
+      club: data.club || null,
       birth_date: data.birth_date || null,
       license_number: data.license_number || null,
       email: data.email,
