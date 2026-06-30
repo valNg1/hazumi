@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { detectVideoType, getVideoLabel, getThumbnailUrl } from '../../lib/video'
 
@@ -39,6 +39,7 @@ export default function Shiai() {
   const [playlistModalOpen, setPlaylistModalOpen] = useState(false)
   const [playlistSelectedTags, setPlaylistSelectedTags] = useState<string[]>([])
   const [playlistName, setPlaylistName] = useState('')
+  const quickAddRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     async function load() {
@@ -321,6 +322,13 @@ export default function Shiai() {
               </button>
             ))}
           </div>
+
+          <button
+            onClick={() => quickAddRef.current?.scrollIntoView({ behavior: 'smooth' })}
+            className="mt-3 px-4 py-2.5 rounded-lg text-sm font-semibold bg-[#C41230] hover:bg-[#9B0E25] text-white transition-colors"
+          >
+            + Ajouter du contenu
+          </button>
         </div>
       )}
 
@@ -415,7 +423,7 @@ export default function Shiai() {
       ) : (
         <div className="space-y-2">
           {/* Barre d'ajout rapide inline */}
-          <div className="bg-[#FAFAFA] rounded-lg border border-[#E5E5E5] p-3 flex gap-3 items-center">
+          <div ref={quickAddRef} className="bg-[#FAFAFA] rounded-lg border border-[#E5E5E5] p-3 flex gap-3 items-center">
             <div className="flex-shrink-0 w-20 h-15 rounded bg-[#F0F0F0] border border-[#E5E5E5]" />
 
             <input
