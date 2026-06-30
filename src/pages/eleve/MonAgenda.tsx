@@ -199,23 +199,26 @@ export default function MonAgenda() {
       return
     }
     setCreatingEvent(true)
+    const dateDebut = createFormData.heure_debut
+      ? `${createFormData.date}T${createFormData.heure_debut}:00`
+      : `${createFormData.date}T00:00:00`
+    const dateFin = createFormData.heure_fin
+      ? `${createFormData.date}T${createFormData.heure_fin}:00`
+      : null
     const insertData = {
-      type: createFormData.type,
+      judoka_id: judokaId,
       titre: createFormData.titre,
-      date: createFormData.date,
-      heure_debut: createFormData.heure_debut ? createFormData.heure_debut : null,
-      heure_fin: createFormData.heure_fin ? createFormData.heure_fin : null,
-      lieu: createFormData.lieu ? createFormData.lieu : null,
-      description: createFormData.description ? createFormData.description : null,
+      date_debut: dateDebut,
+      date_fin: dateFin,
+      type: createFormData.type,
+      lieu: createFormData.lieu || null,
+      notes: createFormData.description || null,
     }
     console.log('[Agenda] données à insérer:', insertData)
     const { data, error } = await supabase.from('evenements').insert(insertData).select()
     console.log('[Agenda] résultat insertion:', { data, error })
-    console.log('[Agenda] erreur complète:', error ? JSON.stringify(error) : 'pas d\'erreur')
     if (error) {
-      console.log('[Agenda] message:', error?.message)
-      console.log('[Agenda] details:', error?.details)
-      console.log('[Agenda] hint:', error?.hint)
+      console.log('[Agenda] erreur:', JSON.stringify(error))
     }
     if (!error && data && data.length > 0) {
       const eventId = data[0].id
