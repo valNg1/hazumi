@@ -199,16 +199,24 @@ export default function MonAgenda() {
       return
     }
     setCreatingEvent(true)
-    const { data, error } = await supabase.from('evenements').insert({
+    const insertData = {
       type: createFormData.type,
       titre: createFormData.titre,
       date: createFormData.date,
-      heure_debut: createFormData.heure_debut || null,
-      heure_fin: createFormData.heure_fin || null,
-      lieu: createFormData.lieu || null,
-      description: createFormData.description || null,
-    }).select()
+      heure_debut: createFormData.heure_debut ? createFormData.heure_debut : null,
+      heure_fin: createFormData.heure_fin ? createFormData.heure_fin : null,
+      lieu: createFormData.lieu ? createFormData.lieu : null,
+      description: createFormData.description ? createFormData.description : null,
+    }
+    console.log('[Agenda] données à insérer:', insertData)
+    const { data, error } = await supabase.from('evenements').insert(insertData).select()
     console.log('[Agenda] résultat insertion:', { data, error })
+    console.log('[Agenda] erreur complète:', error ? JSON.stringify(error) : 'pas d\'erreur')
+    if (error) {
+      console.log('[Agenda] message:', error?.message)
+      console.log('[Agenda] details:', error?.details)
+      console.log('[Agenda] hint:', error?.hint)
+    }
     if (!error && data && data.length > 0) {
       const eventId = data[0].id
       await supabase.from('evenement_participations').insert({ evenement_id: eventId, judoka_id: judokaId })
