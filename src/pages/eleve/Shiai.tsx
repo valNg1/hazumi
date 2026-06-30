@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
-import { detectVideoType, getVideoLabel, getThumbnailUrl } from '../../lib/video'
+import { detectVideoType, getVideoLabel, getThumbnailUrl, getEmbedUrl } from '../../lib/video'
 
 interface Video {
   id: string
@@ -591,26 +591,24 @@ export default function Shiai() {
               </button>
             </div>
             <div className="aspect-video bg-black flex items-center justify-center">
-              {playingVideoUrl && detectVideoType(playingVideoUrl) === 'youtube' && (
-                <iframe
-                  width="100%"
-                  height="100%"
-                  src={`https://www.youtube.com/embed/${playingVideoUrl.split('v=')[1]?.split('&')[0]}`}
-                  title="YouTube video"
-                  allowFullScreen
-                  style={{ border: 'none' }}
-                />
-              )}
-              {playingVideoUrl && detectVideoType(playingVideoUrl) === 'vimeo' && (
-                <iframe
-                  width="100%"
-                  height="100%"
-                  src={`https://player.vimeo.com/video/${playingVideoUrl.split('/').pop()}`}
-                  title="Vimeo video"
-                  allowFullScreen
-                  style={{ border: 'none' }}
-                />
-              )}
+              {(() => {
+                const embedUrl = getEmbedUrl(playingVideoUrl)
+                const videoType = detectVideoType(playingVideoUrl)
+                console.log('[Shiai] embed URL:', embedUrl, 'type:', videoType)
+                if (videoType === 'youtube' || videoType === 'vimeo') {
+                  return (
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      src={embedUrl}
+                      title="Vidéo"
+                      allowFullScreen
+                      style={{ border: 'none' }}
+                    />
+                  )
+                }
+                return <p className="text-white text-center">Ouverture dans un nouvel onglet...</p>
+              })()}
             </div>
           </div>
         </div>
