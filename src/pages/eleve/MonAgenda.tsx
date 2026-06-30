@@ -222,20 +222,25 @@ export default function MonAgenda() {
     }
     if (!error && data && data.length > 0) {
       const eventId = data[0].id
+      console.log('[Agenda] insertion réussie, participations...')
       await supabase.from('evenement_participations').insert({ evenement_id: eventId, judoka_id: judokaId })
+      console.log('[Agenda] participations créées, fermeture modale...')
       setCreateModalOpen(false)
       setCreateFormData({ titre: '', date: '', heure_debut: '', heure_fin: '', type: 'autre', lieu: '', description: '' })
-      const { data: evts } = await supabase.from('evenements').select('id, type, titre, date, lieu, description').gte('date', new Date().toISOString().slice(0, 10)).order('date')
+      console.log('[Agenda] rechargement événements...')
+      const { data: evts } = await supabase.from('evenements').select('id, type, titre, date_debut, date_fin, lieu, notes').gte('date_debut', new Date().toISOString().slice(0, 10)).order('date_debut')
+      console.log('[Agenda] événements rechargés:', evts)
       const agenda: AgendaItem[] = items.filter(i => i.sourceType !== 'evenement').concat((evts ?? []).map(e => ({
         key: `evt:${e.id}`,
         sourceId: e.id,
         sourceType: 'evenement' as const,
         type: (e.type ?? 'autre') as EventType,
         titre: e.titre,
-        date: e.date,
+        date: e.date_debut.split('T')[0],
         lieu: e.lieu,
-        description: e.description,
+        description: e.notes,
       }))).sort((a, b) => a.date.localeCompare(b.date))
+      console.log('[Agenda] agenda mis à jour:', agenda)
       setItems(agenda)
     }
     setCreatingEvent(false)
