@@ -327,78 +327,6 @@ export default function MonAgenda() {
         </div>
       )}
 
-      {filtered.length === 0 ? (
-        <div className="text-center py-16 text-[#999999] text-sm">Aucun événement à venir.</div>
-      ) : (
-        <div className="space-y-4">
-          {filtered.map(item => {
-            const cfg = TYPE_CONFIG[item.type]
-            const participating = participationIds.has(item.key)
-            const daysLeft = Math.ceil((new Date(item.date).getTime() - Date.now()) / 86400000)
-            const dateStr = new Date(item.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-            return (
-              <div
-                key={item.key}
-                className={`rounded-xl border p-5 transition-all cursor-pointer hover:shadow-sm ${cfg.bg} ${cfg.border}`}
-                onClick={() => setSelectedItem(item)}
-              >
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                    <span className="text-2xl flex-shrink-0">{cfg.icon}</span>
-                    <div className="min-w-0">
-                      <p className="text-base font-bold text-[#0A0A0A] leading-tight">{item.titre}</p>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${cfg.badge}`}>{cfg.label}</span>
-                        {item.niveau && <span className="text-[10px] px-2 py-0.5 bg-white/70 text-[#666666] border border-[#E5E5E5] rounded-full capitalize">{item.niveau}</span>}
-                        {(item.tranche_age ?? []).map(t => (
-                          <span key={t} className="text-[10px] px-2 py-0.5 bg-white/70 text-[#666666] border border-[#E5E5E5] rounded-full capitalize">{t}</span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <span className={`text-sm font-bold ${daysLeft <= 7 ? 'text-[#C41230]' : 'text-[#0A0A0A]'}`}>J-{daysLeft}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 text-xs text-[#666666] mb-4">
-                  <span>📅 {dateStr}</span>
-                  {item.lieu && <span>📍 {item.lieu}</span>}
-                </div>
-
-                {item.description && (
-                  <p className="text-sm text-[#666666] mb-4 line-clamp-2 leading-relaxed">{item.description}</p>
-                )}
-
-                {/* Boutons de participation */}
-                <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-                  <button
-                    onClick={() => setParticipation(item, true)}
-                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
-                      participating
-                        ? 'bg-[#C41230] border-[#C41230] text-white'
-                        : 'bg-white border-[#E5E5E5] text-[#666666] hover:border-[#C41230] hover:text-[#C41230]'
-                    }`}
-                  >
-                    {participating ? '✓ Je viens' : 'Je viens'}
-                  </button>
-                  <button
-                    onClick={() => setParticipation(item, false)}
-                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
-                      !participating
-                        ? 'bg-[#F5F5F5] border-[#E5E5E5] text-[#999999]'
-                        : 'bg-white border-[#E5E5E5] text-[#999999] hover:border-[#CCCCCC]'
-                    }`}
-                  >
-                    Je ne viens pas
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
       {/* Planning calendaire */}
       {items.length > 0 && (
         <div className="mt-8 bg-white rounded-xl border border-[#E5E5E5] p-5">
@@ -526,6 +454,78 @@ export default function MonAgenda() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {filtered.length === 0 ? (
+        <div className="text-center py-16 text-[#999999] text-sm">Aucun événement à venir.</div>
+      ) : (
+        <div className="space-y-4">
+          {filtered.map(item => {
+            const cfg = TYPE_CONFIG[item.type]
+            const participating = participationIds.has(item.key)
+            const daysLeft = Math.ceil((new Date(item.date).getTime() - Date.now()) / 86400000)
+            const dateStr = new Date(item.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+            return (
+              <div
+                key={item.key}
+                className={`rounded-xl border p-5 transition-all cursor-pointer hover:shadow-sm ${cfg.bg} ${cfg.border}`}
+                onClick={() => setSelectedItem(item)}
+              >
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    <span className="text-2xl flex-shrink-0">{cfg.icon}</span>
+                    <div className="min-w-0">
+                      <p className="text-base font-bold text-[#0A0A0A] leading-tight">{item.titre}</p>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${cfg.badge}`}>{cfg.label}</span>
+                        {item.niveau && <span className="text-[10px] px-2 py-0.5 bg-white/70 text-[#666666] border border-[#E5E5E5] rounded-full capitalize">{item.niveau}</span>}
+                        {(item.tranche_age ?? []).map(t => (
+                          <span key={t} className="text-[10px] px-2 py-0.5 bg-white/70 text-[#666666] border border-[#E5E5E5] rounded-full capitalize">{t}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <span className={`text-sm font-bold ${daysLeft <= 7 ? 'text-[#C41230]' : 'text-[#0A0A0A]'}`}>J-{daysLeft}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 text-xs text-[#666666] mb-4">
+                  <span>📅 {dateStr}</span>
+                  {item.lieu && <span>📍 {item.lieu}</span>}
+                </div>
+
+                {item.description && (
+                  <p className="text-sm text-[#666666] mb-4 line-clamp-2 leading-relaxed">{item.description}</p>
+                )}
+
+                {/* Boutons de participation */}
+                <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                  <button
+                    onClick={() => setParticipation(item, true)}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
+                      participating
+                        ? 'bg-[#C41230] border-[#C41230] text-white'
+                        : 'bg-white border-[#E5E5E5] text-[#666666] hover:border-[#C41230] hover:text-[#C41230]'
+                    }`}
+                  >
+                    {participating ? '✓ Je viens' : 'Je viens'}
+                  </button>
+                  <button
+                    onClick={() => setParticipation(item, false)}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
+                      !participating
+                        ? 'bg-[#F5F5F5] border-[#E5E5E5] text-[#999999]'
+                        : 'bg-white border-[#E5E5E5] text-[#999999] hover:border-[#CCCCCC]'
+                    }`}
+                  >
+                    Je ne viens pas
+                  </button>
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
 
