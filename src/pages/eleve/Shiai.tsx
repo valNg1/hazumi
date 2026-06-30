@@ -15,6 +15,13 @@ interface PlaylistCollection {
   tags: string[]
 }
 
+function normalizeTag(tag: string): string {
+  return tag
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+}
+
 export default function Shiai() {
   console.log('[Shiai] composant chargé - version 6 (playlists par mot-clé)')
 
@@ -60,13 +67,19 @@ export default function Shiai() {
   }
 
   function getAllTags(): string[] {
-    const allTags = new Set<string>()
+    const tagMap = new Map<string, string>()
     videos.forEach(v => {
       if (v.tags) {
-        v.tags.split(',').forEach(t => allTags.add(t.trim()))
+        v.tags.split(',').forEach(t => {
+          const trimmed = t.trim()
+          const normalized = normalizeTag(trimmed)
+          if (!tagMap.has(normalized)) {
+            tagMap.set(normalized, trimmed)
+          }
+        })
       }
     })
-    return Array.from(allTags).sort()
+    return Array.from(tagMap.values()).sort()
   }
 
   async function loadPlaylists(jid: string) {
@@ -129,14 +142,20 @@ export default function Shiai() {
     if (selectedPlaylistId) {
       const playlist = playlists.find(p => p.id === selectedPlaylistId)
       if (!playlist) return videos
+      const normalizedPlaylistTags = playlist.tags.map(normalizeTag)
       return videos.filter(v => {
         if (!v.tags) return false
-        const videoTags = v.tags.split(',').map(t => t.trim())
-        return playlist.tags.some(t => videoTags.includes(t))
+        const videoTags = v.tags.split(',').map(t => normalizeTag(t.trim()))
+        return normalizedPlaylistTags.some(t => videoTags.includes(t))
       })
     }
     if (!selectedTag) return videos
-    return videos.filter(v => v.tags?.split(',').map(t => t.trim()).includes(selectedTag))
+    const normalizedSelected = normalizeTag(selectedTag)
+    return videos.filter(v => {
+      if (!v.tags) return false
+      const videoTags = v.tags.split(',').map(t => normalizeTag(t.trim()))
+      return videoTags.includes(normalizedSelected)
+    })
   }
 
   async function addVideo() {
@@ -232,7 +251,7 @@ export default function Shiai() {
     <div className="max-w-5xl mx-auto">
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-1">
-          <div className="text-4xl">🥊</div>
+          <span className="text-5xl sm:text-6xl font-bold" style={{ color: '#C41230' }}>試合</span>
           <div>
             <h1 className="text-3xl font-bold text-[#0A0A0A] tracking-tight">Shiai</h1>
             <p className="text-[#666666] text-sm">Mes vidéos de judo — techniques, combats, conseils</p>
