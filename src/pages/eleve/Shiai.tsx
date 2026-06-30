@@ -275,6 +275,13 @@ export default function Shiai() {
         </div>
       ) : (
         <div className="space-y-2">
+          <button
+            onClick={openAddModal}
+            className="w-full p-3 rounded-lg border-2 border-dashed border-[#E5E5E5] hover:border-[#C41230] text-[#999999] hover:text-[#C41230] text-sm transition-colors mb-3"
+          >
+            + Ajouter une vidéo rapidement
+          </button>
+
           {filteredVideos.map(video => {
             const videoType = detectVideoType(video.video_url)
             const label = getVideoLabel(videoType)
@@ -282,7 +289,7 @@ export default function Shiai() {
             const thumbnailUrl = getThumbnailUrl(video.video_url)
 
             return (
-              <div key={video.id} className="bg-white rounded-lg border border-[#E5E5E5] p-3 flex gap-3 items-center hover:shadow-sm transition-shadow group">
+              <div key={video.id} className="bg-white rounded-lg border border-[#E5E5E5] p-3 flex gap-3 items-center hover:shadow-sm transition-shadow">
                 {thumbnailUrl && (
                   <div className="flex-shrink-0 w-20 h-15">
                     <img
@@ -315,10 +322,10 @@ export default function Shiai() {
                   </div>
                 </div>
 
-                <div className="flex-shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex-shrink-0 flex gap-1">
                   <button
                     onClick={() => openEditModal(video)}
-                    className="text-[#CCCCCC] hover:text-[#0A0A0A] transition-colors p-1"
+                    className="text-[#999999] hover:text-[#0A0A0A] transition-colors p-1"
                     title="Modifier"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -327,7 +334,7 @@ export default function Shiai() {
                   </button>
                   <button
                     onClick={() => deleteVideo(video.id)}
-                    className="text-[#CCCCCC] hover:text-red-500 transition-colors p-1"
+                    className="text-[#999999] hover:text-red-500 transition-colors p-1"
                     title="Supprimer"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -338,15 +345,6 @@ export default function Shiai() {
               </div>
             )
           })}
-
-          {filteredVideos.length > 0 && (
-            <button
-              onClick={openAddModal}
-              className="w-full p-3 rounded-lg border-2 border-dashed border-[#E5E5E5] hover:border-[#C41230] text-[#999999] hover:text-[#C41230] text-sm transition-colors"
-            >
-              + Ajouter une vidéo rapidement
-            </button>
-          )}
         </div>
       )}
     </div>
