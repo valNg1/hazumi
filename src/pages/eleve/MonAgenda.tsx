@@ -191,7 +191,12 @@ export default function MonAgenda() {
 
   async function createEvent(e: React.FormEvent) {
     e.preventDefault()
-    if (!judokaId || !createFormData.titre || !createFormData.date) return
+    console.log('[Agenda] formData:', createFormData)
+    console.log('[Agenda] judokaId:', judokaId)
+    if (!judokaId || !createFormData.titre || !createFormData.date) {
+      console.log('[Agenda] validation échouée - retour')
+      return
+    }
     setCreatingEvent(true)
     const { data, error } = await supabase.from('evenements').insert({
       type: createFormData.type,
@@ -202,6 +207,7 @@ export default function MonAgenda() {
       lieu: createFormData.lieu || null,
       description: createFormData.description || null,
     }).select()
+    console.log('[Agenda] résultat insertion:', { data, error })
     if (!error && data && data.length > 0) {
       const eventId = data[0].id
       await supabase.from('evenement_participations').insert({ evenement_id: eventId, judoka_id: judokaId })
