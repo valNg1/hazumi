@@ -98,8 +98,6 @@ export default function Accueil() {
   const [coursTotal, setCoursTotal] = useState(0)
   const [coursVus, setCoursVus] = useState(0)
   const [coursNouveaux, setCoursNouveaux] = useState(0)
-  const [dossierDone, setDossierDone] = useState(0)
-  const [dossierTotal] = useState(3)
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([])
   const [participationIds, setParticipationIds] = useState<Set<string>>(new Set()) // "src:id"
 
@@ -115,10 +113,6 @@ export default function Accueil() {
       setPhotoUrl(j.photo_url ?? null)
       setBelt(j.belt ?? null)
 
-
-      // Dossier
-      const done = [!!(j.full_name && j.birth_date && j.phone), !!j.cert_medical_url, !!j.virement_url].filter(Boolean).length
-      setDossierDone(done)
 
       // Progression grade
       const beltCurriculum = CURRICULUM.find(c => c.belt === j.belt)
@@ -457,32 +451,6 @@ export default function Accueil() {
           </ResponsiveContainer>
         </div>
 
-        {/* Dossier d'inscription — secondaire */}
-        <div
-          className="bg-white rounded-xl border border-[#E5E5E5] p-5 cursor-pointer hover:border-[#CCCCCC] transition-all group"
-          onClick={() => navigate('/eleve/profil')}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-xs uppercase tracking-widest text-[#999999]">Dossier d'inscription</span>
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${dossierDone === dossierTotal ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
-                {dossierDone}/{dossierTotal}
-              </span>
-            </div>
-            <svg className="w-4 h-4 text-[#CCCCCC] group-hover:text-[#C41230] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-          <div className="mt-3 h-1.5 bg-[#F0F0F0] rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${dossierDone === dossierTotal ? 'bg-green-500' : 'bg-[#C41230]'}`}
-              style={{ width: `${Math.round((dossierDone / dossierTotal) * 100)}%` }}
-            />
-          </div>
-          {dossierDone < dossierTotal && (
-            <p className="text-xs text-[#CCCCCC] mt-2">Des documents sont manquants — cliquez pour compléter.</p>
-          )}
-        </div>
       </div>
     </div>
   )
