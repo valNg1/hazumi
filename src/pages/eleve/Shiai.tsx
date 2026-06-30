@@ -251,7 +251,7 @@ export default function Shiai() {
     <div className="max-w-5xl mx-auto">
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-1">
-          <span className="text-5xl sm:text-6xl font-bold" style={{ color: '#C41230' }}>試合</span>
+          <span className="text-2xl sm:text-3xl font-bold" style={{ color: '#C41230' }}>試合</span>
           <div>
             <h1 className="text-3xl font-bold text-[#0A0A0A] tracking-tight">Shiai</h1>
             <p className="text-[#666666] text-sm">Mes vidéos de judo — techniques, combats, conseils</p>
