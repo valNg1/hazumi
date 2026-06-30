@@ -81,22 +81,34 @@ export default function Shiai() {
   }
 
   async function createPlaylist() {
-    if (!judokaId || !playlistName || playlistSelectedTags.length === 0) {
-      setError('Nom et au moins un tag requis')
+    if (!judokaId || !playlistName) {
+      setError('Nom de playlist requis')
       return
     }
     setSaving(true)
     setError(null)
 
+    const tagsToUse = playlistSelectedTags.length > 0
+      ? playlistSelectedTags
+      : playlistName.split(',').map(t => t.trim()).filter(t => t.length > 0)
+
+    if (tagsToUse.length === 0) {
+      setError('Au moins un tag requis')
+      setSaving(false)
+      return
+    }
+
+    console.log('[Shiai] création playlist:', { nom: playlistName, tags: tagsToUse })
+
     const { error: err } = await supabase.from('playlists_collections').insert({
       judoka_id: judokaId,
       nom: playlistName,
-      tags: playlistSelectedTags,
+      tags: tagsToUse,
     })
 
     if (err) {
       console.error('[Shiai] erreur playlist:', JSON.stringify(err))
-      setError('Erreur création playlist')
+      setError(`Erreur: ${err.message || 'Impossible de créer'}`)
     } else {
       setPlaylistModalOpen(false)
       setPlaylistSelectedTags([])
@@ -220,17 +232,7 @@ export default function Shiai() {
     <div className="max-w-5xl mx-auto">
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-1">
-          <svg className="w-10 h-10" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="10" cy="8" r="3.5" fill="#0A0A0A" />
-            <circle cx="30" cy="8" r="3.5" fill="#C41230" />
-            <rect x="5" y="12" width="10" height="8" rx="1.5" fill="#0A0A0A" />
-            <rect x="25" y="12" width="10" height="8" rx="1.5" fill="#C41230" />
-            <line x1="10" y1="20" x2="6" y2="30" stroke="#0A0A0A" strokeWidth="2" strokeLinecap="round" />
-            <line x1="10" y1="20" x2="14" y2="32" stroke="#0A0A0A" strokeWidth="2" strokeLinecap="round" />
-            <line x1="30" y1="20" x2="34" y2="30" stroke="#C41230" strokeWidth="2" strokeLinecap="round" />
-            <line x1="30" y1="20" x2="26" y2="32" stroke="#C41230" strokeWidth="2" strokeLinecap="round" />
-            <path d="M12 20 Q20 18 28 20" stroke="#999999" strokeWidth="1.5" strokeDasharray="2,2" opacity="0.5" />
-          </svg>
+          <div className="text-4xl">🥊</div>
           <div>
             <h1 className="text-3xl font-bold text-[#0A0A0A] tracking-tight">Shiai</h1>
             <p className="text-[#666666] text-sm">Mes vidéos de judo — techniques, combats, conseils</p>
@@ -244,9 +246,9 @@ export default function Shiai() {
           <div className="flex items-center gap-2 mb-3">
             <button
               onClick={() => setPlaylistModalOpen(true)}
-              className="text-xs px-3 py-1.5 rounded-full font-medium bg-[#C41230] hover:bg-[#9B0E25] text-white transition-colors whitespace-nowrap"
+              className="text-xs px-4 py-2.5 rounded-lg font-semibold bg-[#C41230] hover:bg-[#9B0E25] text-white transition-colors whitespace-nowrap"
             >
-              📁 Créer une playlist
+              Créer une playlist
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -300,11 +302,11 @@ export default function Shiai() {
       {playlistModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold text-[#0A0A0A] mb-4">Créer une playlist par mot-clé</h2>
+            <h2 className="text-lg font-semibold text-[#0A0A0A] mb-4">Créer une playlist</h2>
 
             <div className="space-y-4">
               <div>
-                <label className="text-xs text-[#666666] mb-2 block">Sélectionner les tags</label>
+                <label className="text-xs text-[#666666] mb-2 block">Option 1 : Sélectionner les tags existants</label>
                 <div className="flex flex-wrap gap-2 mb-3">
                   {allTags.map(tag => (
                     <button
@@ -334,14 +336,18 @@ export default function Shiai() {
               </div>
 
               <div>
-                <label className="text-xs text-[#666666] mb-1 block">Nom de la playlist</label>
+                <label className="text-xs text-[#666666] mb-1 block">Option 2 : Taper librement des mots-clés</label>
                 <input
                   type="text"
                   value={playlistName}
-                  onChange={e => setPlaylistName(e.target.value)}
-                  placeholder="Ex: Tachi Waza + Uchimata"
+                  onChange={e => {
+                    setPlaylistName(e.target.value)
+                    setPlaylistSelectedTags([])
+                  }}
+                  placeholder="Ex: Tachi Waza, Uchimata, entraînement"
                   className="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:border-[#C41230]"
                 />
+                <p className="text-[10px] text-[#999999] mt-1">Séparer les mots-clés par des virgules</p>
               </div>
 
               {error && <p className="text-xs text-red-600">{error}</p>}
@@ -359,7 +365,11 @@ export default function Shiai() {
                   Annuler
                 </button>
                 <button
-                  onClick={createPlaylist}
+                  onClick={() => {
+                    console.log('[Playlist] tags sélectionnés:', playlistSelectedTags)
+                    console.log('[Playlist] nom:', playlistName)
+                    createPlaylist()
+                  }}
                   disabled={saving}
                   className="flex-1 bg-[#C41230] hover:bg-[#9B0E25] disabled:bg-[#CCCCCC] text-white text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
                 >
