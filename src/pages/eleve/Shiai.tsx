@@ -9,10 +9,18 @@ interface Video {
   tags: string | null
 }
 
+interface PlaylistCollection {
+  id: string
+  nom: string
+  tags: string[]
+}
+
 export default function Shiai() {
-  console.log('[Shiai] composant chargé - version 5 (édition inline)')
+  console.log('[Shiai] composant chargé - version 6 (playlists par mot-clé)')
 
   const [videos, setVideos] = useState<Video[]>([])
+  const [playlists, setPlaylists] = useState<PlaylistCollection[]>([])
+  const [judokaId, setJudokaId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [addFormData, setAddFormData] = useState({ titre: '', url: '', mots_cles: '' })
@@ -20,12 +28,21 @@ export default function Shiai() {
   const [editFormData, setEditFormData] = useState({ titre: '', url: '', mots_cles: '' })
   const [error, setError] = useState<string | null>(null)
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null)
+  const [playlistModalOpen, setPlaylistModalOpen] = useState(false)
+  const [playlistSelectedTags, setPlaylistSelectedTags] = useState<string[]>([])
+  const [playlistName, setPlaylistName] = useState('')
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setLoading(false); return }
-      await loadVideos(user.id)
+      const { data: judoka } = await supabase.from('judokas').select('id').eq('user_id', user.id).single()
+      if (judoka) {
+        setJudokaId(judoka.id)
+        await loadVideos(user.id)
+        await loadPlaylists(judoka.id)
+      }
       setLoading(false)
     }
     load()
@@ -52,7 +69,60 @@ export default function Shiai() {
     return Array.from(allTags).sort()
   }
 
+  async function loadPlaylists(jid: string) {
+    const { data } = await supabase
+      .from('playlists_collections')
+      .select('id, nom, tags')
+      .eq('judoka_id', jid)
+      .order('created_at', { ascending: false })
+    if (data) {
+      setPlaylists(data)
+    }
+  }
+
+  async function createPlaylist() {
+    if (!judokaId || !playlistName || playlistSelectedTags.length === 0) {
+      setError('Nom et au moins un tag requis')
+      return
+    }
+    setSaving(true)
+    setError(null)
+
+    const { error: err } = await supabase.from('playlists_collections').insert({
+      judoka_id: judokaId,
+      nom: playlistName,
+      tags: playlistSelectedTags,
+    })
+
+    if (err) {
+      console.error('[Shiai] erreur playlist:', JSON.stringify(err))
+      setError('Erreur création playlist')
+    } else {
+      setPlaylistModalOpen(false)
+      setPlaylistSelectedTags([])
+      setPlaylistName('')
+      await loadPlaylists(judokaId)
+    }
+    setSaving(false)
+  }
+
+  async function deletePlaylist(playlistId: string) {
+    if (!window.confirm('Supprimer cette playlist ?')) return
+    await supabase.from('playlists_collections').delete().eq('id', playlistId)
+    setPlaylists(prev => prev.filter(p => p.id !== playlistId))
+    if (selectedPlaylistId === playlistId) setSelectedPlaylistId(null)
+  }
+
   function getFilteredVideos(): Video[] {
+    if (selectedPlaylistId) {
+      const playlist = playlists.find(p => p.id === selectedPlaylistId)
+      if (!playlist) return videos
+      return videos.filter(v => {
+        if (!v.tags) return false
+        const videoTags = v.tags.split(',').map(t => t.trim())
+        return playlist.tags.some(t => videoTags.includes(t))
+      })
+    }
     if (!selectedTag) return videos
     return videos.filter(v => v.tags?.split(',').map(t => t.trim()).includes(selectedTag))
   }
@@ -168,32 +238,136 @@ export default function Shiai() {
         </div>
       </div>
 
-      {/* Filtres tags */}
+      {/* Bouton + Filtres tags */}
       {allTags.length > 0 && (
-        <div className="mb-4 flex flex-wrap gap-2">
-          <button
-            onClick={() => setSelectedTag(null)}
-            className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
-              selectedTag === null
-                ? 'bg-[#C41230] text-white'
-                : 'bg-[#F5F5F5] text-[#666666] hover:bg-[#EEEEEE]'
-            }`}
-          >
-            Tous
-          </button>
-          {allTags.map(tag => (
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-3">
             <button
-              key={tag}
-              onClick={() => setSelectedTag(tag)}
+              onClick={() => setPlaylistModalOpen(true)}
+              className="text-xs px-3 py-1.5 rounded-full font-medium bg-[#C41230] hover:bg-[#9B0E25] text-white transition-colors whitespace-nowrap"
+            >
+              📁 Créer une playlist
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => { setSelectedTag(null); setSelectedPlaylistId(null) }}
               className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
-                selectedTag === tag
+                selectedTag === null && selectedPlaylistId === null
                   ? 'bg-[#C41230] text-white'
                   : 'bg-[#F5F5F5] text-[#666666] hover:bg-[#EEEEEE]'
               }`}
             >
-              {tag}
+              Tous
             </button>
-          ))}
+            {playlists.map(playlist => (
+              <button
+                key={playlist.id}
+                onClick={() => { setSelectedPlaylistId(playlist.id); setSelectedTag(null) }}
+                className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors group relative ${
+                  selectedPlaylistId === playlist.id
+                    ? 'bg-[#C41230] text-white'
+                    : 'bg-[#F5F5F5] text-[#666666] hover:bg-[#EEEEEE]'
+                }`}
+              >
+                🎬 {playlist.nom}
+                <button
+                  onClick={e => { e.stopPropagation(); deletePlaylist(playlist.id) }}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 text-[#CCCCCC] hover:text-red-500 transition-colors"
+                >
+                  ✕
+                </button>
+              </button>
+            ))}
+            {allTags.map(tag => (
+              <button
+                key={tag}
+                onClick={() => { setSelectedTag(tag); setSelectedPlaylistId(null) }}
+                className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
+                  selectedTag === tag && selectedPlaylistId === null
+                    ? 'bg-[#C41230] text-white'
+                    : 'bg-[#F5F5F5] text-[#666666] hover:bg-[#EEEEEE]'
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Modale création playlist */}
+      {playlistModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <h2 className="text-lg font-semibold text-[#0A0A0A] mb-4">Créer une playlist par mot-clé</h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-[#666666] mb-2 block">Sélectionner les tags</label>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {allTags.map(tag => (
+                    <button
+                      key={tag}
+                      onClick={() => {
+                        setPlaylistSelectedTags(prev =>
+                          prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+                        )
+                        if (!playlistName) {
+                          setPlaylistName(
+                            playlistSelectedTags.includes(tag)
+                              ? playlistSelectedTags.filter(t => t !== tag).join(' + ')
+                              : [...playlistSelectedTags, tag].join(' + ')
+                          )
+                        }
+                      }}
+                      className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
+                        playlistSelectedTags.includes(tag)
+                          ? 'bg-[#C41230] text-white'
+                          : 'bg-[#F5F5F5] text-[#666666] hover:bg-[#EEEEEE]'
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-[#666666] mb-1 block">Nom de la playlist</label>
+                <input
+                  type="text"
+                  value={playlistName}
+                  onChange={e => setPlaylistName(e.target.value)}
+                  placeholder="Ex: Tachi Waza + Uchimata"
+                  className="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:border-[#C41230]"
+                />
+              </div>
+
+              {error && <p className="text-xs text-red-600">{error}</p>}
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => {
+                    setPlaylistModalOpen(false)
+                    setPlaylistSelectedTags([])
+                    setPlaylistName('')
+                    setError(null)
+                  }}
+                  className="flex-1 px-3 py-2 border border-[#E5E5E5] text-[#666666] text-sm font-medium rounded-lg hover:bg-[#FAFAFA] transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={createPlaylist}
+                  disabled={saving}
+                  className="flex-1 bg-[#C41230] hover:bg-[#9B0E25] disabled:bg-[#CCCCCC] text-white text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
+                >
+                  {saving ? 'Création…' : 'Créer'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
