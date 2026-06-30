@@ -10,14 +10,16 @@ interface Video {
 }
 
 export default function Shiai() {
-  console.log('[Shiai] composant chargé - version 3')
+  console.log('[Shiai] composant chargé - version 4')
 
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
-  const [adding, setAdding] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState({ url: '', titre: '', mots_cles: '' })
   const [error, setError] = useState<string | null>(null)
+  const [selectedTag, setSelectedTag] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -40,41 +42,87 @@ export default function Shiai() {
     }
   }
 
-  async function addVideo() {
+  function getAllTags(): string[] {
+    const allTags = new Set<string>()
+    videos.forEach(v => {
+      if (v.tags) {
+        v.tags.split(',').forEach(t => allTags.add(t.trim()))
+      }
+    })
+    return Array.from(allTags).sort()
+  }
+
+  function getFilteredVideos(): Video[] {
+    if (!selectedTag) return videos
+    return videos.filter(v => v.tags?.split(',').map(t => t.trim()).includes(selectedTag))
+  }
+
+  function openAddModal() {
+    setEditingId(null)
+    setFormData({ url: '', titre: '', mots_cles: '' })
+    setError(null)
+    setModalOpen(true)
+  }
+
+  function openEditModal(video: Video) {
+    setEditingId(video.id)
+    setFormData({ url: video.video_url, titre: video.title, mots_cles: video.tags || '' })
+    setError(null)
+    setModalOpen(true)
+  }
+
+  async function saveVideo() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || !formData.url || !formData.titre) {
       setError('URL et nom sont obligatoires')
       return
     }
-    setAdding(true)
+    setSaving(true)
     setError(null)
 
     const videoType = detectVideoType(formData.url)
     if (!['youtube', 'vimeo', 'instagram', 'gdrive', 'facebook', 'tiktok', 'direct'].includes(videoType)) {
       setError('URL non supportée')
-      setAdding(false)
+      setSaving(false)
       return
     }
 
-    const { error: err } = await supabase.from('videos').insert({
-      title: formData.titre,
-      video_url: formData.url,
-      tags: formData.mots_cles || null,
-      uploaded_by: user.id,
-      description: '',
-      belt: '',
-      technique_key: '',
-    })
+    if (editingId) {
+      const { error: err } = await supabase.from('videos').update({
+        title: formData.titre,
+        video_url: formData.url,
+        tags: formData.mots_cles || null,
+      }).eq('id', editingId)
 
-    if (err) {
-      console.error('[Shiai] erreur:', JSON.stringify(err))
-      setError(`Erreur: ${err.message || 'Impossible d\'ajouter la vidéo'}`)
+      if (err) {
+        console.error('[Shiai] erreur édition:', JSON.stringify(err))
+        setError(`Erreur: ${err.message || 'Impossible de modifier'}`)
+      } else {
+        setFormData({ url: '', titre: '', mots_cles: '' })
+        setModalOpen(false)
+        await loadVideos(user.id)
+      }
     } else {
-      setFormData({ url: '', titre: '', mots_cles: '' })
-      setModalOpen(false)
-      await loadVideos(user.id)
+      const { error: err } = await supabase.from('videos').insert({
+        title: formData.titre,
+        video_url: formData.url,
+        tags: formData.mots_cles || null,
+        uploaded_by: user.id,
+        description: '',
+        belt: '',
+        technique_key: '',
+      })
+
+      if (err) {
+        console.error('[Shiai] erreur ajout:', JSON.stringify(err))
+        setError(`Erreur: ${err.message || 'Impossible d\'ajouter'}`)
+      } else {
+        setFormData({ url: '', titre: '', mots_cles: '' })
+        setModalOpen(false)
+        await loadVideos(user.id)
+      }
     }
-    setAdding(false)
+    setSaving(false)
   }
 
   async function deleteVideo(videoId: string) {
@@ -85,6 +133,9 @@ export default function Shiai() {
 
   if (loading) return <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
 
+  const allTags = getAllTags()
+  const filteredVideos = getFilteredVideos()
+
   return (
     <div className="max-w-5xl mx-auto">
       <div className="mb-6 flex items-center justify-between gap-4">
@@ -93,22 +144,22 @@ export default function Shiai() {
           <p className="text-[#666666] text-sm">Mes vidéos de judo — techniques, combats, conseils</p>
         </div>
         <button
-          onClick={() => { setModalOpen(true); setError(null) }}
+          onClick={openAddModal}
           className="flex items-center gap-2 bg-[#C41230] hover:bg-[#9B0E25] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          Ajouter une vidéo
+          + Ajouter
         </button>
       </div>
 
-      {/* Modale d'ajout */}
+      {/* Modale d'ajout/édition */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-[#0A0A0A]">Ajouter une vidéo</h2>
+              <h2 className="text-lg font-semibold text-[#0A0A0A]">{editingId ? 'Modifier' : 'Ajouter'} une vidéo</h2>
               <button
                 onClick={() => setModalOpen(false)}
                 className="text-[#CCCCCC] hover:text-[#666666] transition-colors"
@@ -163,15 +214,44 @@ export default function Shiai() {
                   Annuler
                 </button>
                 <button
-                  onClick={addVideo}
-                  disabled={adding}
+                  onClick={saveVideo}
+                  disabled={saving}
                   className="flex-1 bg-[#C41230] hover:bg-[#9B0E25] disabled:bg-[#CCCCCC] text-white text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
                 >
-                  {adding ? 'Ajout…' : 'Ajouter'}
+                  {saving ? 'Enregistrement…' : editingId ? 'Modifier' : 'Ajouter'}
                 </button>
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Filtres tags */}
+      {allTags.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          <button
+            onClick={() => setSelectedTag(null)}
+            className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
+              selectedTag === null
+                ? 'bg-[#C41230] text-white'
+                : 'bg-[#F5F5F5] text-[#666666] hover:bg-[#EEEEEE]'
+            }`}
+          >
+            Tous
+          </button>
+          {allTags.map(tag => (
+            <button
+              key={tag}
+              onClick={() => setSelectedTag(tag)}
+              className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
+                selectedTag === tag
+                  ? 'bg-[#C41230] text-white'
+                  : 'bg-[#F5F5F5] text-[#666666] hover:bg-[#EEEEEE]'
+              }`}
+            >
+              {tag}
+            </button>
+          ))}
         </div>
       )}
 
@@ -182,7 +262,7 @@ export default function Shiai() {
         </div>
       ) : (
         <div className="space-y-2">
-          {videos.map(video => {
+          {filteredVideos.map(video => {
             const videoType = detectVideoType(video.video_url)
             const label = getVideoLabel(videoType)
             const tags = video.tags ? video.tags.split(',').map(t => t.trim()) : []
@@ -222,18 +302,38 @@ export default function Shiai() {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => deleteVideo(video.id)}
-                  className="flex-shrink-0 text-[#CCCCCC] hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                  title="Supprimer"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+                <div className="flex-shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => openEditModal(video)}
+                    className="text-[#CCCCCC] hover:text-[#0A0A0A] transition-colors p-1"
+                    title="Modifier"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => deleteVideo(video.id)}
+                    className="text-[#CCCCCC] hover:text-red-500 transition-colors p-1"
+                    title="Supprimer"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             )
           })}
+
+          {filteredVideos.length > 0 && (
+            <button
+              onClick={openAddModal}
+              className="w-full p-3 rounded-lg border-2 border-dashed border-[#E5E5E5] hover:border-[#C41230] text-[#999999] hover:text-[#C41230] text-sm transition-colors"
+            >
+              + Ajouter une vidéo rapidement
+            </button>
+          )}
         </div>
       )}
     </div>
