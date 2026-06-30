@@ -10,14 +10,14 @@ interface Video {
 }
 
 export default function Shiai() {
-  console.log('[Shiai] composant chargé - version 4')
+  console.log('[Shiai] composant chargé - version 5 (édition inline)')
 
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [modalOpen, setModalOpen] = useState(false)
+  const [addFormData, setAddFormData] = useState({ titre: '', url: '', mots_cles: '' })
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [formData, setFormData] = useState({ url: '', titre: '', mots_cles: '' })
+  const [editFormData, setEditFormData] = useState({ titre: '', url: '', mots_cles: '' })
   const [error, setError] = useState<string | null>(null)
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
 
@@ -57,72 +57,82 @@ export default function Shiai() {
     return videos.filter(v => v.tags?.split(',').map(t => t.trim()).includes(selectedTag))
   }
 
-  function openAddModal() {
-    setEditingId(null)
-    setFormData({ url: '', titre: '', mots_cles: '' })
-    setError(null)
-    setModalOpen(true)
-  }
-
-  function openEditModal(video: Video) {
-    setEditingId(video.id)
-    setFormData({ url: video.video_url, titre: video.title, mots_cles: video.tags || '' })
-    setError(null)
-    setModalOpen(true)
-  }
-
-  async function saveVideo() {
+  async function addVideo() {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user || !formData.url || !formData.titre) {
-      setError('URL et nom sont obligatoires')
+    if (!user || !addFormData.url || !addFormData.titre) {
+      setError('Titre et URL sont obligatoires')
       return
     }
     setSaving(true)
     setError(null)
 
-    const videoType = detectVideoType(formData.url)
+    const videoType = detectVideoType(addFormData.url)
     if (!['youtube', 'vimeo', 'instagram', 'gdrive', 'facebook', 'tiktok', 'direct'].includes(videoType)) {
       setError('URL non supportée')
       setSaving(false)
       return
     }
 
-    if (editingId) {
-      const { error: err } = await supabase.from('videos').update({
-        title: formData.titre,
-        video_url: formData.url,
-        tags: formData.mots_cles || null,
-      }).eq('id', editingId)
+    const { error: err } = await supabase.from('videos').insert({
+      title: addFormData.titre,
+      video_url: addFormData.url,
+      tags: addFormData.mots_cles || null,
+      uploaded_by: user.id,
+      description: '',
+      belt: '',
+      technique_key: '',
+    })
 
-      if (err) {
-        console.error('[Shiai] erreur édition:', JSON.stringify(err))
-        setError(`Erreur: ${err.message || 'Impossible de modifier'}`)
-      } else {
-        setFormData({ url: '', titre: '', mots_cles: '' })
-        setModalOpen(false)
-        await loadVideos(user.id)
-      }
+    if (err) {
+      console.error('[Shiai] erreur ajout:', JSON.stringify(err))
+      setError(`Erreur: ${err.message || 'Impossible d\'ajouter'}`)
     } else {
-      const { error: err } = await supabase.from('videos').insert({
-        title: formData.titre,
-        video_url: formData.url,
-        tags: formData.mots_cles || null,
-        uploaded_by: user.id,
-        description: '',
-        belt: '',
-        technique_key: '',
-      })
-
-      if (err) {
-        console.error('[Shiai] erreur ajout:', JSON.stringify(err))
-        setError(`Erreur: ${err.message || 'Impossible d\'ajouter'}`)
-      } else {
-        setFormData({ url: '', titre: '', mots_cles: '' })
-        setModalOpen(false)
-        await loadVideos(user.id)
-      }
+      setAddFormData({ titre: '', url: '', mots_cles: '' })
+      await loadVideos(user.id)
     }
     setSaving(false)
+  }
+
+  function startEdit(video: Video) {
+    setEditingId(video.id)
+    setEditFormData({ titre: video.title, url: video.video_url, mots_cles: video.tags || '' })
+  }
+
+  async function saveEdit() {
+    if (!editFormData.url || !editFormData.titre) {
+      setError('Titre et URL sont obligatoires')
+      return
+    }
+    setSaving(true)
+    setError(null)
+
+    const videoType = detectVideoType(editFormData.url)
+    if (!['youtube', 'vimeo', 'instagram', 'gdrive', 'facebook', 'tiktok', 'direct'].includes(videoType)) {
+      setError('URL non supportée')
+      setSaving(false)
+      return
+    }
+
+    const { error: err } = await supabase.from('videos').update({
+      title: editFormData.titre,
+      video_url: editFormData.url,
+      tags: editFormData.mots_cles || null,
+    }).eq('id', editingId)
+
+    if (err) {
+      console.error('[Shiai] erreur édition:', JSON.stringify(err))
+      setError(`Erreur: ${err.message || 'Impossible de modifier'}`)
+    } else {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) await loadVideos(user.id)
+      setEditingId(null)
+    }
+    setSaving(false)
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setError(null)
   }
 
   async function deleteVideo(videoId: string) {
@@ -138,8 +148,8 @@ export default function Shiai() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="mb-6">
+        <div className="flex items-center gap-3 mb-1">
           <svg className="w-10 h-10" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="10" cy="8" r="3.5" fill="#0A0A0A" />
             <circle cx="30" cy="8" r="3.5" fill="#C41230" />
@@ -152,92 +162,11 @@ export default function Shiai() {
             <path d="M12 20 Q20 18 28 20" stroke="#999999" strokeWidth="1.5" strokeDasharray="2,2" opacity="0.5" />
           </svg>
           <div>
-            <h1 className="text-3xl font-bold text-[#0A0A0A] tracking-tight mb-1">Shiai</h1>
+            <h1 className="text-3xl font-bold text-[#0A0A0A] tracking-tight">Shiai</h1>
             <p className="text-[#666666] text-sm">Mes vidéos de judo — techniques, combats, conseils</p>
           </div>
         </div>
-        <button
-          onClick={openAddModal}
-          className="flex items-center gap-2 bg-[#C41230] hover:bg-[#9B0E25] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          + Ajouter
-        </button>
       </div>
-
-      {/* Modale d'ajout/édition */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-[#0A0A0A]">{editingId ? 'Modifier' : 'Ajouter'} une vidéo</h2>
-              <button
-                onClick={() => setModalOpen(false)}
-                className="text-[#CCCCCC] hover:text-[#666666] transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs text-[#666666] mb-1 block">URL</label>
-                <input
-                  type="text"
-                  value={formData.url}
-                  onChange={e => setFormData({ ...formData, url: e.target.value })}
-                  placeholder="https://youtube.com/watch?v=..."
-                  className="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:border-[#C41230]"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-[#666666] mb-1 block">Nom de la vidéo</label>
-                <input
-                  type="text"
-                  value={formData.titre}
-                  onChange={e => setFormData({ ...formData, titre: e.target.value })}
-                  placeholder="Ex: O goshi sur judoka grand"
-                  className="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:border-[#C41230]"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-[#666666] mb-1 block">Mots-clés (optionnel)</label>
-                <input
-                  type="text"
-                  value={formData.mots_cles}
-                  onChange={e => setFormData({ ...formData, mots_cles: e.target.value })}
-                  placeholder="o goshi, judo, technique"
-                  className="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:border-[#C41230]"
-                />
-              </div>
-
-              {error && <p className="text-xs text-red-600">{error}</p>}
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  onClick={() => setModalOpen(false)}
-                  className="flex-1 px-3 py-2 border border-[#E5E5E5] text-[#666666] text-sm font-medium rounded-lg hover:bg-[#FAFAFA] transition-colors"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={saveVideo}
-                  disabled={saving}
-                  className="flex-1 bg-[#C41230] hover:bg-[#9B0E25] disabled:bg-[#CCCCCC] text-white text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
-                >
-                  {saving ? 'Enregistrement…' : editingId ? 'Modifier' : 'Ajouter'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Filtres tags */}
       {allTags.length > 0 && (
@@ -271,22 +200,101 @@ export default function Shiai() {
       {/* Liste des vidéos */}
       {videos.length === 0 ? (
         <div className="text-center py-16 text-[#999999] text-sm">
-          Aucune vidéo pour le moment.
+          Aucune vidéo pour le moment. Ajoutez-en une ci-dessous.
         </div>
       ) : (
         <div className="space-y-2">
-          <button
-            onClick={openAddModal}
-            className="w-full p-3 rounded-lg border-2 border-dashed border-[#E5E5E5] hover:border-[#C41230] text-[#999999] hover:text-[#C41230] text-sm transition-colors mb-3"
-          >
-            + Ajouter une vidéo rapidement
-          </button>
+          {/* Barre d'ajout rapide inline */}
+          <div className="bg-[#FAFAFA] rounded-lg border border-[#E5E5E5] p-3 flex gap-3 items-center">
+            <div className="flex-shrink-0 w-20 h-15 rounded bg-[#F0F0F0] border border-[#E5E5E5]" />
 
+            <input
+              type="text"
+              value={addFormData.titre}
+              onChange={e => setAddFormData({ ...addFormData, titre: e.target.value })}
+              placeholder="Titre"
+              className="flex-1 px-2 py-1.5 text-sm border border-[#E5E5E5] rounded bg-white focus:outline-none focus:border-[#C41230]"
+            />
+
+            <input
+              type="text"
+              value={addFormData.url}
+              onChange={e => setAddFormData({ ...addFormData, url: e.target.value })}
+              placeholder="URL"
+              className="flex-1 px-2 py-1.5 text-sm border border-[#E5E5E5] rounded bg-white focus:outline-none focus:border-[#C41230]"
+            />
+
+            <input
+              type="text"
+              value={addFormData.mots_cles}
+              onChange={e => setAddFormData({ ...addFormData, mots_cles: e.target.value })}
+              placeholder="Mots-clés"
+              className="flex-1 px-2 py-1.5 text-sm border border-[#E5E5E5] rounded bg-white focus:outline-none focus:border-[#C41230]"
+            />
+
+            <button
+              onClick={addVideo}
+              disabled={saving}
+              className="flex-shrink-0 bg-[#C41230] hover:bg-[#9B0E25] disabled:bg-[#CCCCCC] text-white px-3 py-1.5 rounded text-sm font-semibold transition-colors"
+            >
+              ✓
+            </button>
+          </div>
+
+          {error && <p className="text-xs text-red-600 px-2">{error}</p>}
+
+          {/* Vidéos */}
           {filteredVideos.map(video => {
+            const isEditing = editingId === video.id
             const videoType = detectVideoType(video.video_url)
             const label = getVideoLabel(videoType)
             const tags = video.tags ? video.tags.split(',').map(t => t.trim()) : []
             const thumbnailUrl = getThumbnailUrl(video.video_url)
+
+            if (isEditing) {
+              return (
+                <div key={video.id} className="bg-white rounded-lg border-2 border-[#C41230] p-3 flex gap-3 items-center">
+                  <div className="flex-shrink-0 w-20 h-15 rounded bg-[#F0F0F0] border border-[#E5E5E5]" />
+
+                  <input
+                    type="text"
+                    value={editFormData.titre}
+                    onChange={e => setEditFormData({ ...editFormData, titre: e.target.value })}
+                    className="flex-1 px-2 py-1.5 text-sm border border-[#E5E5E5] rounded focus:outline-none focus:border-[#C41230]"
+                  />
+
+                  <input
+                    type="text"
+                    value={editFormData.url}
+                    onChange={e => setEditFormData({ ...editFormData, url: e.target.value })}
+                    className="flex-1 px-2 py-1.5 text-sm border border-[#E5E5E5] rounded focus:outline-none focus:border-[#C41230]"
+                  />
+
+                  <input
+                    type="text"
+                    value={editFormData.mots_cles}
+                    onChange={e => setEditFormData({ ...editFormData, mots_cles: e.target.value })}
+                    className="flex-1 px-2 py-1.5 text-sm border border-[#E5E5E5] rounded focus:outline-none focus:border-[#C41230]"
+                  />
+
+                  <div className="flex-shrink-0 flex gap-1">
+                    <button
+                      onClick={saveEdit}
+                      disabled={saving}
+                      className="bg-green-500 hover:bg-green-600 disabled:bg-[#CCCCCC] text-white px-3 py-1.5 rounded text-sm font-semibold transition-colors"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      onClick={cancelEdit}
+                      className="bg-[#CCCCCC] hover:bg-[#999999] text-white px-3 py-1.5 rounded text-sm font-semibold transition-colors"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              )
+            }
 
             return (
               <div key={video.id} className="bg-white rounded-lg border border-[#E5E5E5] p-3 flex gap-3 items-center hover:shadow-sm transition-shadow">
@@ -314,7 +322,7 @@ export default function Shiai() {
                     }`}>
                       {label}
                     </span>
-                    {tags.length > 0 && tags.slice(0, 1).map(tag => (
+                    {tags.map(tag => (
                       <span key={tag} className="text-[9px] px-1.5 py-0.5 bg-[#F5F5F5] text-[#666666] rounded border border-[#E5E5E5]">
                         {tag}
                       </span>
@@ -324,22 +332,16 @@ export default function Shiai() {
 
                 <div className="flex-shrink-0 flex gap-1">
                   <button
-                    onClick={() => openEditModal(video)}
-                    className="text-[#999999] hover:text-[#0A0A0A] transition-colors p-1"
-                    title="Modifier"
+                    onClick={() => startEdit(video)}
+                    className="text-[#999999] hover:text-[#0A0A0A] transition-colors p-1 text-xs font-semibold"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
+                    Modifier
                   </button>
                   <button
                     onClick={() => deleteVideo(video.id)}
-                    className="text-[#999999] hover:text-red-500 transition-colors p-1"
-                    title="Supprimer"
+                    className="text-[#999999] hover:text-red-500 transition-colors p-1 text-xs font-semibold"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                    Supprimer
                   </button>
                 </div>
               </div>
