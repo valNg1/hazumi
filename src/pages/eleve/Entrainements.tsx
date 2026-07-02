@@ -66,8 +66,6 @@ interface PersonalTraining {
   date: string
   heure_debut: string | null
   heure_fin: string | null
-  completed: boolean | null
-  completed_at: string | null
 }
 
 export default function Entrainements() {
@@ -87,7 +85,7 @@ export default function Entrainements() {
     if (!user) return
     const { data: judoka } = await supabase.from('judokas').select('id, club_id').eq('user_id', user.id).single()
     if (!judoka) return
-    const { data: s } = await supabase.from('planification_entrainements').select('id, type, date, heure_debut, heure_fin, notes, recurrent, completed, completed_at').eq('judoka_id', judoka.id).order('date')
+    const { data: s } = await supabase.from('planification_entrainements').select('id, type, date, heure_debut, heure_fin, notes, recurrent').eq('judoka_id', judoka.id).order('date')
     setJudokaId(judoka.id)
     const seancesData: Seance[] = (s ?? []).map((t: any) => ({
       id: t.id,
@@ -103,11 +101,7 @@ export default function Entrainements() {
     }))
     setSeances(seancesData)
     setPersonalTrainings(s ?? [])
-    const confirmed = new Set<string>()
-    for (const training of s ?? []) {
-      if (training.completed === true) confirmed.add(training.id)
-    }
-    setConfirmedIds(confirmed)
+    setConfirmedIds(new Set())
     setCompetEvents([])
   }
 
@@ -121,18 +115,12 @@ export default function Entrainements() {
 
   async function togglePresence(seanceId: string) {
     if (!judokaId) return
-    const isConfirmed = confirmedIds.has(seanceId)
-    const { error } = await supabase.from('planification_entrainements').update({
-      completed: !isConfirmed,
-      completed_at: !isConfirmed ? new Date().toISOString() : null,
-    }).eq('id', seanceId)
-
-    if (!error) {
-      if (isConfirmed) {
-        setConfirmedIds(prev => { const s = new Set(prev); s.delete(seanceId); return s })
-      } else {
-        setConfirmedIds(prev => new Set([...prev, seanceId]))
-      }
+    if (confirmedIds.has(seanceId)) {
+      await supabase.from('presences').delete().eq('seance_id', seanceId).eq('judoka_id', judokaId)
+      setConfirmedIds(prev => { const s = new Set(prev); s.delete(seanceId); return s })
+    } else {
+      await supabase.from('presences').upsert({ seance_id: seanceId, judoka_id: judokaId }, { onConflict: 'seance_id,judoka_id' })
+      setConfirmedIds(prev => new Set([...prev, seanceId]))
     }
   }
 
@@ -364,12 +352,11 @@ function CompetPill({ event, compact }: { event: CompetEvent; compact?: boolean 
   )
 }
 
-function SeancePill({ seance, today, compact, confirmed, onToggle }: {
+function SeancePill({ seance, today, compact }: {
   seance: Seance; today: string; confirmed?: boolean; onToggle?: (id: string) => void; compact?: boolean
 }) {
   const isPast = seance.date < today
   const isToday = seance.date === today
-  const isFuture = seance.date > today
   return (
     <div className={`rounded-lg border p-3 transition-all ${isPast ? 'border-[#F0F0F0] bg-[#FAFAFA]' : isToday ? 'border-[#C41230]/30 bg-[#FFF5F6]' : 'border-[#E5E5E5] bg-white'}`}>
       <div className="flex items-start justify-between gap-2">
@@ -383,18 +370,6 @@ function SeancePill({ seance, today, compact, confirmed, onToggle }: {
             </div>
           )}
         </div>
-        {isFuture && onToggle && compact && (
-          <button
-            onClick={() => onToggle(seance.id)}
-            className={`flex-shrink-0 px-2 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${
-              confirmed
-                ? 'bg-[#C41230] text-white hover:bg-[#9B0E25]'
-                : 'bg-[#F0F0F0] text-[#666666] hover:bg-[#E5E5E5]'
-            }`}
-          >
-            {confirmed ? '✓ Je viens' : 'Je viens'}
-          </button>
-        )}
       </div>
     </div>
   )
