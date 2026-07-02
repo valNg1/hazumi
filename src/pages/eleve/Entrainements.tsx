@@ -114,7 +114,13 @@ export default function Entrainements() {
   }
 
   async function handleSaveTraining(form: TrainingForm) {
-    if (!judokaId) return
+    console.log('[Training] form data:', form)
+    console.log('[Training] judoka_id:', judokaId)
+
+    if (!judokaId) {
+      console.error('[Training] judoka_id is null')
+      return
+    }
     if (!form.heureDebut || !form.heureFin) {
       alert('Heures requises')
       return
@@ -156,10 +162,21 @@ export default function Entrainements() {
             jours_recurrence: [],
           } as any]
 
-      await supabase.from('entrainements').insert(toInsert)
+      console.log('[Training] toInsert:', toInsert)
+      const { error } = await supabase.from('entrainements').insert(toInsert)
+      console.log('[Training] erreur:', error)
+
+      if (error) {
+        console.error('[Training] Supabase error:', error)
+        alert(`Erreur: ${error.message}`)
+        return
+      }
+
+      console.log('[Training] Succès - fermeture modale')
       setShowTrainingModal(false)
     } catch (err) {
-      console.error('[Entrainements] Erreur création:', err)
+      console.error('[Training] Exception:', err)
+      console.log('[Training] erreur:', err)
       alert('Erreur lors de l\'enregistrement')
     } finally {
       setCreatingTraining(false)
