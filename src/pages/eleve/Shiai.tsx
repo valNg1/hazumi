@@ -579,40 +579,65 @@ export default function Shiai() {
       )}
 
       {playingVideoUrl && (
-        <>
-          <div className="fixed inset-0 z-40 bg-black/70" onClick={() => setPlayingVideoUrl(null)} />
-          <div className="fixed z-50 top-1/2 left-1/2" style={{ transform: 'translate(-50%, -50%)', width: '95vw', maxWidth: '768px', maxHeight: '90vh', overflow: 'auto' }}>
-            <div className="bg-white rounded-lg shadow-xl">
-              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[#E5E5E5]">
-                <h2 className="text-base sm:text-lg font-semibold text-[#0A0A0A]">Lecteur vidéo</h2>
-                <button
-                  onClick={() => setPlayingVideoUrl(null)}
-                  className="text-[#999999] hover:text-[#0A0A0A] text-xl sm:text-base"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="bg-black overflow-hidden" style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
-                {(() => {
-                  const embedUrl = getEmbedUrl(playingVideoUrl)
-                  const videoType = detectVideoType(playingVideoUrl)
-                  console.log('[Shiai] embed URL:', embedUrl, 'type:', videoType)
-                  if (videoType === 'youtube' || videoType === 'vimeo') {
-                    return (
-                      <iframe
-                        src={embedUrl}
-                        title="Vidéo"
-                        allowFullScreen
-                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                      />
-                    )
-                  }
-                  return <p className="text-white text-center text-sm px-4 absolute inset-0 flex items-center justify-center">Ouverture dans un nouvel onglet...</p>
-                })()}
-              </div>
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0,
+          width: '100vw', height: '100vh',
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px',
+          boxSizing: 'border-box'
+        }} onClick={() => setPlayingVideoUrl(null)}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            width: '100%',
+            maxWidth: '768px',
+            overflow: 'hidden',
+            boxShadow: '0 20px 25px rgba(0,0,0,0.3)'
+          }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[#E5E5E5]">
+              <h2 className="text-base sm:text-lg font-semibold text-[#0A0A0A]">Lecteur vidéo</h2>
+              <button
+                onClick={() => setPlayingVideoUrl(null)}
+                className="text-[#999999] hover:text-[#0A0A0A] text-xl sm:text-base"
+              >
+                ✕
+              </button>
+            </div>
+            <div style={{
+              position: 'relative',
+              paddingBottom: '56.25%',
+              height: 0,
+              backgroundColor: '#000000'
+            }}>
+              {(() => {
+                const embedUrl = getEmbedUrl(playingVideoUrl)
+                const videoType = detectVideoType(playingVideoUrl)
+                console.log('[Shiai] embed URL:', embedUrl, 'type:', videoType)
+                if (videoType === 'youtube' || videoType === 'vimeo') {
+                  return (
+                    <iframe
+                      src={embedUrl}
+                      title="Vidéo"
+                      allowFullScreen
+                      style={{
+                        position: 'absolute',
+                        top: 0, left: 0,
+                        width: '100%', height: '100%',
+                        border: 'none'
+                      }}
+                    />
+                  )
+                }
+                return <p className="text-white text-center text-sm px-4" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Ouverture dans un nouvel onglet...</p>
+              })()}
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   )
