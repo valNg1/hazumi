@@ -1,5 +1,8 @@
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
+import TrainingModal from '../../components/TrainingModal'
+import { generateRecurrenceDates } from '../../lib/training'
+import type { TrainingForm } from '../../lib/training'
 
 interface Seance {
   id: string
@@ -65,6 +68,8 @@ export default function Entrainements() {
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<ViewMode>('semaine')
   const [cursor, setCursor] = useState(new Date())
+  const [showTrainingModal, setShowTrainingModal] = useState(false)
+  const [creatingTraining, setCreatingTraining] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -105,6 +110,59 @@ export default function Entrainements() {
     } else {
       await supabase.from('presences').upsert({ seance_id: seanceId, judoka_id: judokaId }, { onConflict: 'seance_id,judoka_id' })
       setConfirmedIds(prev => new Set([...prev, seanceId]))
+    }
+  }
+
+  async function handleSaveTraining(form: TrainingForm) {
+    if (!judokaId) return
+    if (!form.heureDebut || !form.heureFin) {
+      alert('Heures requises')
+      return
+    }
+    if (!form.isRecurrent && !form.dateSingle) {
+      alert('Date requise')
+      return
+    }
+    if (form.isRecurrent && (!form.dateDebut || form.joursRecurrence.length === 0)) {
+      alert('Configuration récurrence requise')
+      return
+    }
+
+    setCreatingTraining(true)
+    try {
+      const toInsert = form.isRecurrent && form.dateDebut
+        ? generateRecurrenceDates(form.dateDebut, form.dateFin ?? null, form.joursRecurrence, form.excludeWeekends, form.excludeHolidays, (form.zone as 'metropole' | 'domtom' | 'autre')).map(date => ({
+            judoka_id: judokaId,
+            type: form.type,
+            date,
+            heure_debut: form.heureDebut || null,
+            heure_fin: form.heureFin || null,
+            notes: form.notes || null,
+            recurrent: true,
+            date_debut_recurrence: form.dateDebut,
+            date_fin_recurrence: form.dateFin || null,
+            jours_recurrence: form.joursRecurrence,
+          }))
+        : [{
+            judoka_id: judokaId,
+            type: form.type,
+            date: form.dateSingle!,
+            heure_debut: form.heureDebut || null,
+            heure_fin: form.heureFin || null,
+            notes: form.notes || null,
+            recurrent: false,
+            date_debut_recurrence: undefined,
+            date_fin_recurrence: null,
+            jours_recurrence: [],
+          } as any]
+
+      await supabase.from('entrainements').insert(toInsert)
+      setShowTrainingModal(false)
+    } catch (err) {
+      console.error('[Entrainements] Erreur création:', err)
+      alert('Erreur lors de l\'enregistrement')
+    } finally {
+      setCreatingTraining(false)
     }
   }
 
@@ -182,9 +240,17 @@ export default function Entrainements() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Mes entraînements</h1>
-        <p className="text-[#999999] text-sm mt-0.5">Séances planifiées par le club</p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Mes entraînements</h1>
+          <p className="text-[#999999] text-sm mt-0.5">Séances planifiées par le club</p>
+        </div>
+        <button
+          onClick={() => setShowTrainingModal(true)}
+          className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap"
+        >
+          Organiser mes entraînements
+        </button>
       </div>
 
       {/* Recap panel */}
@@ -228,6 +294,8 @@ export default function Entrainements() {
       ) : (
         <ListView seances={visibleSeances} competEvents={visibleCompets} today={today} confirmedIds={confirmedIds} onToggle={togglePresence} groupBy={view === 'annee' || view === 'trimestre' ? 'month' : 'week'} />
       )}
+
+      <TrainingModal isOpen={showTrainingModal} onClose={() => setShowTrainingModal(false)} onSave={handleSaveTraining} isLoading={creatingTraining} />
     </div>
   )
 }

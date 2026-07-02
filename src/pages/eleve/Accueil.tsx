@@ -100,6 +100,7 @@ export default function Accueil() {
   const [coursNouveaux, setCoursNouveaux] = useState(0)
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([])
   const [participationIds, setParticipationIds] = useState<Set<string>>(new Set()) // "src:id"
+  const [trainingsThisWeek, setTrainingsThisWeek] = useState(0)
 
   useEffect(() => {
     async function load() {
@@ -175,11 +176,23 @@ export default function Accueil() {
 
       // Agenda à venir (compétitions + événements)
       const todayStr2 = new Date().toISOString().slice(0, 10)
-      const [{ data: comps }, { data: evts }, { data: compParts }, { data: evtParts }] = await Promise.all([
+
+      // Calcul semaine (lundi-dimanche)
+      const today3 = new Date(todayStr2)
+      const dayOfWeek = today3.getDay()
+      const monday = new Date(today3)
+      monday.setDate(today3.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1))
+      const sunday = new Date(monday)
+      sunday.setDate(monday.getDate() + 6)
+      const mondayStr = monday.toISOString().slice(0, 10)
+      const sundayStr = sunday.toISOString().slice(0, 10)
+
+      const [{ data: comps }, { data: evts }, { data: compParts }, { data: evtParts }, { count: trainCount }] = await Promise.all([
         supabase.from('competitions').select('id, nom, date, lieu, niveau, tranche_age').gte('date', todayStr2).order('date'),
         supabase.from('evenements').select('id, type, titre, date_debut, date_fin, lieu, notes').eq('judoka_id', j.id).gte('date_debut', todayStr2).order('date_debut'),
         supabase.from('competition_participations').select('competition_id').eq('judoka_id', j.id),
         supabase.from('evenement_participations').select('evenement_id').eq('judoka_id', j.id),
+        supabase.from('entrainements').select('*', { count: 'exact', head: true }).eq('judoka_id', j.id).gte('date', mondayStr).lte('date', sundayStr),
       ])
       const ageCategory = j.birth_date ? getAgeCategory(j.birth_date) : null
       const items: AgendaItem[] = [
@@ -200,6 +213,7 @@ export default function Accueil() {
         ...(evtParts ?? []).map((p: { evenement_id: string }) => `evt:${p.evenement_id}`),
       ])
       setParticipationIds(ids)
+      setTrainingsThisWeek(trainCount ?? 0)
 
       setLoading(false)
     }
@@ -407,6 +421,21 @@ export default function Accueil() {
               </div>
             )
           })()}
+
+          {/* Entraînements cette semaine */}
+          <div
+            className="bg-white rounded-xl border border-[#E5E5E5] p-5 cursor-pointer hover:border-[#CCCCCC] transition-all group"
+            onClick={() => navigate('/eleve/entrainements')}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs uppercase tracking-widest text-[#999999]">Entraînements</span>
+              <svg className="w-3.5 h-3.5 text-[#CCCCCC] group-hover:text-[#C41230] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+            <p className="text-3xl font-bold text-[#0A0A0A]">{trainingsThisWeek}</p>
+            <p className="text-xs text-[#CCCCCC] mt-1">cette semaine</p>
+          </div>
         </div>
 
         {/* Graph heures : possible vs réalisé */}
