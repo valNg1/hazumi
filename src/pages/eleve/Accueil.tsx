@@ -481,7 +481,7 @@ export default function Accueil() {
                 </linearGradient>
               </defs>
               <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} label={{ value: 'heures', angle: -90, position: 'insideLeft' }} />
+              <YAxis domain={[0, 20]} tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} label={{ value: 'heures', angle: -90, position: 'insideLeft' }} />
               <Tooltip
                 contentStyle={{ fontSize: 11, border: '1px solid #E5E5E5', borderRadius: 8, boxShadow: 'none' }}
                 formatter={(v: unknown, name: unknown) => [`${v}h`, name === 'possible' ? 'Possible' : 'Réalisé']}
