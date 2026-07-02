@@ -468,20 +468,26 @@ export default function Accueil() {
               ))}
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={150}>
-            <AreaChart data={chartData} margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="gPossible" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#CCCCCC" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#CCCCCC" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="gRealise" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#C41230" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#C41230" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} />
-              <YAxis domain={[0, 20]} tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} label={{ value: 'heures', angle: -90, position: 'insideLeft' }} />
+          {(() => {
+            const maxPossible = Math.max(...chartData.map(d => d.possible), 0)
+            const maxRealise = Math.max(...chartData.map(d => d.realise), 0)
+            const maxValue = Math.max(maxPossible, maxRealise)
+            const yMax = Math.ceil(maxValue / 5) * 5 + 5
+            return (
+              <ResponsiveContainer width="100%" height={150}>
+                <AreaChart data={chartData} margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gPossible" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#CCCCCC" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#CCCCCC" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="gRealise" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#C41230" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#C41230" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0, yMax]} tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} label={{ value: 'heures', angle: -90, position: 'insideLeft' }} />
               <Tooltip
                 contentStyle={{ fontSize: 11, border: '1px solid #E5E5E5', borderRadius: 8, boxShadow: 'none' }}
                 formatter={(v: unknown, name: unknown) => [`${v}h`, name === 'possible' ? 'Possible' : 'Réalisé']}
@@ -492,8 +498,10 @@ export default function Accueil() {
               {chartData.find(d => d.isToday) && <ReferenceLine x={chartData.find(d => d.isToday)?.label} stroke="#C41230" strokeDasharray="4 4" />}
               <Area type="monotone" dataKey="possible" stroke="#CCCCCC" strokeWidth={1.5} fill="url(#gPossible)" dot={false} />
               <Area type="monotone" dataKey="realise" stroke="#C41230" strokeWidth={2} fill="url(#gRealise)" dot={false} activeDot={{ r: 4, fill: '#C41230' }} />
-            </AreaChart>
-          </ResponsiveContainer>
+                </AreaChart>
+              </ResponsiveContainer>
+            )
+          })()}
         </div>
 
       </div>
