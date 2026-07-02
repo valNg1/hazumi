@@ -88,10 +88,6 @@ export default function Accueil() {
   const [acquis, setAcquis] = useState(0)
   const [total, setTotal] = useState(0)
   const [playlistCount, setPlaylistCount] = useState(0)
-  const [entrainementCount, setEntrainementCount] = useState(0)
-  const [confirmedCount, setConfirmedCount] = useState(0)
-  const [totalUpcoming, setTotalUpcoming] = useState(0)
-  const [confirmedMinutes, setConfirmedMinutes] = useState(0)
   const [chartData, setChartData] = useState<{ label: string; possible: number; realise: number }[]>([])
   const [chartView, setChartView] = useState<ChartView>('mois')
   const [rawData, setRawData] = useState<RawData | null>(null)
@@ -101,6 +97,7 @@ export default function Accueil() {
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([])
   const [participationIds, setParticipationIds] = useState<Set<string>>(new Set()) // "src:id"
   const [trainingsThisWeek, setTrainingsThisWeek] = useState(0)
+  const [trainingsThisMonth, setTrainingsThisMonth] = useState(0)
 
   useEffect(() => {
     async function load() {
@@ -134,21 +131,12 @@ export default function Accueil() {
 
       // Entraînements
       const today = new Date()
-      const todayStr = today.toISOString().slice(0, 10)
-      const in7 = new Date(today); in7.setDate(today.getDate() + 7)
-      const in7Str = in7.toISOString().slice(0, 10)
       const schoolY = today.getMonth() >= 8 ? today.getFullYear() : today.getFullYear() - 1
       const schoolStart = `${schoolY}-09-01`
       const schoolEnd = `${schoolY + 1}-06-30`
       type SeanceRef = { date: string; duree_minutes: number }
       const { data: trainingsData } = await supabase.from('planification_entrainements').select('id, date').eq('judoka_id', j.id).gte('date', schoolStart).lte('date', schoolEnd)
       const trainingsAll = (trainingsData ?? []).map((t: any) => ({ date: t.date, duree_minutes: 0 }))
-      const upcomingTrainings = trainingsAll.filter(s => s.date >= todayStr && s.date <= in7Str)
-      const futureTrainings = trainingsAll.filter(s => s.date >= todayStr)
-      setEntrainementCount(upcomingTrainings.length)
-      setTotalUpcoming(trainingsAll.filter(s => s.date >= todayStr).length)
-      setConfirmedCount(futureTrainings.length)
-      setConfirmedMinutes(0)
 
       // Données brutes pour le graph (année scolaire)
       const seancesList = trainingsAll as SeanceRef[]
@@ -182,10 +170,17 @@ export default function Accueil() {
       const mondayStr = monday.toISOString().slice(0, 10)
       const sundayStr = sunday.toISOString().slice(0, 10)
 
-      const [{ data: comps }, { data: evts }, { count: trainCount }] = await Promise.all([
+      // Calcul mois (1er au dernier jour du mois courant)
+      const monthStart = new Date(today3.getFullYear(), today3.getMonth(), 1)
+      const monthEnd = new Date(today3.getFullYear(), today3.getMonth() + 1, 0)
+      const monthStartStr = monthStart.toISOString().slice(0, 10)
+      const monthEndStr = monthEnd.toISOString().slice(0, 10)
+
+      const [{ data: comps }, { data: evts }, { count: trainCount }, { count: trainMonthCount }] = await Promise.all([
         supabase.from('competitions').select('id, nom, date, lieu, niveau, tranche_age').gte('date', todayStr2).order('date'),
         supabase.from('evenements').select('id, type, titre, date_debut, date_fin, lieu, notes').eq('judoka_id', j.id).gte('date_debut', todayStr2).order('date_debut'),
         supabase.from('planification_entrainements').select('*', { count: 'exact', head: true }).eq('judoka_id', j.id).gte('date', mondayStr).lte('date', sundayStr),
+        supabase.from('planification_entrainements').select('*', { count: 'exact', head: true }).eq('judoka_id', j.id).gte('date', monthStartStr).lte('date', monthEndStr),
       ])
       const ageCategory = j.birth_date ? getAgeCategory(j.birth_date) : null
       const items: AgendaItem[] = [
@@ -204,6 +199,7 @@ export default function Accueil() {
       const ids = new Set<string>()
       setParticipationIds(ids)
       setTrainingsThisWeek(trainCount ?? 0)
+      setTrainingsThisMonth(trainMonthCount ?? 0)
 
       setLoading(false)
     }
@@ -299,36 +295,6 @@ export default function Accueil() {
             <p className="text-xs text-[#999999] mt-1">playlist{playlistCount !== 1 ? 's' : ''}</p>
           </div>
 
-          {/* Mes entraînements */}
-          <div
-            className="bg-white rounded-xl border border-[#E5E5E5] p-5 cursor-pointer hover:border-[#CCCCCC] transition-all group"
-            onClick={() => navigate('/eleve/entrainements')}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs uppercase tracking-widest text-[#999999]">Entraînements</span>
-              <svg className="w-3.5 h-3.5 text-[#CCCCCC] group-hover:text-[#C41230] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-            <p className="text-3xl font-bold text-[#0A0A0A]">{entrainementCount}</p>
-            <p className="text-xs text-[#999999] mt-1">cette semaine</p>
-            <div className="mt-2 pt-2 border-t border-[#F5F5F5] space-y-1">
-              <div className="flex justify-between text-xs">
-                <span className="text-[#999999]">Confirmées</span>
-                <span className="text-[#0A0A0A] font-medium">{confirmedCount}/{totalUpcoming}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-[#999999]">Taux</span>
-                <span className="text-[#0A0A0A] font-medium">{totalUpcoming > 0 ? Math.round((confirmedCount / totalUpcoming) * 100) : 0}%</span>
-              </div>
-              {confirmedMinutes > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-[#999999]">Heures</span>
-                  <span className="text-[#C41230] font-semibold">{Math.floor(confirmedMinutes / 60)}h{String(confirmedMinutes % 60).padStart(2, '0')}</span>
-                </div>
-              )}
-            </div>
-          </div>
 
           {/* Mes cours */}
           <div
@@ -412,19 +378,25 @@ export default function Accueil() {
             )
           })()}
 
-          {/* Entraînements cette semaine */}
+          {/* Mes entraînements */}
           <div
             className="bg-white rounded-xl border border-[#E5E5E5] p-5 cursor-pointer hover:border-[#CCCCCC] transition-all group"
             onClick={() => navigate('/eleve/entrainements')}
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs uppercase tracking-widest text-[#999999]">Entraînements</span>
+              <span className="text-xs uppercase tracking-widest text-[#999999]">Mes entraînements</span>
               <svg className="w-3.5 h-3.5 text-[#CCCCCC] group-hover:text-[#C41230] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </div>
             <p className="text-3xl font-bold text-[#0A0A0A]">{trainingsThisWeek}</p>
-            <p className="text-xs text-[#CCCCCC] mt-1">cette semaine</p>
+            <p className="text-xs text-[#999999] mt-1">cette semaine</p>
+            <div className="mt-2 pt-2 border-t border-[#F5F5F5]">
+              <div className="flex justify-between text-xs">
+                <span className="text-[#999999]">Ce mois</span>
+                <span className="text-[#0A0A0A] font-medium">{trainingsThisMonth}</span>
+              </div>
+            </div>
           </div>
         </div>
 
