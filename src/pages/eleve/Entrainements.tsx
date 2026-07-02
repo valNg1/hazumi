@@ -60,9 +60,18 @@ function fmtDuration(minutes: number): string {
   return h > 0 ? (m > 0 ? `${h}h${m.toString().padStart(2, '0')}` : `${h}h`) : `${m}min`
 }
 
+interface PersonalTraining {
+  id: string
+  type: string
+  date: string
+  heure_debut: string | null
+  heure_fin: string | null
+}
+
 export default function Entrainements() {
   const [judokaId, setJudokaId] = useState<string | null>(null)
   const [seances, setSeances] = useState<Seance[]>([])
+  const [_personalTrainings, setPersonalTrainings] = useState<PersonalTraining[]>([])
   const [confirmedIds, setConfirmedIds] = useState<Set<string>>(new Set())
   const [competEvents, setCompetEvents] = useState<CompetEvent[]>([])
   const [loading, setLoading] = useState(true)
@@ -71,32 +80,36 @@ export default function Entrainements() {
   const [showTrainingModal, setShowTrainingModal] = useState(false)
   const [creatingTraining, setCreatingTraining] = useState(false)
 
+  async function loadData() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data: judoka } = await supabase.from('judokas').select('id, club_id').eq('user_id', user.id).single()
+    if (!judoka) return
+    const [{ data: s }, { data: p }, { data: compParts }, { data: evtParts }, { data: trainings }] = await Promise.all([
+      supabase.from('seances').select('*').eq('club_id', judoka.club_id ?? '').order('date').order('heure_debut'),
+      supabase.from('presences').select('seance_id').eq('judoka_id', judoka.id),
+      supabase.from('competition_participations').select('id, competition_id, competitions(nom, date, lieu, niveau)').eq('judoka_id', judoka.id),
+      supabase.from('evenement_participations').select('id, evenement_id, evenements(type, titre, date, lieu)').eq('judoka_id', judoka.id),
+      supabase.from('planification_entrainements').select('id, type, date, heure_debut, heure_fin').eq('judoka_id', judoka.id).order('date'),
+    ])
+    setJudokaId(judoka.id)
+    setSeances(s ?? [])
+    setPersonalTrainings(trainings ?? [])
+    setConfirmedIds(new Set((p ?? []).map((x: { seance_id: string }) => x.seance_id)))
+    const compEvents: CompetEvent[] = (compParts ?? []).map((x: any) => {
+      const c = Array.isArray(x.competitions) ? x.competitions[0] : x.competitions
+      return { id: x.id, competition_id: x.competition_id, nom: c?.nom ?? '—', date: c?.date ?? '', lieu: c?.lieu, niveau: c?.niveau, eventType: 'competition' as const }
+    }).filter((e: CompetEvent) => e.date)
+    const evtEvents: CompetEvent[] = (evtParts ?? []).map((x: any) => {
+      const e = Array.isArray(x.evenements) ? x.evenements[0] : x.evenements
+      return { id: x.id, competition_id: x.evenement_id, nom: e?.titre ?? '—', date: e?.date ?? '', lieu: e?.lieu, eventType: e?.type ?? 'autre' }
+    }).filter((e: CompetEvent) => e.date)
+    setCompetEvents([...compEvents, ...evtEvents].sort((a, b) => a.date.localeCompare(b.date)))
+  }
+
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { setLoading(false); return }
-      const { data: judoka } = await supabase.from('judokas').select('id, club_id').eq('user_id', user.id).single()
-      if (!judoka) { setLoading(false); return }
-      const [{ data: s }, { data: p }, { data: compParts }, { data: evtParts }] = await Promise.all([
-        supabase.from('seances').select('*').eq('club_id', judoka.club_id ?? '').order('date').order('heure_debut'),
-        supabase.from('presences').select('seance_id').eq('judoka_id', judoka.id),
-        supabase.from('competition_participations').select('id, competition_id, competitions(nom, date, lieu, niveau)').eq('judoka_id', judoka.id),
-        supabase.from('evenement_participations').select('id, evenement_id, evenements(type, titre, date, lieu)').eq('judoka_id', judoka.id),
-      ])
-      setJudokaId(judoka.id)
-      setSeances(s ?? [])
-      setConfirmedIds(new Set((p ?? []).map((x: { seance_id: string }) => x.seance_id)))
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const compEvents: CompetEvent[] = (compParts ?? []).map((x: any) => {
-        const c = Array.isArray(x.competitions) ? x.competitions[0] : x.competitions
-        return { id: x.id, competition_id: x.competition_id, nom: c?.nom ?? '—', date: c?.date ?? '', lieu: c?.lieu, niveau: c?.niveau, eventType: 'competition' as const }
-      }).filter((e: CompetEvent) => e.date)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const evtEvents: CompetEvent[] = (evtParts ?? []).map((x: any) => {
-        const e = Array.isArray(x.evenements) ? x.evenements[0] : x.evenements
-        return { id: x.id, competition_id: x.evenement_id, nom: e?.titre ?? '—', date: e?.date ?? '', lieu: e?.lieu, eventType: e?.type ?? 'autre' }
-      }).filter((e: CompetEvent) => e.date)
-      setCompetEvents([...compEvents, ...evtEvents].sort((a, b) => a.date.localeCompare(b.date)))
+      await loadData()
       setLoading(false)
     }
     load()
@@ -172,7 +185,8 @@ export default function Entrainements() {
         return
       }
 
-      console.log('[Training] Succès - fermeture modale')
+      console.log('[Training] Succès - fermeture modale + rechargement')
+      await loadData()
       setShowTrainingModal(false)
     } catch (err) {
       console.error('[Training] Exception:', err)
