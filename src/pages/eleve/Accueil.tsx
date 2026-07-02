@@ -173,6 +173,10 @@ export default function Accueil() {
         return { date: t.date, duree_minutes: Math.max(0, durationMin) }
       })
 
+      console.log('[Graph] trainingsData total:', (trainingsData ?? []).length)
+      console.log('[Graph] realiseAll (fait):', realiseAll.length)
+      console.log('[Graph] sample data:', (trainingsData ?? []).slice(0, 3).map((t: any) => ({ date: t.date, statut: t.statut })))
+
       // Données brutes pour le graph
       const seancesList = trainingsAll as SeanceRef[]
       const realiseList = realiseAll as SeanceRef[]
