@@ -85,7 +85,7 @@ export default function Entrainements() {
     if (!user) return
     const { data: judoka } = await supabase.from('judokas').select('id, club_id').eq('user_id', user.id).single()
     if (!judoka) return
-    const { data: s } = await supabase.from('planification_entrainements').select('id, type, date, heure_debut, heure_fin, notes, recurrent').eq('judoka_id', judoka.id).order('date')
+    const { data: s } = await supabase.from('planification_entrainements').select('*').eq('judoka_id', judoka.id).order('date')
     setJudokaId(judoka.id)
     const seancesData: Seance[] = (s ?? []).map((t: any) => ({
       id: t.id,
