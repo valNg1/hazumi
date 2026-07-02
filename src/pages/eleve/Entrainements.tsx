@@ -352,8 +352,8 @@ function CompetPill({ event, compact }: { event: CompetEvent; compact?: boolean 
   )
 }
 
-function SeancePill({ seance, today, confirmed, onToggle, compact }: {
-  seance: Seance; today: string; confirmed: boolean; onToggle: (id: string) => void; compact?: boolean
+function SeancePill({ seance, today, compact }: {
+  seance: Seance; today: string; confirmed?: boolean; onToggle?: (id: string) => void; compact?: boolean
 }) {
   const isPast = seance.date < today
   const isToday = seance.date === today
@@ -370,17 +370,6 @@ function SeancePill({ seance, today, confirmed, onToggle, compact }: {
             </div>
           )}
         </div>
-        {!isPast && (
-          <button
-            onClick={() => onToggle(seance.id)}
-            className={`flex-shrink-0 text-xs px-2.5 py-1 rounded-full border transition-all ${confirmed ? 'bg-[#C41230] border-[#C41230] text-white' : 'border-[#E5E5E5] text-[#999999] hover:border-[#C41230] hover:text-[#C41230]'}`}
-          >
-            {confirmed ? '✓ Présent' : 'Je viens'}
-          </button>
-        )}
-        {isPast && confirmed && (
-          <span className="text-xs text-[#999999] flex-shrink-0">✓</span>
-        )}
       </div>
     </div>
   )

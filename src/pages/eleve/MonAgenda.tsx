@@ -222,10 +222,7 @@ export default function MonAgenda() {
       console.log('[Agenda] erreur:', JSON.stringify(error))
     }
     if (!error && data && data.length > 0) {
-      const eventId = data[0].id
-      console.log('[Agenda] insertion réussie, participations...')
-      await supabase.from('evenement_participations').insert({ evenement_id: eventId, judoka_id: judokaId })
-      console.log('[Agenda] participations créées, fermeture modale...')
+      console.log('[Agenda] fermeture modale...')
       setCreateModalOpen(false)
       setCreateFormData({ titre: '', date: '', heure_debut: '', heure_fin: '', type: 'autre', lieu: '', description: '' })
       console.log('[Agenda] rechargement événements...')
@@ -247,23 +244,8 @@ export default function MonAgenda() {
     setCreatingEvent(false)
   }
 
-  async function setParticipation(item: AgendaItem, viens: boolean) {
-    if (!judokaId) return
-    if (viens) {
-      if (item.sourceType === 'competition') {
-        await supabase.from('competition_participations').upsert({ competition_id: item.sourceId, judoka_id: judokaId }, { onConflict: 'competition_id,judoka_id' })
-      } else {
-        await supabase.from('evenement_participations').upsert({ evenement_id: item.sourceId, judoka_id: judokaId }, { onConflict: 'evenement_id,judoka_id' })
-      }
-      setParticipationIds(prev => new Set([...prev, item.key]))
-    } else {
-      if (item.sourceType === 'competition') {
-        await supabase.from('competition_participations').delete().eq('competition_id', item.sourceId).eq('judoka_id', judokaId)
-      } else {
-        await supabase.from('evenement_participations').delete().eq('evenement_id', item.sourceId).eq('judoka_id', judokaId)
-      }
-      setParticipationIds(prev => { const s = new Set(prev); s.delete(item.key); return s })
-    }
+  async function setParticipation(_item: AgendaItem, _viens: boolean) {
+    // Tables participation supprimées lors du pivot B2C - fonction conservée pour compatibilité
   }
 
   const typesPresents = TYPE_ORDER.filter(t => items.some(i => i.type === t))
@@ -463,7 +445,6 @@ export default function MonAgenda() {
         <div className="space-y-4">
           {filtered.map(item => {
             const cfg = TYPE_CONFIG[item.type]
-            const participating = participationIds.has(item.key)
             const daysLeft = Math.ceil((new Date(item.date).getTime() - Date.now()) / 86400000)
             const dateStr = new Date(item.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
             return (
@@ -500,29 +481,6 @@ export default function MonAgenda() {
                   <p className="text-sm text-[#666666] mb-4 line-clamp-2 leading-relaxed">{item.description}</p>
                 )}
 
-                {/* Boutons de participation */}
-                <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-                  <button
-                    onClick={() => setParticipation(item, true)}
-                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
-                      participating
-                        ? 'bg-[#C41230] border-[#C41230] text-white'
-                        : 'bg-white border-[#E5E5E5] text-[#666666] hover:border-[#C41230] hover:text-[#C41230]'
-                    }`}
-                  >
-                    {participating ? '✓ Je viens' : 'Je viens'}
-                  </button>
-                  <button
-                    onClick={() => setParticipation(item, false)}
-                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
-                      !participating
-                        ? 'bg-[#F5F5F5] border-[#E5E5E5] text-[#999999]'
-                        : 'bg-white border-[#E5E5E5] text-[#999999] hover:border-[#CCCCCC]'
-                    }`}
-                  >
-                    Je ne viens pas
-                  </button>
-                </div>
               </div>
             )
           })}
