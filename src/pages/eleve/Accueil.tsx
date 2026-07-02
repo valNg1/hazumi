@@ -146,17 +146,25 @@ export default function Accueil() {
       // Entraînements
       const today = new Date()
       const todayStr = today.toISOString().slice(0, 10)
-      const schoolY = today.getMonth() >= 8 ? today.getFullYear() : today.getFullYear() - 1
-      const schoolStart = `${schoolY}-09-01`
-      const schoolEnd = `${schoolY + 1}-06-30`
+
+      // Fenêtre glissante: 3 mois avant + 1 mois après
+      const dateDebut = new Date(today)
+      dateDebut.setMonth(today.getMonth() - 3)
+      const dateFin = new Date(today)
+      dateFin.setMonth(today.getMonth() + 1)
+
+      const dateDebutStr = dateDebut.toISOString().split('T')[0]
+      const dateFinStr = dateFin.toISOString().split('T')[0]
+
       type SeanceRef = { date: string; duree_minutes: number }
 
       console.log('[Graph] judokaId utilisé:', j.id)
       console.log('[Graph] user.id:', user.id)
-      console.log('[Graph] schoolStart-schoolEnd:', schoolStart, '-', schoolEnd)
+      console.log('[Graph] fenêtre glissante:', dateDebutStr, '-', dateFinStr)
 
-      const { data: trainingsData, error: trainingsError } = await supabase.from('planification_entrainements').select('*').eq('judoka_id', j.id).gte('date', schoolStart).lte('date', schoolEnd)
+      const { data: trainingsData, error: trainingsError } = await supabase.from('planification_entrainements').select('*').eq('judoka_id', j.id).gte('date', dateDebutStr).lte('date', dateFinStr)
       console.log('[Graph] trainingsData error:', trainingsError)
+      console.log('[Graph] trainingsData count:', (trainingsData ?? []).length)
 
       const trainingsAll = (trainingsData ?? []).map((t: any) => {
         let durationMin = 0
