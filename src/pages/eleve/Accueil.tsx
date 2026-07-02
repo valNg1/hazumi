@@ -348,13 +348,13 @@ export default function Accueil() {
           </div>
 
 
-          {/* Mes cours */}
+          {/* Mon catalogue */}
           <div
             className="bg-white rounded-xl border border-[#E5E5E5] p-5 cursor-pointer hover:border-[#CCCCCC] transition-all group"
             onClick={() => navigate('/eleve/progression?mode=playlist')}
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs uppercase tracking-widest text-[#999999]">Mes cours</span>
+              <span className="text-xs uppercase tracking-widest text-[#999999]">Mon catalogue</span>
               <svg className="w-3.5 h-3.5 text-[#CCCCCC] group-hover:text-[#C41230] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
