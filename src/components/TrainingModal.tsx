@@ -5,6 +5,7 @@ interface TrainingModalProps {
   isOpen: boolean
   onClose: () => void
   onSave: (form: TrainingForm) => Promise<void>
+  onSuccess?: () => void | Promise<void>
   isLoading?: boolean
 }
 
@@ -19,7 +20,7 @@ const JOURS = [
   { key: 'dim', label: 'D' },
 ]
 
-export default function TrainingModal({ isOpen, onClose, onSave, isLoading }: TrainingModalProps) {
+export default function TrainingModal({ isOpen, onClose, onSave, onSuccess, isLoading }: TrainingModalProps) {
   const [form, setForm] = useState<TrainingForm>({
     type: 'judo',
     heureDebut: '',
@@ -47,6 +48,7 @@ export default function TrainingModal({ isOpen, onClose, onSave, isLoading }: Tr
       return
     }
     await onSave(form)
+    await onSuccess?.()
     onClose()
   }
 

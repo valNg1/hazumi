@@ -185,9 +185,7 @@ export default function Entrainements() {
         return
       }
 
-      console.log('[Training] Succès - fermeture modale + rechargement')
-      await loadData()
-      setShowTrainingModal(false)
+      console.log('[Training] Succès - données enregistrées')
     } catch (err) {
       console.error('[Training] Exception:', err)
       console.log('[Training] erreur:', err)
@@ -326,7 +324,7 @@ export default function Entrainements() {
         <ListView seances={visibleSeances} competEvents={visibleCompets} today={today} confirmedIds={confirmedIds} onToggle={togglePresence} groupBy={view === 'annee' || view === 'trimestre' ? 'month' : 'week'} />
       )}
 
-      <TrainingModal isOpen={showTrainingModal} onClose={() => setShowTrainingModal(false)} onSave={handleSaveTraining} isLoading={creatingTraining} />
+      <TrainingModal isOpen={showTrainingModal} onClose={() => setShowTrainingModal(false)} onSave={handleSaveTraining} onSuccess={loadData} isLoading={creatingTraining} />
     </div>
   )
 }
