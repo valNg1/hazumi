@@ -85,11 +85,7 @@ export default function Entrainements() {
     if (!user) return
     const { data: judoka } = await supabase.from('judokas').select('id, club_id').eq('user_id', user.id).single()
     if (!judoka) return
-    const [{ data: s }, { data: compParts }, { data: evtParts }] = await Promise.all([
-      supabase.from('planification_entrainements').select('id, type, date, heure_debut, heure_fin, notes, recurrent').eq('judoka_id', judoka.id).order('date'),
-      supabase.from('competition_participations').select('id, competition_id, competitions(nom, date, lieu, niveau)').eq('judoka_id', judoka.id),
-      supabase.from('evenement_participations').select('id, evenement_id, evenements(type, titre, date, lieu)').eq('judoka_id', judoka.id),
-    ])
+    const { data: s } = await supabase.from('planification_entrainements').select('id, type, date, heure_debut, heure_fin, notes, recurrent').eq('judoka_id', judoka.id).order('date')
     setJudokaId(judoka.id)
     const seancesData: Seance[] = (s ?? []).map((t: any) => ({
       id: t.id,
@@ -106,15 +102,7 @@ export default function Entrainements() {
     setSeances(seancesData)
     setPersonalTrainings(s ?? [])
     setConfirmedIds(new Set())
-    const compEvents: CompetEvent[] = (compParts ?? []).map((x: any) => {
-      const c = Array.isArray(x.competitions) ? x.competitions[0] : x.competitions
-      return { id: x.id, competition_id: x.competition_id, nom: c?.nom ?? '—', date: c?.date ?? '', lieu: c?.lieu, niveau: c?.niveau, eventType: 'competition' as const }
-    }).filter((e: CompetEvent) => e.date)
-    const evtEvents: CompetEvent[] = (evtParts ?? []).map((x: any) => {
-      const e = Array.isArray(x.evenements) ? x.evenements[0] : x.evenements
-      return { id: x.id, competition_id: x.evenement_id, nom: e?.titre ?? '—', date: e?.date ?? '', lieu: e?.lieu, eventType: e?.type ?? 'autre' }
-    }).filter((e: CompetEvent) => e.date)
-    setCompetEvents([...compEvents, ...evtEvents].sort((a, b) => a.date.localeCompare(b.date)))
+    setCompetEvents([])
   }
 
   useEffect(() => {

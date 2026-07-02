@@ -141,23 +141,18 @@ export default function Accueil() {
       const schoolStart = `${schoolY}-09-01`
       const schoolEnd = `${schoolY + 1}-06-30`
       type SeanceRef = { date: string; duree_minutes: number }
-      const [{ data: seancesAll }, { data: presencesData }] = await Promise.all([
-        supabase.from('seances').select('id, date, duree_minutes').gte('date', schoolStart).lte('date', schoolEnd),
-        supabase.from('presences').select('seances(date, duree_minutes)').eq('judoka_id', j.id),
-      ])
-      const allPresences = (presencesData ?? []).map((p: { seances: SeanceRef | SeanceRef[] | null }) => {
-        const s = p.seances; return Array.isArray(s) ? s[0] : s
-      }).filter(Boolean) as SeanceRef[]
-      const upcomingPresences = allPresences.filter(s => s.date >= todayStr && s.date <= in7Str)
-      const futureConfirmed = allPresences.filter(s => s.date >= todayStr)
-      setEntrainementCount(upcomingPresences.length)
-      setTotalUpcoming((seancesAll ?? []).filter(s => s.date >= todayStr).length)
-      setConfirmedCount(futureConfirmed.length)
-      setConfirmedMinutes(futureConfirmed.reduce((sum, s) => sum + s.duree_minutes, 0))
+      const { data: trainingsData } = await supabase.from('planification_entrainements').select('id, date').eq('judoka_id', j.id).gte('date', schoolStart).lte('date', schoolEnd)
+      const trainingsAll = (trainingsData ?? []).map((t: any) => ({ date: t.date, duree_minutes: 0 }))
+      const upcomingTrainings = trainingsAll.filter(s => s.date >= todayStr && s.date <= in7Str)
+      const futureTrainings = trainingsAll.filter(s => s.date >= todayStr)
+      setEntrainementCount(upcomingTrainings.length)
+      setTotalUpcoming(trainingsAll.filter(s => s.date >= todayStr).length)
+      setConfirmedCount(futureTrainings.length)
+      setConfirmedMinutes(0)
 
       // Données brutes pour le graph (année scolaire)
-      const seancesList = (seancesAll ?? []) as SeanceRef[]
-      const confirmedList = allPresences.filter(s => s.date >= schoolStart && s.date <= schoolEnd)
+      const seancesList = trainingsAll as SeanceRef[]
+      const confirmedList: SeanceRef[] = []
       const raw = { seancesList, confirmedList, schoolY }
       setRawData(raw)
       setChartData(buildChartData(raw, 'mois'))
@@ -187,11 +182,9 @@ export default function Accueil() {
       const mondayStr = monday.toISOString().slice(0, 10)
       const sundayStr = sunday.toISOString().slice(0, 10)
 
-      const [{ data: comps }, { data: evts }, { data: compParts }, { data: evtParts }, { count: trainCount }] = await Promise.all([
+      const [{ data: comps }, { data: evts }, { count: trainCount }] = await Promise.all([
         supabase.from('competitions').select('id, nom, date, lieu, niveau, tranche_age').gte('date', todayStr2).order('date'),
         supabase.from('evenements').select('id, type, titre, date_debut, date_fin, lieu, notes').eq('judoka_id', j.id).gte('date_debut', todayStr2).order('date_debut'),
-        supabase.from('competition_participations').select('competition_id').eq('judoka_id', j.id),
-        supabase.from('evenement_participations').select('evenement_id').eq('judoka_id', j.id),
         supabase.from('planification_entrainements').select('*', { count: 'exact', head: true }).eq('judoka_id', j.id).gte('date', mondayStr).lte('date', sundayStr),
       ])
       const ageCategory = j.birth_date ? getAgeCategory(j.birth_date) : null
@@ -208,10 +201,7 @@ export default function Accueil() {
         })),
       ].sort((a, b) => a.date.localeCompare(b.date))
       setAgendaItems(items)
-      const ids = new Set([
-        ...(compParts ?? []).map((p: { competition_id: string }) => `comp:${p.competition_id}`),
-        ...(evtParts ?? []).map((p: { evenement_id: string }) => `evt:${p.evenement_id}`),
-      ])
+      const ids = new Set<string>()
       setParticipationIds(ids)
       setTrainingsThisWeek(trainCount ?? 0)
 

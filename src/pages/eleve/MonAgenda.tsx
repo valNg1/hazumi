@@ -145,12 +145,12 @@ export default function MonAgenda() {
       const today = new Date().toISOString().slice(0, 10)
       const ageCategory = j.birth_date ? getAgeCategory(j.birth_date) : null
 
-      const [{ data: comps }, { data: evts }, { data: compParts }, { data: evtParts }] = await Promise.all([
+      const [{ data: comps }, { data: evts }] = await Promise.all([
         supabase.from('competitions').select('id, nom, date, lieu, niveau, tranche_age, notes').gte('date', today).order('date'),
         supabase.from('evenements').select('id, type, titre, date_debut, date_fin, lieu, notes').gte('date_debut', today).order('date_debut'),
-        supabase.from('competition_participations').select('competition_id').eq('judoka_id', j.id),
-        supabase.from('evenement_participations').select('evenement_id').eq('judoka_id', j.id),
       ])
+      const compParts: any[] = []
+      const evtParts: any[] = []
 
       const agenda: AgendaItem[] = [
         ...(comps ?? [])
