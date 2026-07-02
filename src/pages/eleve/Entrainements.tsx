@@ -370,11 +370,27 @@ function SeancePill({ seance, today, compact, onStatusChange }: {
 
   return (
     <div className={`rounded-lg border p-3 transition-all ${bgClass}`}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <p className={`text-sm font-medium truncate ${textClass}`}>
-            {statut === 'fait' ? '✓ ' : statut === 'annule' ? '✗ ' : ''}{seance.titre}
-          </p>
+      {compact && onStatusChange && (
+        <div className="space-y-2">
+          <p className={`text-sm font-medium whitespace-normal ${textClass}`}>{seance.titre}</p>
+          <div className="flex gap-1.5">
+            {statut === 'planifie' ? (
+              <>
+                <button onClick={() => { console.log('[Training] clic statut:', seance.id, 'fait'); alert('clic Fait!'); onStatusChange('fait') }} className="px-2.5 py-0.5 text-[11px] rounded border border-[#E5E5E5] text-[#999999] hover:border-[#22B14C] hover:text-[#22B14C] transition-colors">Fait</button>
+                <button onClick={() => { console.log('[Training] clic statut:', seance.id, 'annule'); alert('clic Annulé!'); onStatusChange('annule') }} className="px-2.5 py-0.5 text-[11px] rounded border border-[#E5E5E5] text-[#999999] hover:border-[#999999] transition-colors">Annulé</button>
+              </>
+            ) : statut === 'fait' ? (
+              <>
+                <span className="px-2.5 py-0.5 text-[11px] rounded border border-[#22B14C] text-[#22B14C] bg-white">Fait</span>
+                <button onClick={() => { console.log('[Training] clic statut:', seance.id, 'planifie'); alert('clic Annuler!'); onStatusChange('planifie') }} className="px-2.5 py-0.5 text-[11px] rounded border border-[#E5E5E5] text-[#999999] hover:border-[#E5E5E5] hover:bg-[#F9F9F9]">Annuler</button>
+              </>
+            ) : statut === 'annule' ? (
+              <>
+                <span className="px-2.5 py-0.5 text-[11px] rounded border border-[#999999] text-[#999999] bg-white line-through">Annulé</span>
+                <button onClick={() => { console.log('[Training] clic statut:', seance.id, 'planifie'); alert('clic Rétablir!'); onStatusChange('planifie') }} className="px-2.5 py-0.5 text-[11px] rounded border border-[#E5E5E5] text-[#999999] hover:border-[#E5E5E5] hover:bg-[#F9F9F9]">Rétablir</button>
+              </>
+            ) : null}
+          </div>
           {!compact && (
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               {seance.heure_debut && seance.heure_fin ? (
@@ -385,28 +401,24 @@ function SeancePill({ seance, today, compact, onStatusChange }: {
             </div>
           )}
         </div>
-
-        {compact && !isPast && onStatusChange && (
-          <div className="flex gap-1.5 flex-shrink-0">
-            {statut === 'planifie' ? (
-              <>
-                <button onClick={() => { console.log('[Training] clic statut:', seance.id, 'fait'); onStatusChange('fait') }} className="px-2.5 py-0.5 text-[11px] rounded border border-[#E5E5E5] text-[#999999] hover:border-[#22B14C] hover:text-[#22B14C] transition-colors">Fait</button>
-                <button onClick={() => { console.log('[Training] clic statut:', seance.id, 'annule'); onStatusChange('annule') }} className="px-2.5 py-0.5 text-[11px] rounded border border-[#E5E5E5] text-[#999999] hover:border-[#999999] transition-colors">Annulé</button>
-              </>
-            ) : statut === 'fait' ? (
-              <>
-                <span className="px-2.5 py-0.5 text-[11px] rounded border border-[#22B14C] text-[#22B14C] bg-white">Fait</span>
-                <button onClick={() => { console.log('[Training] clic statut:', seance.id, 'planifie'); onStatusChange('planifie') }} className="px-2.5 py-0.5 text-[11px] rounded border border-[#E5E5E5] text-[#999999] hover:border-[#E5E5E5] hover:bg-[#F9F9F9]">Annuler</button>
-              </>
-            ) : statut === 'annule' ? (
-              <>
-                <span className="px-2.5 py-0.5 text-[11px] rounded border border-[#999999] text-[#999999] bg-white line-through">Annulé</span>
-                <button onClick={() => { console.log('[Training] clic statut:', seance.id, 'planifie'); onStatusChange('planifie') }} className="px-2.5 py-0.5 text-[11px] rounded border border-[#E5E5E5] text-[#999999] hover:border-[#E5E5E5] hover:bg-[#F9F9F9]">Rétablir</button>
-              </>
-            ) : null}
+      )}
+      {!compact && !onStatusChange && (
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm font-medium ${textClass}`}>{seance.titre}</p>
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              {seance.heure_debut && seance.heure_fin ? (
+                <span className="text-xs text-[#999999]">{seance.heure_debut.slice(0, 5)} — {seance.heure_fin.slice(0, 5)}</span>
+              ) : seance.heure_debut ? (
+                <span className="text-xs text-[#999999]">{seance.heure_debut.slice(0, 5)}</span>
+              ) : null}
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+      {compact && !onStatusChange && (
+        <p className={`text-sm font-medium ${textClass}`}>{seance.titre}</p>
+      )}
     </div>
   )
 }
