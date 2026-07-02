@@ -151,7 +151,12 @@ export default function Accueil() {
       const schoolEnd = `${schoolY + 1}-06-30`
       type SeanceRef = { date: string; duree_minutes: number }
 
-      const { data: trainingsData } = await supabase.from('planification_entrainements').select('*').eq('judoka_id', j.id).gte('date', schoolStart).lte('date', schoolEnd)
+      console.log('[Graph] judokaId utilisé:', j.id)
+      console.log('[Graph] user.id:', user.id)
+      console.log('[Graph] schoolStart-schoolEnd:', schoolStart, '-', schoolEnd)
+
+      const { data: trainingsData, error: trainingsError } = await supabase.from('planification_entrainements').select('*').eq('judoka_id', j.id).gte('date', schoolStart).lte('date', schoolEnd)
+      console.log('[Graph] trainingsData error:', trainingsError)
 
       const trainingsAll = (trainingsData ?? []).map((t: any) => {
         let durationMin = 0
