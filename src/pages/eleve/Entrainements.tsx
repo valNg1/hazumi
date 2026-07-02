@@ -72,7 +72,6 @@ export default function Entrainements() {
   const [judokaId, setJudokaId] = useState<string | null>(null)
   const [seances, setSeances] = useState<Seance[]>([])
   const [_personalTrainings, setPersonalTrainings] = useState<PersonalTraining[]>([])
-  const [confirmedIds, setConfirmedIds] = useState<Set<string>>(new Set())
   const [competEvents, setCompetEvents] = useState<CompetEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<ViewMode>('semaine')
@@ -101,7 +100,6 @@ export default function Entrainements() {
     }))
     setSeances(seancesData)
     setPersonalTrainings(s ?? [])
-    setConfirmedIds(new Set())
     setCompetEvents([])
   }
 
@@ -113,16 +111,6 @@ export default function Entrainements() {
     load()
   }, [])
 
-  async function togglePresence(seanceId: string) {
-    if (!judokaId) return
-    if (confirmedIds.has(seanceId)) {
-      await supabase.from('presences').delete().eq('seance_id', seanceId).eq('judoka_id', judokaId)
-      setConfirmedIds(prev => { const s = new Set(prev); s.delete(seanceId); return s })
-    } else {
-      await supabase.from('presences').upsert({ seance_id: seanceId, judoka_id: judokaId }, { onConflict: 'seance_id,judoka_id' })
-      setConfirmedIds(prev => new Set([...prev, seanceId]))
-    }
-  }
 
   async function handleSaveTraining(form: TrainingForm) {
     console.log('[Training] form data:', form)
@@ -198,8 +186,6 @@ export default function Entrainements() {
   const upcoming = useMemo(() => seances.filter(s => s.date >= today), [seances, today])
 
   const totalMinPast = past.reduce((sum, s) => sum + s.duree_minutes, 0)
-  const confirmed = useMemo(() => upcoming.filter(s => confirmedIds.has(s.id)), [upcoming, confirmedIds])
-  const pctConfirmed = upcoming.length > 0 ? Math.round((confirmed.length / upcoming.length) * 100) : 0
 
   function navigate(dir: 1 | -1) {
     const d = new Date(cursor)
@@ -281,11 +267,9 @@ export default function Entrainements() {
       </div>
 
       {/* Recap panel */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+      <div className="grid grid-cols-2 gap-3 mb-8">
         <RecapCard label="Séances passées" value={String(past.length)} sub={fmtDuration(totalMinPast)} />
         <RecapCard label="Séances à venir" value={String(upcoming.length)} sub={`${upcoming.length} séance${upcoming.length !== 1 ? 's' : ''} planifiée${upcoming.length !== 1 ? 's' : ''}`} accent />
-        <RecapCard label="Séances confirmées" value={String(confirmed.length)} sub={`sur ${upcoming.length} à venir`} accent />
-        <RecapCard label="Taux de présence" value={`${pctConfirmed}%`} sub={`${confirmed.length} confirmée${confirmed.length !== 1 ? 's' : ''}`} accent />
       </div>
 
       {/* View tabs + navigation */}
@@ -315,11 +299,11 @@ export default function Entrainements() {
 
       {/* Agenda */}
       {view === 'semaine' ? (
-        <WeekView seances={visibleSeances} competEvents={visibleCompets} cursor={cursor} today={today} confirmedIds={confirmedIds} onToggle={togglePresence} />
+        <WeekView seances={visibleSeances} competEvents={visibleCompets} cursor={cursor} today={today} />
       ) : view === 'mois' ? (
-        <MonthView seances={visibleSeances} competEvents={visibleCompets} cursor={cursor} today={today} confirmedIds={confirmedIds} onToggle={togglePresence} />
+        <MonthView seances={visibleSeances} competEvents={visibleCompets} cursor={cursor} today={today} />
       ) : (
-        <ListView seances={visibleSeances} competEvents={visibleCompets} today={today} confirmedIds={confirmedIds} onToggle={togglePresence} groupBy={view === 'annee' || view === 'trimestre' ? 'month' : 'week'} />
+        <ListView seances={visibleSeances} competEvents={visibleCompets} today={today} groupBy={view === 'annee' || view === 'trimestre' ? 'month' : 'week'} />
       )}
 
       <TrainingModal isOpen={showTrainingModal} onClose={() => setShowTrainingModal(false)} onSave={handleSaveTraining} onSuccess={loadData} isLoading={creatingTraining} />
@@ -353,20 +337,22 @@ function CompetPill({ event, compact }: { event: CompetEvent; compact?: boolean 
 }
 
 function SeancePill({ seance, today, compact }: {
-  seance: Seance; today: string; confirmed?: boolean; onToggle?: (id: string) => void; compact?: boolean
+  seance: Seance; today: string; compact?: boolean
 }) {
   const isPast = seance.date < today
   const isToday = seance.date === today
   return (
     <div className={`rounded-lg border p-3 transition-all ${isPast ? 'border-[#F0F0F0] bg-[#FAFAFA]' : isToday ? 'border-[#C41230]/30 bg-[#FFF5F6]' : 'border-[#E5E5E5] bg-white'}`}>
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
           <p className={`text-sm font-medium truncate ${isPast ? 'text-[#999999]' : 'text-[#0A0A0A]'}`}>{seance.titre}</p>
           {!compact && (
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-              {seance.heure_debut && <span className="text-xs text-[#999999]">{seance.heure_debut.slice(0, 5)}</span>}
-              <span className="text-xs text-[#CCCCCC]">{fmtDuration(seance.duree_minutes)}</span>
-              {seance.lieu && <span className="text-xs text-[#CCCCCC]">{seance.lieu}</span>}
+              {seance.heure_debut && seance.heure_fin ? (
+                <span className="text-xs text-[#999999]">{seance.heure_debut.slice(0, 5)} — {seance.heure_fin.slice(0, 5)}</span>
+              ) : seance.heure_debut ? (
+                <span className="text-xs text-[#999999]">{seance.heure_debut.slice(0, 5)}</span>
+              ) : null}
             </div>
           )}
         </div>
@@ -375,8 +361,8 @@ function SeancePill({ seance, today, compact }: {
   )
 }
 
-function WeekView({ seances, competEvents, cursor, today, confirmedIds, onToggle }: {
-  seances: Seance[]; competEvents: CompetEvent[]; cursor: Date; today: string; confirmedIds: Set<string>; onToggle: (id: string) => void
+function WeekView({ seances, competEvents, cursor, today }: {
+  seances: Seance[]; competEvents: CompetEvent[]; cursor: Date; today: string
 }) {
   const mon = getMonday(cursor)
   const days = Array.from({ length: 7 }, (_, i) => addDays(mon, i))
@@ -399,7 +385,7 @@ function WeekView({ seances, competEvents, cursor, today, confirmedIds, onToggle
               {daySessions.length === 0 && dayCompets.length === 0
                 ? <div className="h-16 rounded-lg border border-dashed border-[#F0F0F0]" />
                 : daySessions.map(s => (
-                  <SeancePill key={s.id} seance={s} today={today} confirmed={confirmedIds.has(s.id)} onToggle={onToggle} compact />
+                  <SeancePill key={s.id} seance={s} today={today} compact />
                 ))
               }
             </div>
@@ -410,8 +396,8 @@ function WeekView({ seances, competEvents, cursor, today, confirmedIds, onToggle
   )
 }
 
-function MonthView({ seances, competEvents, cursor, today, confirmedIds, onToggle }: {
-  seances: Seance[]; competEvents: CompetEvent[]; cursor: Date; today: string; confirmedIds: Set<string>; onToggle: (id: string) => void
+function MonthView({ seances, competEvents, cursor, today }: {
+  seances: Seance[]; competEvents: CompetEvent[]; cursor: Date; today: string
 }) {
   const year = cursor.getFullYear()
   const month = cursor.getMonth()
@@ -450,7 +436,7 @@ function MonthView({ seances, competEvents, cursor, today, confirmedIds, onToggl
                       <div key={c.id} className="text-[10px] px-1.5 py-0.5 rounded truncate bg-amber-100 text-amber-800" title={c.nom}>🏆 {c.nom}</div>
                     ))}
                     {daySessions.map(s => (
-                      <div key={s.id} className={`text-[10px] px-1.5 py-0.5 rounded truncate ${confirmedIds.has(s.id) ? 'bg-[#C41230] text-white' : 'bg-[#F0F0F0] text-[#666666]'}`} title={s.titre}>
+                      <div key={s.id} className="text-[10px] px-1.5 py-0.5 rounded truncate bg-[#F0F0F0] text-[#666666]" title={s.titre}>
                         {s.titre}
                       </div>
                     ))}
@@ -467,7 +453,7 @@ function MonthView({ seances, competEvents, cursor, today, confirmedIds, onToggl
           <p className="text-xs uppercase tracking-widest text-[#999999] mb-3">{seances.length} séance{seances.length !== 1 ? 's' : ''} ce mois</p>
           {competEvents.map(c => <CompetPill key={c.id} event={c} />)}
           {seances.map(s => (
-            <SeancePill key={s.id} seance={s} today={today} confirmed={confirmedIds.has(s.id)} onToggle={onToggle} />
+            <SeancePill key={s.id} seance={s} today={today} />
           ))}
         </div>
       )}
@@ -475,8 +461,8 @@ function MonthView({ seances, competEvents, cursor, today, confirmedIds, onToggl
   )
 }
 
-function ListView({ seances, competEvents, today, confirmedIds, onToggle, groupBy }: {
-  seances: Seance[]; competEvents: CompetEvent[]; today: string; confirmedIds: Set<string>; onToggle: (id: string) => void; groupBy: 'month' | 'week'
+function ListView({ seances, competEvents, today, groupBy }: {
+  seances: Seance[]; competEvents: CompetEvent[]; today: string; groupBy: 'month' | 'week'
 }) {
   const groups = useMemo(() => {
     const map = new Map<string, { seances: Seance[]; compets: CompetEvent[] }>()
@@ -538,7 +524,7 @@ function ListView({ seances, competEvents, today, confirmedIds, onToggle, groupB
                     <div className="flex-1">
                       {item.type === 'compet'
                         ? <CompetPill event={item.data as CompetEvent} />
-                        : <SeancePill seance={item.data as Seance} today={today} confirmed={confirmedIds.has(item.data.id)} onToggle={onToggle} />
+                        : <SeancePill seance={item.data as Seance} today={today} />
                       }
                     </div>
                   </div>

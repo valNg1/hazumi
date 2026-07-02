@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts'
 import { supabase } from '../../lib/supabase'
 import { CURRICULUM, getBeltIndex } from '../../lib/curriculum'
 import type { Belt } from '../../types'
@@ -32,43 +32,57 @@ function getAgeCategory(birthDate: string): string {
 }
 
 type ChartView = 'mois' | 'trimestre' | 'annee'
-type RawData = { seancesList: { date: string; duree_minutes: number }[]; confirmedList: { date: string; duree_minutes: number }[]; schoolY: number }
+type RawData = { seancesList: { date: string; duree_minutes: number }[]; realiseList: { date: string; duree_minutes: number }[]; today: string }
 
-function buildChartData(raw: RawData, view: ChartView): { label: string; possible: number; realise: number }[] {
-  const { seancesList, confirmedList, schoolY } = raw
+function buildChartData(raw: RawData, view: ChartView): { label: string; possible: number; realise: number; isToday?: boolean }[] {
+  const { seancesList, realiseList, today } = raw
   const toH = (min: number) => Math.round((min / 60) * 10) / 10
+  const todayDate = new Date(today + 'T00:00:00Z')
 
-  const periods: { label: string; keys: string[] }[] = []
+  const periods: { label: string; startDate: Date; endDate: Date }[] = []
 
   if (view === 'mois') {
-    for (const m of [9,10,11,12,1,2,3,4,5,6]) {
-      const y = m >= 9 ? schoolY : schoolY + 1
-      const key = `${y}-${String(m).padStart(2,'0')}`
-      const label = new Date(y, m - 1, 1).toLocaleDateString('fr-FR', { month: 'short' }).replace('.','')
-      periods.push({ label, keys: [key] })
+    // 3 mois avant + 1 mois après
+    const start = new Date(todayDate.getFullYear(), todayDate.getMonth() - 3, 1)
+    const end = new Date(todayDate.getFullYear(), todayDate.getMonth() + 2, 0)
+    let d = new Date(start)
+    while (d <= end) {
+      const monthStart = new Date(d.getFullYear(), d.getMonth(), 1)
+      const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+      const label = monthStart.toLocaleDateString('fr-FR', { month: 'short' }).replace('.','')
+      periods.push({ label, startDate: monthStart, endDate: monthEnd })
+      d.setMonth(d.getMonth() + 1)
     }
   } else if (view === 'trimestre') {
-    const TRIMS = [
-      { label: 'T1 Sep–Nov', months: [9,10,11] },
-      { label: 'T2 Déc–Fév', months: [12,1,2] },
-      { label: 'T3 Mar–Mai', months: [3,4,5] },
-      { label: 'T4 Jun', months: [6] },
-    ]
-    for (const { label, months } of TRIMS) {
-      const keys = months.map(m => `${m >= 9 ? schoolY : schoolY + 1}-${String(m).padStart(2,'0')}`)
-      periods.push({ label, keys })
+    // 6 mois avant + 3 mois après = couvre 2 trimestres avant et 2 après
+    const currentQ = Math.floor(todayDate.getMonth() / 3)
+    for (let i = -2; i <= 1; i++) {
+      const qMonth = (currentQ + i) * 3
+      const qYear = todayDate.getFullYear() + Math.floor((todayDate.getMonth() + i * 3) / 12)
+      const start = new Date(qYear, qMonth, 1)
+      const end = new Date(qYear, qMonth + 3, 0)
+      const qNum = ((qMonth % 12) / 3) + 1
+      const label = `T${qNum}`
+      periods.push({ label, startDate: start, endDate: end })
     }
   } else {
-    periods.push({ label: `${schoolY}–${schoolY+1}`, keys: [] })
+    // 6 mois avant + 6 mois après
+    for (let i = -1; i <= 1; i++) {
+      const y = todayDate.getFullYear() + i
+      const start = new Date(y, 0, 1)
+      const end = new Date(y, 11, 31)
+      periods.push({ label: String(y), startDate: start, endDate: end })
+    }
   }
 
-  let cumulPossible = 0
-  let cumulRealise = 0
-  return periods.map(({ label, keys }) => {
-    const matchP = (s: { date: string }) => keys.length === 0 || keys.some(k => s.date.startsWith(k))
-    cumulPossible += seancesList.filter(matchP).reduce((a,s) => a + s.duree_minutes, 0)
-    cumulRealise += confirmedList.filter(matchP).reduce((a,s) => a + s.duree_minutes, 0)
-    return { label, possible: toH(cumulPossible), realise: toH(cumulRealise) }
+  return periods.map(({ label, startDate, endDate }) => {
+    const startStr = startDate.toISOString().slice(0, 10)
+    const endStr = endDate.toISOString().slice(0, 10)
+    const matchInRange = (s: { date: string }) => s.date >= startStr && s.date <= endStr
+    const possible = toH(seancesList.filter(matchInRange).reduce((a,s) => a + s.duree_minutes, 0))
+    const realise = toH(realiseList.filter(matchInRange).reduce((a,s) => a + s.duree_minutes, 0))
+    const isToday = today >= startStr && today <= endStr
+    return { label, possible, realise, ...(isToday && { isToday }) }
   })
 }
 
@@ -131,17 +145,33 @@ export default function Accueil() {
 
       // Entraînements
       const today = new Date()
+      const todayStr = today.toISOString().slice(0, 10)
       const schoolY = today.getMonth() >= 8 ? today.getFullYear() : today.getFullYear() - 1
       const schoolStart = `${schoolY}-09-01`
       const schoolEnd = `${schoolY + 1}-06-30`
       type SeanceRef = { date: string; duree_minutes: number }
-      const { data: trainingsData } = await supabase.from('planification_entrainements').select('*').eq('judoka_id', j.id).gte('date', schoolStart).lte('date', schoolEnd)
-      const trainingsAll = (trainingsData ?? []).map((t: any) => ({ date: t.date, duree_minutes: 0 }))
 
-      // Données brutes pour le graph (année scolaire)
+      const [{ data: trainingsData }, { data: realiseData }] = await Promise.all([
+        supabase.from('planification_entrainements').select('*').eq('judoka_id', j.id).gte('date', schoolStart).lte('date', schoolEnd),
+        supabase.from('entrainements').select('*').eq('judoka_id', j.id).gte('date', schoolStart).lte('date', schoolEnd),
+      ])
+
+      const trainingsAll = (trainingsData ?? []).map((t: any) => {
+        let durationMin = 0
+        if (t.heure_debut && t.heure_fin) {
+          const [hd, md] = t.heure_debut.split(':').map(Number)
+          const [hf, mf] = t.heure_fin.split(':').map(Number)
+          durationMin = (hf * 60 + mf) - (hd * 60 + md)
+        }
+        return { date: t.date, duree_minutes: Math.max(0, durationMin) }
+      })
+
+      const realiseAll = (realiseData ?? []).map((t: any) => ({ date: t.date, duree_minutes: t.duree_minutes || 0 }))
+
+      // Données brutes pour le graph
       const seancesList = trainingsAll as SeanceRef[]
-      const confirmedList: SeanceRef[] = []
-      const raw = { seancesList, confirmedList, schoolY }
+      const realiseList = realiseAll as SeanceRef[]
+      const raw = { seancesList, realiseList, today: todayStr }
       setRawData(raw)
       setChartData(buildChartData(raw, 'mois'))
 
@@ -429,13 +459,15 @@ export default function Accueil() {
                 </linearGradient>
               </defs>
               <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} unit="h" />
+              <YAxis tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} label={{ value: 'heures', angle: -90, position: 'insideLeft' }} />
               <Tooltip
                 contentStyle={{ fontSize: 11, border: '1px solid #E5E5E5', borderRadius: 8, boxShadow: 'none' }}
                 formatter={(v: unknown, name: unknown) => [`${v}h`, name === 'possible' ? 'Possible' : 'Réalisé']}
                 labelStyle={{ color: '#333', fontWeight: 600 }}
               />
               <Legend formatter={(v) => v === 'possible' ? 'Possible' : 'Réalisé'} wrapperStyle={{ fontSize: 11, paddingTop: 4 }} />
+              {/* @ts-ignore */}
+              {chartData.find(d => d.isToday) && <ReferenceLine x={chartData.find(d => d.isToday)?.label} stroke="#C41230" strokeDasharray="4 4" />}
               <Area type="monotone" dataKey="possible" stroke="#CCCCCC" strokeWidth={1.5} fill="url(#gPossible)" dot={false} />
               <Area type="monotone" dataKey="realise" stroke="#C41230" strokeWidth={2} fill="url(#gRealise)" dot={false} activeDot={{ r: 4, fill: '#C41230' }} />
             </AreaChart>
