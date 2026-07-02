@@ -163,7 +163,7 @@ export default function Entrainements() {
           } as any]
 
       console.log('[Training] toInsert:', toInsert)
-      const { error } = await supabase.from('entrainements').insert(toInsert)
+      const { error } = await supabase.from('planification_entrainements').insert(toInsert)
       console.log('[Training] erreur:', error)
 
       if (error) {

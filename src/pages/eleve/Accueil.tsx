@@ -192,7 +192,7 @@ export default function Accueil() {
         supabase.from('evenements').select('id, type, titre, date_debut, date_fin, lieu, notes').eq('judoka_id', j.id).gte('date_debut', todayStr2).order('date_debut'),
         supabase.from('competition_participations').select('competition_id').eq('judoka_id', j.id),
         supabase.from('evenement_participations').select('evenement_id').eq('judoka_id', j.id),
-        supabase.from('entrainements').select('*', { count: 'exact', head: true }).eq('judoka_id', j.id).gte('date', mondayStr).lte('date', sundayStr),
+        supabase.from('planification_entrainements').select('*', { count: 'exact', head: true }).eq('judoka_id', j.id).gte('date', mondayStr).lte('date', sundayStr),
       ])
       const ageCategory = j.birth_date ? getAgeCategory(j.birth_date) : null
       const items: AgendaItem[] = [
