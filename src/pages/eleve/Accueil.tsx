@@ -151,10 +151,7 @@ export default function Accueil() {
       const schoolEnd = `${schoolY + 1}-06-30`
       type SeanceRef = { date: string; duree_minutes: number }
 
-      const [{ data: trainingsData }, { data: realiseData }] = await Promise.all([
-        supabase.from('planification_entrainements').select('*').eq('judoka_id', j.id).gte('date', schoolStart).lte('date', schoolEnd),
-        supabase.from('entrainements').select('*').eq('judoka_id', j.id).gte('date', schoolStart).lte('date', schoolEnd),
-      ])
+      const { data: trainingsData } = await supabase.from('planification_entrainements').select('*').eq('judoka_id', j.id).gte('date', schoolStart).lte('date', schoolEnd)
 
       const trainingsAll = (trainingsData ?? []).map((t: any) => {
         let durationMin = 0
@@ -166,7 +163,15 @@ export default function Accueil() {
         return { date: t.date, duree_minutes: Math.max(0, durationMin) }
       })
 
-      const realiseAll = (realiseData ?? []).map((t: any) => ({ date: t.date, duree_minutes: t.duree_minutes || 0 }))
+      const realiseAll = (trainingsData ?? []).filter((t: any) => t.statut === 'fait').map((t: any) => {
+        let durationMin = 0
+        if (t.heure_debut && t.heure_fin) {
+          const [hd, md] = t.heure_debut.split(':').map(Number)
+          const [hf, mf] = t.heure_fin.split(':').map(Number)
+          durationMin = (hf * 60 + mf) - (hd * 60 + md)
+        }
+        return { date: t.date, duree_minutes: Math.max(0, durationMin) }
+      })
 
       // Données brutes pour le graph
       const seancesList = trainingsAll as SeanceRef[]

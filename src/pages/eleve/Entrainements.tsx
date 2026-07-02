@@ -15,6 +15,7 @@ interface Seance {
   lieu: string | null
   intervenant: string | null
   notes: string | null
+  statut?: 'planifie' | 'fait' | 'annule'
 }
 
 interface CompetEvent {
@@ -97,10 +98,18 @@ export default function Entrainements() {
       lieu: null,
       intervenant: null,
       notes: t.notes,
+      statut: t.statut || 'planifie',
     }))
     setSeances(seancesData)
     setPersonalTrainings(s ?? [])
     setCompetEvents([])
+  }
+
+  async function updateStatut(seanceId: string, newStatut: 'planifie' | 'fait' | 'annule') {
+    const { error } = await supabase.from('planification_entrainements').update({ statut: newStatut }).eq('id', seanceId)
+    if (!error) {
+      setSeances(prev => prev.map(s => s.id === seanceId ? { ...s, statut: newStatut } : s))
+    }
   }
 
   useEffect(() => {
@@ -182,10 +191,13 @@ export default function Entrainements() {
   }
 
   const today = toStr(new Date())
-  const past = useMemo(() => seances.filter(s => s.date < today), [seances, today])
-  const upcoming = useMemo(() => seances.filter(s => s.date >= today), [seances, today])
+  const past = useMemo(() => seances.filter(s => s.date < today && s.statut === 'fait'), [seances, today])
+  const upcoming = useMemo(() => seances.filter(s => s.date >= today && s.statut === 'planifie'), [seances, today])
+  const realised = useMemo(() => seances.filter(s => s.date < today && s.statut === 'fait'), [seances])
+  const realised_upcoming = useMemo(() => seances.filter(s => s.date >= today && s.statut === 'fait'), [seances])
 
   const totalMinPast = past.reduce((sum, s) => sum + s.duree_minutes, 0)
+  const pctRealised = (realised.length + realised_upcoming.length) > 0 && (realised.length + realised_upcoming.length) <= (seances.length) ? Math.round(((realised.length + realised_upcoming.length) / (seances.length)) * 100) : 0
 
   function navigate(dir: 1 | -1) {
     const d = new Date(cursor)
@@ -267,9 +279,11 @@ export default function Entrainements() {
       </div>
 
       {/* Recap panel */}
-      <div className="grid grid-cols-2 gap-3 mb-8">
-        <RecapCard label="Séances passées" value={String(past.length)} sub={fmtDuration(totalMinPast)} />
-        <RecapCard label="Séances à venir" value={String(upcoming.length)} sub={`${upcoming.length} séance${upcoming.length !== 1 ? 's' : ''} planifiée${upcoming.length !== 1 ? 's' : ''}`} accent />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+        <RecapCard label="Séances réalisées" value={String(realised.length)} sub={fmtDuration(totalMinPast)} accent />
+        <RecapCard label="Séances à venir" value={String(upcoming.length)} sub={`${upcoming.length} séance${upcoming.length !== 1 ? 's' : ''} planifiée${upcoming.length !== 1 ? 's' : ''}`} />
+        <RecapCard label="Total réalisé" value={String(realised.length + realised_upcoming.length)} sub={`${realised.length + realised_upcoming.length} séance${(realised.length + realised_upcoming.length) !== 1 ? 's' : ''}`} accent />
+        <RecapCard label="Taux de réalisation" value={`${pctRealised}%`} sub={`sur ${seances.length} total`} accent />
       </div>
 
       {/* View tabs + navigation */}
@@ -299,7 +313,7 @@ export default function Entrainements() {
 
       {/* Agenda */}
       {view === 'semaine' ? (
-        <WeekView seances={visibleSeances} competEvents={visibleCompets} cursor={cursor} today={today} />
+        <WeekView seances={visibleSeances} competEvents={visibleCompets} cursor={cursor} today={today} onStatusChange={updateStatut} />
       ) : view === 'mois' ? (
         <MonthView seances={visibleSeances} competEvents={visibleCompets} cursor={cursor} today={today} />
       ) : (
@@ -336,16 +350,28 @@ function CompetPill({ event, compact }: { event: CompetEvent; compact?: boolean 
   )
 }
 
-function SeancePill({ seance, today, compact }: {
-  seance: Seance; today: string; compact?: boolean
+function SeancePill({ seance, today, compact, onStatusChange }: {
+  seance: Seance; today: string; compact?: boolean; onStatusChange?: (statut: 'planifie' | 'fait' | 'annule') => void
 }) {
   const isPast = seance.date < today
   const isToday = seance.date === today
+  const statut = seance.statut || 'planifie'
+
+  const bgClass = statut === 'fait' ? 'border-[#22B14C]/30 bg-[#F0FFF4]'
+    : statut === 'annule' ? 'border-[#F0F0F0] bg-[#FAFAFA]'
+    : isPast ? 'border-[#F0F0F0] bg-[#FAFAFA]'
+    : isToday ? 'border-[#C41230]/30 bg-[#FFF5F6]'
+    : 'border-[#E5E5E5] bg-white'
+
+  const textClass = statut === 'annule' ? 'line-through text-[#999999]' : 'text-[#0A0A0A]'
+
   return (
-    <div className={`rounded-lg border p-3 transition-all ${isPast ? 'border-[#F0F0F0] bg-[#FAFAFA]' : isToday ? 'border-[#C41230]/30 bg-[#FFF5F6]' : 'border-[#E5E5E5] bg-white'}`}>
-      <div className="flex items-start gap-2">
+    <div className={`rounded-lg border p-3 transition-all ${bgClass}`}>
+      <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-medium truncate ${isPast ? 'text-[#999999]' : 'text-[#0A0A0A]'}`}>{seance.titre}</p>
+          <p className={`text-sm font-medium truncate ${textClass}`}>
+            {statut === 'fait' ? '✓ ' : statut === 'annule' ? '✗ ' : ''}{seance.titre}
+          </p>
           {!compact && (
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               {seance.heure_debut && seance.heure_fin ? (
@@ -356,13 +382,28 @@ function SeancePill({ seance, today, compact }: {
             </div>
           )}
         </div>
+
+        {compact && !isPast && onStatusChange && (
+          <div className="flex gap-1 flex-shrink-0">
+            {statut === 'planifie' ? (
+              <>
+                <button onClick={() => onStatusChange('fait')} className="px-2 py-1 text-xs rounded bg-[#22B14C] text-white hover:bg-[#1a8a38] font-medium">✓ Fait</button>
+                <button onClick={() => onStatusChange('annule')} className="px-2 py-1 text-xs rounded bg-[#F0F0F0] text-[#666666] hover:bg-[#E5E5E5]">✗</button>
+              </>
+            ) : statut === 'fait' ? (
+              <button onClick={() => onStatusChange('planifie')} className="px-2 py-0.5 text-[10px] rounded bg-[#F0F0F0] text-[#666666] hover:bg-[#E5E5E5]">Annuler</button>
+            ) : statut === 'annule' ? (
+              <button onClick={() => onStatusChange('planifie')} className="px-2 py-0.5 text-[10px] rounded bg-[#F0F0F0] text-[#666666] hover:bg-[#E5E5E5]">Rétablir</button>
+            ) : null}
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
-function WeekView({ seances, competEvents, cursor, today }: {
-  seances: Seance[]; competEvents: CompetEvent[]; cursor: Date; today: string
+function WeekView({ seances, competEvents, cursor, today, onStatusChange }: {
+  seances: Seance[]; competEvents: CompetEvent[]; cursor: Date; today: string; onStatusChange?: (seanceId: string, statut: 'planifie' | 'fait' | 'annule') => void
 }) {
   const mon = getMonday(cursor)
   const days = Array.from({ length: 7 }, (_, i) => addDays(mon, i))
@@ -385,7 +426,7 @@ function WeekView({ seances, competEvents, cursor, today }: {
               {daySessions.length === 0 && dayCompets.length === 0
                 ? <div className="h-16 rounded-lg border border-dashed border-[#F0F0F0]" />
                 : daySessions.map(s => (
-                  <SeancePill key={s.id} seance={s} today={today} compact />
+                  <SeancePill key={s.id} seance={s} today={today} compact onStatusChange={onStatusChange ? (statut) => onStatusChange(s.id, statut) : undefined} />
                 ))
               }
             </div>
