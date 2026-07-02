@@ -106,8 +106,11 @@ export default function Entrainements() {
   }
 
   async function updateStatut(seanceId: string, newStatut: 'planifie' | 'fait' | 'annule') {
+    console.log('[Training] updateStatut appelé:', seanceId, newStatut)
     const { error } = await supabase.from('planification_entrainements').update({ statut: newStatut }).eq('id', seanceId)
+    console.log('[Training] erreur Supabase:', error)
     if (!error) {
+      console.log('[Training] statut mis à jour avec succès')
       setSeances(prev => prev.map(s => s.id === seanceId ? { ...s, statut: newStatut } : s))
     }
   }
@@ -384,16 +387,22 @@ function SeancePill({ seance, today, compact, onStatusChange }: {
         </div>
 
         {compact && !isPast && onStatusChange && (
-          <div className="flex gap-1 flex-shrink-0">
+          <div className="flex gap-1.5 flex-shrink-0">
             {statut === 'planifie' ? (
               <>
-                <button onClick={() => onStatusChange('fait')} className="px-2 py-1 text-xs rounded bg-[#22B14C] text-white hover:bg-[#1a8a38] font-medium">✓ Fait</button>
-                <button onClick={() => onStatusChange('annule')} className="px-2 py-1 text-xs rounded bg-[#F0F0F0] text-[#666666] hover:bg-[#E5E5E5]">✗</button>
+                <button onClick={() => { console.log('[Training] clic statut:', seance.id, 'fait'); onStatusChange('fait') }} className="px-2.5 py-0.5 text-[11px] rounded border border-[#E5E5E5] text-[#999999] hover:border-[#22B14C] hover:text-[#22B14C] transition-colors">Fait</button>
+                <button onClick={() => { console.log('[Training] clic statut:', seance.id, 'annule'); onStatusChange('annule') }} className="px-2.5 py-0.5 text-[11px] rounded border border-[#E5E5E5] text-[#999999] hover:border-[#999999] transition-colors">Annulé</button>
               </>
             ) : statut === 'fait' ? (
-              <button onClick={() => onStatusChange('planifie')} className="px-2 py-0.5 text-[10px] rounded bg-[#F0F0F0] text-[#666666] hover:bg-[#E5E5E5]">Annuler</button>
+              <>
+                <span className="px-2.5 py-0.5 text-[11px] rounded border border-[#22B14C] text-[#22B14C] bg-white">Fait</span>
+                <button onClick={() => { console.log('[Training] clic statut:', seance.id, 'planifie'); onStatusChange('planifie') }} className="px-2.5 py-0.5 text-[11px] rounded border border-[#E5E5E5] text-[#999999] hover:border-[#E5E5E5] hover:bg-[#F9F9F9]">Annuler</button>
+              </>
             ) : statut === 'annule' ? (
-              <button onClick={() => onStatusChange('planifie')} className="px-2 py-0.5 text-[10px] rounded bg-[#F0F0F0] text-[#666666] hover:bg-[#E5E5E5]">Rétablir</button>
+              <>
+                <span className="px-2.5 py-0.5 text-[11px] rounded border border-[#999999] text-[#999999] bg-white line-through">Annulé</span>
+                <button onClick={() => { console.log('[Training] clic statut:', seance.id, 'planifie'); onStatusChange('planifie') }} className="px-2.5 py-0.5 text-[11px] rounded border border-[#E5E5E5] text-[#999999] hover:border-[#E5E5E5] hover:bg-[#F9F9F9]">Rétablir</button>
+              </>
             ) : null}
           </div>
         )}
