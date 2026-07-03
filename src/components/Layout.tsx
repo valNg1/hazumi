@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { signOut } from '../lib/auth'
 import { clearSpace, getSpace } from '../lib/space'
 import { supabase } from '../lib/supabase'
@@ -34,7 +34,17 @@ export default function Layout() {
   const space = getSpace() ?? 'eleve'
   const [menuOpen, setMenuOpen] = useState(false)
   const [unread, setUnread] = useState(0)
+  const readRef = useRef(false)
   const navItems = NAV[space as keyof typeof NAV]
+
+  useEffect(() => {
+    const handler = () => {
+      readRef.current = true
+      setUnread(0)
+    }
+    window.addEventListener('hazumi:messages-read', handler)
+    return () => window.removeEventListener('hazumi:messages-read', handler)
+  }, [])
 
   useEffect(() => {
     if (space !== 'eleve') return
@@ -55,7 +65,7 @@ export default function Layout() {
         .eq('judoka_id', j.id)
         .eq('sender', 'admin')
         .is('read_at', null)
-      if (active) setUnread(count ?? 0)
+      if (active && !readRef.current) setUnread(count ?? 0)
 
       channel = supabase
         .channel('badge-judoka')
@@ -64,7 +74,10 @@ export default function Layout() {
           { event: 'INSERT', schema: 'public', table: 'messages', filter: `judoka_id=eq.${j.id}` },
           (payload) => {
             const m = payload.new as { sender: string; read_at: string | null }
-            if (m.sender === 'admin' && m.read_at === null) setUnread((u) => u + 1)
+            if (m.sender === 'admin' && m.read_at === null) {
+              readRef.current = false
+              setUnread((u) => u + 1)
+            }
           }
         )
         .subscribe()

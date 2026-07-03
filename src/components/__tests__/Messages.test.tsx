@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, beforeAll, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import Messages from '../../pages/eleve/Messages'
 import Layout from '../Layout'
 
@@ -22,8 +22,12 @@ vi.mock('../../lib/supabase', () => {
   function from(table: string) {
     let mode: 'select' | 'insert' = 'select'
     let payload: any = null
+    let head = false
     const builder: any = {
-      select: () => builder,
+      select: (_arg?: string, opts?: any) => {
+        head = !!opts?.head
+        return builder
+      },
       eq: () => builder,
       is: () => builder,
       order: () =>
@@ -48,7 +52,13 @@ vi.mock('../../lib/supabase', () => {
         return builder
       },
       update: () => builder,
-      then: (resolve: any) => resolve({ data: null, error: null }),
+      then: (resolve: any) => {
+        if (head && table === 'messages') {
+          const count = store.messages.filter((m) => m.sender === 'admin' && m.read_at === null).length
+          return resolve({ count, data: null, error: null })
+        }
+        return resolve({ data: null, error: null })
+      },
     }
     return builder
   }
@@ -160,14 +170,67 @@ describe('Messages (chat judoka)', () => {
   })
 })
 
-describe('Badge non-lus judoka (Layout, Realtime)', () => {
-  it('le badge de non-lus se met à jour en temps réel', async () => {
+const unreadAdmin = (n: number) =>
+  Array.from({ length: n }, (_, i) => ({
+    id: `a${i}`,
+    judoka_id: 'judoka-1',
+    sender: 'admin',
+    content: `Message ${i}`,
+    created_at: '2026-07-01T10:00:00Z',
+    read_at: null,
+  }))
+
+describe('Badge notification navbar judoka (Layout)', () => {
+  it('le badge apparaît quand il y a des messages admin non lus', async () => {
+    h.store.messages = unreadAdmin(3)
     render(
       <MemoryRouter>
         <Layout />
       </MemoryRouter>
     )
-    // aucun badge au départ
+    await waitFor(() => {
+      expect(screen.getAllByText('3').length).toBeGreaterThan(0)
+    })
+  })
+
+  it('le badge affiche le bon nombre (messages lus/judoka non comptés)', async () => {
+    h.store.messages = [
+      ...unreadAdmin(2),
+      { id: 'read', judoka_id: 'judoka-1', sender: 'admin', content: 'lu', created_at: '2026-07-01T09:00:00Z', read_at: '2026-07-01T09:05:00Z' },
+      { id: 'mine', judoka_id: 'judoka-1', sender: 'judoka', content: 'moi', created_at: '2026-07-01T08:00:00Z', read_at: null },
+    ]
+    render(
+      <MemoryRouter>
+        <Layout />
+      </MemoryRouter>
+    )
+    await waitFor(() => {
+      expect(screen.getByText('2')).toBeInTheDocument()
+    })
+  })
+
+  it("le badge disparaît quand on ouvre la page Messages (marqués lus)", async () => {
+    h.store.messages = unreadAdmin(2)
+    render(
+      <MemoryRouter initialEntries={['/eleve/messages']}>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route path="/eleve/messages" element={<Messages />} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    )
+    await waitFor(() => {
+      expect(screen.queryByText('2')).toBeNull()
+    })
+  })
+
+  it('le badge se met à jour en temps réel à l\'arrivée d\'un message admin', async () => {
+    render(
+      <MemoryRouter>
+        <Layout />
+      </MemoryRouter>
+    )
     await waitFor(() => {
       expect(h.store.channels.length).toBeGreaterThan(0)
     })

@@ -74,6 +74,7 @@ export default function Messages() {
       .eq('judoka_id', j.id)
       .eq('sender', 'admin')
       .is('read_at', null)
+    window.dispatchEvent(new CustomEvent('hazumi:messages-read'))
 
     setLoading(false)
   }
