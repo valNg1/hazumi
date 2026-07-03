@@ -137,4 +137,56 @@ describe.skipIf(!hasCreds)('RLS table messages (judoka ↔ admin)', () => {
       .single()
     expect(error).not.toBeNull()
   }, 30000)
+
+  it("un message vide ('' ou espaces) est rejeté", async () => {
+    const client = await signIn(users.a.email)
+    const empty = await client
+      .from('messages')
+      .insert({ judoka_id: users.a.judokaId, sender: 'judoka', content: '' })
+      .select()
+      .single()
+    expect(empty.error).not.toBeNull()
+
+    const spaces = await client
+      .from('messages')
+      .insert({ judoka_id: users.a.judokaId, sender: 'judoka', content: '   ' })
+      .select()
+      .single()
+    expect(spaces.error).not.toBeNull()
+  }, 30000)
+
+  it('un judoka peut marquer son message comme lu (read_at)', async () => {
+    const client = await signIn(users.a.email)
+    const now = new Date().toISOString()
+    const { data, error } = await client
+      .from('messages')
+      .update({ read_at: now })
+      .eq('judoka_id', users.a.judokaId)
+      .select()
+    expect(error).toBeNull()
+    expect((data ?? []).length).toBeGreaterThan(0)
+    expect((data ?? []).every((m) => m.read_at !== null)).toBe(true)
+  }, 30000)
+
+  it("un judoka ne peut pas marquer comme lu le message d'un autre", async () => {
+    const client = await signIn(users.a.email)
+    const { data, error } = await client
+      .from('messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('judoka_id', users.b.judokaId)
+      .select()
+    expect(error).toBeNull()
+    expect(data ?? []).toHaveLength(0)
+  }, 30000)
+
+  it("l'admin peut marquer comme lu le message de n'importe quel judoka", async () => {
+    const client = await signIn(users.admin.email)
+    const { data, error } = await client
+      .from('messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('judoka_id', users.b.judokaId)
+      .select()
+    expect(error).toBeNull()
+    expect((data ?? []).length).toBeGreaterThan(0)
+  }, 30000)
 })
