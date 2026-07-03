@@ -1,7 +1,8 @@
 import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { signOut } from '../lib/auth'
 import { clearSpace, getSpace } from '../lib/space'
+import { supabase } from '../lib/supabase'
 import Footer from './Footer'
 
 const NAV: Record<'eleve' | 'club', { to: string; label: string }[]> = {
@@ -13,6 +14,7 @@ const NAV: Record<'eleve' | 'club', { to: string; label: string }[]> = {
     { to: '/eleve/kyu', label: 'Kyu' },
     { to: '/eleve/entrainements', label: 'Mes entraînements' },
     { to: '/eleve/agenda', label: 'Mon agenda' },
+    { to: '/eleve/messages', label: 'Messages' },
   ],
   club: [
     { to: '/club/effectifs', label: 'Effectifs' },
@@ -31,7 +33,33 @@ export default function Layout() {
   const navigate = useNavigate()
   const space = getSpace() ?? 'eleve'
   const [menuOpen, setMenuOpen] = useState(false)
+  const [unread, setUnread] = useState(0)
   const navItems = NAV[space as keyof typeof NAV]
+
+  useEffect(() => {
+    if (space !== 'eleve') return
+    let active = true
+    ;(async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: j } = await supabase
+        .from('judokas')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+      if (!j) return
+      const { count } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('judoka_id', j.id)
+        .eq('sender', 'admin')
+        .is('read_at', null)
+      if (active) setUnread(count ?? 0)
+    })()
+    return () => {
+      active = false
+    }
+  }, [space])
 
   async function handleSignOut() {
     clearSpace()
@@ -57,12 +85,17 @@ export default function Layout() {
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
-                `flex items-center px-3 xl:px-4 text-xs uppercase tracking-widest border-b-2 transition-colors whitespace-nowrap ${
+                `flex items-center gap-1.5 px-3 xl:px-4 text-xs uppercase tracking-widest border-b-2 transition-colors whitespace-nowrap ${
                   isActive ? '!text-white !border-[#C41230]' : 'text-[#666666] border-transparent hover:text-[#CCCCCC]'
                 }`
               }
             >
               {item.label}
+              {item.to === '/eleve/messages' && unread > 0 && (
+                <span className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-[#C41230] text-white text-[10px] font-bold leading-none">
+                  {unread}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -99,12 +132,17 @@ export default function Layout() {
                 to={item.to}
                 onClick={() => setMenuOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                  `flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                     isActive ? 'bg-[#1A1A1A] text-white' : 'text-[#999999] hover:text-white'
                   }`
                 }
               >
                 {item.label}
+                {item.to === '/eleve/messages' && unread > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-[#C41230] text-white text-[10px] font-bold leading-none">
+                    {unread}
+                  </span>
+                )}
               </NavLink>
             ))}
           </nav>

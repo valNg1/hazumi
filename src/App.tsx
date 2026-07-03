@@ -13,6 +13,7 @@ import JudoKa from './pages/eleve/JudoKa'
 import Kyu from './pages/eleve/Kyu'
 import Entrainements from './pages/eleve/Entrainements'
 import MonAgenda from './pages/eleve/MonAgenda'
+import Messages from './pages/eleve/Messages'
 import OnboardingJudoka from './pages/eleve/OnboardingJudoka'
 import Confidentialite from './pages/Confidentialite'
 import MentionsLegales from './pages/MentionsLegales'
@@ -105,6 +106,7 @@ export default function App() {
               <Route path="/eleve/kyu" element={<Kyu />} />
               <Route path="/eleve/entrainements" element={<Entrainements />} />
               <Route path="/eleve/agenda" element={<MonAgenda />} />
+              <Route path="/eleve/messages" element={<Messages />} />
             </Route>
             <Route path="/" element={<SmartRedirect />} />
             <Route path="*" element={<SmartRedirect />} />
