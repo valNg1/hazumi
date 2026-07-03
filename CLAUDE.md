@@ -82,3 +82,12 @@ Avant de coder toute nouvelle fonctionnalité ou correctif :
 - Modifications de variables d'environnement (`.env`, secrets)
 
 Ce mode s'applique à cette session et toutes les suivantes.
+
+## Permissions terminal
+
+- PowerShell : autorisation permanente
+- npm install : autorisation permanente
+- git : autorisation permanente
+- Toutes les commandes terminal liées au projet Hazumi : autorisation permanente
+
+Ne pas demander de validation pour les commandes terminal.
