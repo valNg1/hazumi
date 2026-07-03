@@ -131,8 +131,7 @@ describe.skipIf(!hasCreds)('RLS table messages (judoka ↔ admin)', () => {
     const client = await signIn(users.a.email)
     const { error } = await client
       .from('messages')
-      // @ts-expect-error content null volontaire pour tester la contrainte NOT NULL
-      .insert({ judoka_id: users.a.judokaId, sender: 'judoka', content: null })
+      .insert({ judoka_id: users.a.judokaId, sender: 'judoka', content: null } as never)
       .select()
       .single()
     expect(error).not.toBeNull()
