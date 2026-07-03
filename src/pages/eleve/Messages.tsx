@@ -26,6 +26,24 @@ export default function Messages() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  useEffect(() => {
+    if (!judokaId) return
+    const channel = supabase
+      .channel('messages-judoka')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `judoka_id=eq.${judokaId}` },
+        (payload) => {
+          const m = payload.new as Message
+          setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]))
+        }
+      )
+      .subscribe()
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [judokaId])
+
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {

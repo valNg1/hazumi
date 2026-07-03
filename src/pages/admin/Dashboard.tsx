@@ -22,6 +22,20 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     loadData()
+    const channel = supabase
+      .channel('badge-admin')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        (payload) => {
+          const m = payload.new as { sender: string; read_at: string | null }
+          if (m.sender === 'judoka' && m.read_at === null) setUnreadTotal((u) => u + 1)
+        }
+      )
+      .subscribe()
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   async function loadData() {

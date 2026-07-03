@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import AdminMessagesList from '../MessagesList'
 import AdminMessages from '../Messages'
+import AdminDashboard from '../Dashboard'
 
 const h = vi.hoisted(() => ({
   store: {
@@ -11,6 +12,10 @@ const h = vi.hoisted(() => ({
     role: 'admin' as string,
     judoka: { id: 'j1', first_name: 'Ken', last_name: 'Judo', email: 'ken@test.fr' },
     messages: [] as any[],
+    channels: [] as any[],
+    emitInsert(msg: any) {
+      for (const c of this.channels) c.cb({ new: msg })
+    },
   },
 }))
 
@@ -56,10 +61,22 @@ vi.mock('../../../lib/supabase', () => {
     }
     return builder
   }
+  function channel() {
+    const chan: any = {
+      on: (_evt: string, _opts: any, cb: any) => {
+        store.channels.push({ cb })
+        return chan
+      },
+      subscribe: () => chan,
+    }
+    return chan
+  }
   return {
     supabase: {
       auth: { getUser: () => Promise.resolve({ data: { user: { id: h.store.userId } } }) },
       from,
+      channel,
+      removeChannel: () => {},
     },
   }
 })
@@ -71,6 +88,7 @@ beforeAll(() => {
 beforeEach(() => {
   h.store.role = 'admin'
   h.store.messages = []
+  h.store.channels = []
 })
 
 function renderList() {
@@ -144,5 +162,52 @@ describe('AdminMessages (fil d\'un judoka)', () => {
     const last = h.store.messages[h.store.messages.length - 1]
     expect(last.sender).toBe('admin')
     expect(last.content).toBe('Bien reçu, à bientôt')
+  })
+
+  it('un nouveau message reçu apparaît sans recharger la page (Realtime)', async () => {
+    h.store.messages = [
+      { id: 'a', judoka_id: 'j1', sender: 'admin', content: 'Bonjour', created_at: '2026-07-01T10:00:00Z', read_at: null },
+    ]
+    renderThread()
+    await screen.findByRole('button', { name: /envoyer/i })
+
+    h.store.emitInsert({
+      id: 'rt-j1',
+      judoka_id: 'j1',
+      sender: 'judoka',
+      content: 'Réponse temps réel du judoka',
+      created_at: new Date().toISOString(),
+      read_at: null,
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('Réponse temps réel du judoka')).toBeInTheDocument()
+    })
+  })
+})
+
+describe('Badge non-lus admin (Dashboard, Realtime)', () => {
+  it('le badge de non-lus se met à jour en temps réel', async () => {
+    render(
+      <MemoryRouter>
+        <AdminDashboard />
+      </MemoryRouter>
+    )
+    await waitFor(() => {
+      expect(h.store.channels.length).toBeGreaterThan(0)
+    })
+
+    h.store.emitInsert({
+      id: 'rt-b1',
+      judoka_id: 'j1',
+      sender: 'judoka',
+      content: 'Nouveau message non lu',
+      created_at: new Date().toISOString(),
+      read_at: null,
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('1')).toBeInTheDocument()
+    })
   })
 })

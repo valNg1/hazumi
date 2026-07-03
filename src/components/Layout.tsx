@@ -39,6 +39,7 @@ export default function Layout() {
   useEffect(() => {
     if (space !== 'eleve') return
     let active = true
+    let channel: ReturnType<typeof supabase.channel> | null = null
     ;(async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -55,9 +56,22 @@ export default function Layout() {
         .eq('sender', 'admin')
         .is('read_at', null)
       if (active) setUnread(count ?? 0)
+
+      channel = supabase
+        .channel('badge-judoka')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'messages', filter: `judoka_id=eq.${j.id}` },
+          (payload) => {
+            const m = payload.new as { sender: string; read_at: string | null }
+            if (m.sender === 'admin' && m.read_at === null) setUnread((u) => u + 1)
+          }
+        )
+        .subscribe()
     })()
     return () => {
       active = false
+      if (channel) supabase.removeChannel(channel)
     }
   }, [space])
 

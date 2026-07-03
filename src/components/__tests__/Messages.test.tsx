@@ -3,9 +3,18 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import Messages from '../../pages/eleve/Messages'
+import Layout from '../Layout'
 
 const h = vi.hoisted(() => ({
-  store: { messages: [] as any[], judokaId: 'judoka-1', userId: 'user-1' },
+  store: {
+    messages: [] as any[],
+    judokaId: 'judoka-1',
+    userId: 'user-1',
+    channels: [] as any[],
+    emitInsert(msg: any) {
+      for (const c of this.channels) c.cb({ new: msg })
+    },
+  },
 }))
 
 vi.mock('../../lib/supabase', () => {
@@ -43,10 +52,22 @@ vi.mock('../../lib/supabase', () => {
     }
     return builder
   }
+  function channel() {
+    const chan: any = {
+      on: (_evt: string, _opts: any, cb: any) => {
+        store.channels.push({ cb })
+        return chan
+      },
+      subscribe: () => chan,
+    }
+    return chan
+  }
   return {
     supabase: {
       auth: { getUser: () => Promise.resolve({ data: { user: { id: h.store.userId } } }) },
       from,
+      channel,
+      removeChannel: () => {},
     },
   }
 })
@@ -66,6 +87,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   h.store.messages = []
+  h.store.channels = []
 })
 
 describe('Messages (chat judoka)', () => {
@@ -116,5 +138,51 @@ describe('Messages (chat judoka)', () => {
     })
     // champ vidé après envoi
     expect((input as HTMLInputElement).value).toBe('')
+  })
+
+  it('un nouveau message reçu apparaît sans recharger la page (Realtime)', async () => {
+    renderPage()
+    await screen.findByRole('button', { name: /envoyer/i })
+
+    // simulation d'un message admin poussé par Supabase Realtime
+    h.store.emitInsert({
+      id: 'rt-1',
+      judoka_id: 'judoka-1',
+      sender: 'admin',
+      content: 'Réponse en temps réel',
+      created_at: new Date().toISOString(),
+      read_at: null,
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('Réponse en temps réel')).toBeInTheDocument()
+    })
+  })
+})
+
+describe('Badge non-lus judoka (Layout, Realtime)', () => {
+  it('le badge de non-lus se met à jour en temps réel', async () => {
+    render(
+      <MemoryRouter>
+        <Layout />
+      </MemoryRouter>
+    )
+    // aucun badge au départ
+    await waitFor(() => {
+      expect(h.store.channels.length).toBeGreaterThan(0)
+    })
+
+    h.store.emitInsert({
+      id: 'rt-2',
+      judoka_id: 'judoka-1',
+      sender: 'admin',
+      content: 'Nouveau',
+      created_at: new Date().toISOString(),
+      read_at: null,
+    })
+
+    await waitFor(() => {
+      expect(screen.getAllByText('1').length).toBeGreaterThan(0)
+    })
   })
 })
