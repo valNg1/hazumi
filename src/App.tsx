@@ -22,6 +22,7 @@ import DPA from './pages/DPA'
 import ResetPassword from './pages/ResetPassword'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminMessages from './pages/admin/Messages'
+import AdminMessagesList from './pages/admin/MessagesList'
 
 function SmartRedirect() {
   const [redirect, setRedirect] = useState<string | null>(null)
@@ -95,6 +96,7 @@ export default function App() {
             <Route path="/eleve/onboarding" element={<OnboardingJudoka />} />
             <Route element={<AdminLayout />}>
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/messages" element={<AdminMessagesList />} />
               <Route path="/admin/messages/:judokaId" element={<AdminMessages />} />
             </Route>
             <Route element={<Layout />}>

@@ -18,6 +18,7 @@ export default function AdminDashboard() {
   const [judokas, setJudokas] = useState<Judoka[]>([])
   const [loading, setLoading] = useState(true)
   const [hasAccess, setHasAccess] = useState(false)
+  const [unreadTotal, setUnreadTotal] = useState(0)
 
   useEffect(() => {
     loadData()
@@ -52,6 +53,14 @@ export default function AdminDashboard() {
     if (!error && data) {
       setJudokas(data)
     }
+
+    const { count } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('sender', 'judoka')
+      .is('read_at', null)
+    setUnreadTotal(count ?? 0)
+
     setLoading(false)
   }
 
@@ -77,6 +86,24 @@ export default function AdminDashboard() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#0A0A0A] mb-1">Dashboard Admin</h1>
         <p className="text-[#666666]">Gestion des élèves et des interactions</p>
+      </div>
+
+      {/* Onglets */}
+      <div className="flex items-center gap-1 mb-8 border-b border-[#E5E5E5]">
+        <span className="px-4 py-2.5 text-sm font-semibold text-[#0A0A0A] border-b-2 border-[#C41230] -mb-px">
+          Membres
+        </span>
+        <button
+          onClick={() => navigate('/admin/messages')}
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-[#666666] border-b-2 border-transparent hover:text-[#0A0A0A] transition-colors"
+        >
+          Messages
+          {unreadTotal > 0 && (
+            <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-[#C41230] text-white text-xs font-bold leading-none">
+              {unreadTotal}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Statistiques */}
