@@ -47,7 +47,25 @@ VITE_SUPABASE_ANON_KEY=...
 npm run dev      # Serveur de développement
 npm run build    # Build de production
 npm run preview  # Prévisualisation du build
+npm run test     # Tests unitaires (Vitest, single run)
+npm run test:watch  # Tests unitaires en mode watch
 ```
+
+## Tests unitaires — OBLIGATOIRES (TDD)
+
+Avant de coder toute nouvelle fonctionnalité ou correctif :
+
+1. **Écrire les tests d'abord** (Test Driven Development) :
+   - Cas nominaux (ça doit marcher)
+   - Cas limites (valeur vide, `null`, utilisateur non connecté…)
+   - Cas d'erreur (API down, RLS bloquée…)
+2. **Outils** : Vitest + React Testing Library + jsdom.
+3. **Structure des fichiers de test** :
+   - `src/lib/__tests__/*.test.ts`
+   - `src/components/__tests__/*.test.tsx`
+   - `src/pages/__tests__/*.test.tsx`
+4. **Avant chaque commit** : lancer `npm run test`. Aucun code cassé ne part en production.
+5. **Existant** : écrire d'abord des tests de non-régression avant d'ajouter du nouveau code.
 
 ## Mode autonome (Claude)
 
