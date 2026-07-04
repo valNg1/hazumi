@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { getEmbedUrl, getThumbnailUrl, getVideoLabel } from '../lib/video'
 
-type ContenuType = 'video' | 'article' | 'pdf'
-type Parcours = 'shiai' | 'judo-ka' | 'kyu'
+export type ContenuType = 'video' | 'article' | 'pdf'
+export type Parcours = 'shiai' | 'judo-ka' | 'kyu'
 
-interface CatalogueItem {
+export interface CatalogueItem {
   id: string
   titre: string
   type: ContenuType
@@ -15,7 +15,12 @@ interface CatalogueItem {
   tags: string[] | null
 }
 
-export default function CatalogueSection({ parcours }: { parcours: Parcours }) {
+interface CatalogueSectionProps {
+  parcours: Parcours
+  onItemsLoaded?: (items: CatalogueItem[]) => void
+}
+
+export default function CatalogueSection({ parcours, onItemsLoaded }: CatalogueSectionProps) {
   const [items, setItems] = useState<CatalogueItem[]>([])
   const [videoOpen, setVideoOpen] = useState<CatalogueItem | null>(null)
   const [articleOpen, setArticleOpen] = useState<CatalogueItem | null>(null)
@@ -30,7 +35,9 @@ export default function CatalogueSection({ parcours }: { parcours: Parcours }) {
       .select('*')
       .eq('parcours', parcours)
       .order('created_at', { ascending: false })
-    setItems((data as CatalogueItem[]) ?? [])
+    const loaded = (data as CatalogueItem[]) ?? []
+    setItems(loaded)
+    onItemsLoaded?.(loaded)
   }
 
   if (items.length === 0) return null

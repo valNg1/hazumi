@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { detectVideoType, getVideoLabel, getThumbnailUrl, getEmbedUrl } from '../lib/video'
-import CatalogueSection from './CatalogueSection'
+import CatalogueSection, { type CatalogueItem } from './CatalogueSection'
 
 type Parcours = 'shiai' | 'judo-ka' | 'kyu'
 
@@ -30,7 +30,6 @@ interface PersonalLibraryProps {
   titre: string
   icone: string
   description: string
-  cataloguePosition?: 'top' | 'bottom'
 }
 
 export default function PersonalLibrary({
@@ -38,9 +37,9 @@ export default function PersonalLibrary({
   titre,
   icone,
   description,
-  cataloguePosition = 'top',
 }: PersonalLibraryProps) {
   const [videos, setVideos] = useState<Video[]>([])
+  const [catalogueItems, setCatalogueItems] = useState<CatalogueItem[]>([])
   const [playlists, setPlaylists] = useState<PlaylistCollection[]>([])
   const [judokaId, setJudokaId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -105,6 +104,29 @@ export default function PersonalLibrary({
           }
         })
       }
+    })
+    return Array.from(tagMap.values()).sort()
+  }
+
+  function getCombinedTags(): string[] {
+    const tagMap = new Map<string, string>()
+    videos.forEach(v => {
+      if (v.tags) {
+        v.tags.split(',').forEach(t => {
+          const trimmed = t.trim()
+          if (!trimmed) return
+          const normalized = normalizeTag(trimmed)
+          if (!tagMap.has(normalized)) tagMap.set(normalized, trimmed)
+        })
+      }
+    })
+    catalogueItems.forEach(item => {
+      (item.tags ?? []).forEach(t => {
+        const trimmed = t.trim()
+        if (!trimmed) return
+        const normalized = normalizeTag(trimmed)
+        if (!tagMap.has(normalized)) tagMap.set(normalized, trimmed)
+      })
     })
     return Array.from(tagMap.values()).sort()
   }
@@ -270,9 +292,8 @@ export default function PersonalLibrary({
   if (loading) return <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
 
   const allTags = getAllTags()
+  const combinedTags = getCombinedTags()
   const filteredVideos = getFilteredVideos()
-
-  const catalogue = <CatalogueSection parcours={parcours} />
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -286,10 +307,12 @@ export default function PersonalLibrary({
         </div>
       </div>
 
-      {cataloguePosition === 'top' && catalogue}
+      <CatalogueSection parcours={parcours} onItemsLoaded={setCatalogueItems} />
+
+      <h2 className="text-lg font-bold text-[#0A0A0A] mb-3">Ma bibliothèque</h2>
 
       {/* Bouton + Filtres en 2 lignes */}
-      {allTags.length > 0 && (
+      {combinedTags.length > 0 && (
         <div className="mb-4 space-y-3">
           <div className="flex items-center gap-2">
             <button
@@ -370,7 +393,7 @@ export default function PersonalLibrary({
               <div>
                 <label className="text-xs text-[#666666] mb-2 block">Option 1 : Sélectionner les tags existants</label>
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {allTags.map(tag => (
+                  {combinedTags.map(tag => (
                     <button
                       key={tag}
                       onClick={() => {
@@ -588,13 +611,6 @@ export default function PersonalLibrary({
               </div>
             )
           })}
-        </div>
-      )}
-
-      {cataloguePosition === 'bottom' && (
-        <div className="mt-8 pt-6 border-t border-[#E5E5E5]">
-          <p className="text-xs uppercase tracking-widest text-[#999999] mb-4">Contenu mis à disposition par Hazumi</p>
-          {catalogue}
         </div>
       )}
 

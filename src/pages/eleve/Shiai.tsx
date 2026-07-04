@@ -7,7 +7,6 @@ export default function Shiai() {
       titre="Shiai"
       icone="試合"
       description="Mes vidéos de judo — techniques, combats, conseils"
-      cataloguePosition="top"
     />
   )
 }

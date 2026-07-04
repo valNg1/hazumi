@@ -7,7 +7,6 @@ export default function JudoKa() {
       titre="Judo-Ka"
       icone="🎌"
       description="Culture, histoire et philosophie du judo"
-      cataloguePosition="bottom"
     />
   )
 }
