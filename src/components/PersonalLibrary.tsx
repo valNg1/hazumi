@@ -1,15 +1,36 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { detectVideoType, getVideoLabel, getThumbnailUrl, getEmbedUrl } from '../lib/video'
-import CatalogueSection, { type CatalogueItem } from './CatalogueSection'
 
 type Parcours = 'shiai' | 'judo-ka' | 'kyu'
+type ContentType = 'video' | 'article' | 'pdf'
 
 interface Video {
   id: string
   title: string
   video_url: string
   tags: string | null
+}
+
+interface RawCatalogueItem {
+  id: string
+  titre: string
+  type: ContentType
+  parcours: Parcours
+  url: string | null
+  contenu: string | null
+  tags: string[] | null
+}
+
+interface ContentItem {
+  id: string
+  titre: string
+  type: ContentType
+  url?: string | null
+  contenu?: string | null
+  tags: string[]
+  source: 'hazumi' | 'perso'
+  parcours: Parcours
 }
 
 interface PlaylistCollection {
@@ -23,6 +44,35 @@ function normalizeTag(tag: string): string {
     .trim()
     .toLowerCase()
     .replace(/\s+/g, ' ')
+}
+
+function splitTags(tags: string | null): string[] {
+  return tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : []
+}
+
+function videoToItem(v: Video, parcours: Parcours): ContentItem {
+  return {
+    id: v.id,
+    titre: v.title,
+    type: 'video',
+    url: v.video_url,
+    tags: splitTags(v.tags),
+    source: 'perso',
+    parcours,
+  }
+}
+
+function catalogueToItem(c: RawCatalogueItem): ContentItem {
+  return {
+    id: c.id,
+    titre: c.titre,
+    type: c.type,
+    url: c.url,
+    contenu: c.contenu,
+    tags: c.tags ?? [],
+    source: 'hazumi',
+    parcours: c.parcours,
+  }
 }
 
 interface PersonalLibraryProps {
@@ -39,7 +89,7 @@ export default function PersonalLibrary({
   description,
 }: PersonalLibraryProps) {
   const [videos, setVideos] = useState<Video[]>([])
-  const [catalogueItems, setCatalogueItems] = useState<CatalogueItem[]>([])
+  const [catalogueItems, setCatalogueItems] = useState<RawCatalogueItem[]>([])
   const [playlists, setPlaylists] = useState<PlaylistCollection[]>([])
   const [judokaId, setJudokaId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -55,6 +105,7 @@ export default function PersonalLibrary({
   const [playlistName, setPlaylistName] = useState('')
   const quickAddRef = useRef<HTMLDivElement>(null)
   const [playingVideoUrl, setPlayingVideoUrl] = useState<string | null>(null)
+  const [articleOpen, setArticleOpen] = useState<ContentItem | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -65,18 +116,19 @@ export default function PersonalLibrary({
         setJudokaId(judoka.id)
         await loadVideos(user.id)
         await loadPlaylists(judoka.id)
+        await loadCatalogue()
       }
       setLoading(false)
     }
     load()
   }, [parcours])
 
-  function playVideo(video: Video) {
-    const videoType = detectVideoType(video.video_url)
+  function playVideoUrl(url: string) {
+    const videoType = detectVideoType(url)
     if (videoType === 'youtube' || videoType === 'vimeo') {
-      setPlayingVideoUrl(video.video_url)
+      setPlayingVideoUrl(url)
     } else {
-      window.open(video.video_url, '_blank')
+      window.open(url, '_blank')
     }
   }
 
@@ -92,42 +144,27 @@ export default function PersonalLibrary({
     }
   }
 
-  function getAllTags(): string[] {
-    const tagMap = new Map<string, string>()
-    videos.forEach(v => {
-      if (v.tags) {
-        v.tags.split(',').forEach(t => {
-          const trimmed = t.trim()
-          const normalized = normalizeTag(trimmed)
-          if (!tagMap.has(normalized)) {
-            tagMap.set(normalized, trimmed)
-          }
-        })
-      }
-    })
-    return Array.from(tagMap.values()).sort()
+  async function loadCatalogue() {
+    const { data } = await supabase
+      .from('catalogue_hazumi')
+      .select('*')
+      .eq('parcours', parcours)
+      .order('created_at', { ascending: false })
+    setCatalogueItems((data as RawCatalogueItem[]) ?? [])
   }
 
   function getCombinedTags(): string[] {
     const tagMap = new Map<string, string>()
-    videos.forEach(v => {
-      if (v.tags) {
-        v.tags.split(',').forEach(t => {
-          const trimmed = t.trim()
-          if (!trimmed) return
-          const normalized = normalizeTag(trimmed)
-          if (!tagMap.has(normalized)) tagMap.set(normalized, trimmed)
-        })
-      }
-    })
-    catalogueItems.forEach(item => {
-      (item.tags ?? []).forEach(t => {
+    const registerTags = (tags: string[]) => {
+      tags.forEach(t => {
         const trimmed = t.trim()
         if (!trimmed) return
         const normalized = normalizeTag(trimmed)
         if (!tagMap.has(normalized)) tagMap.set(normalized, trimmed)
       })
-    })
+    }
+    videos.forEach(v => registerTags(splitTags(v.tags)))
+    catalogueItems.forEach(c => registerTags(c.tags ?? []))
     return Array.from(tagMap.values()).sort()
   }
 
@@ -186,24 +223,18 @@ export default function PersonalLibrary({
     if (selectedPlaylistId === playlistId) setSelectedPlaylistId(null)
   }
 
-  function getFilteredVideos(): Video[] {
+  function getFilteredItems(items: ContentItem[]): ContentItem[] {
     if (selectedPlaylistId) {
       const playlist = playlists.find(p => p.id === selectedPlaylistId)
-      if (!playlist) return videos
+      if (!playlist) return items
       const normalizedPlaylistTags = playlist.tags.map(normalizeTag)
-      return videos.filter(v => {
-        if (!v.tags) return false
-        const videoTags = v.tags.split(',').map(t => normalizeTag(t.trim()))
-        return normalizedPlaylistTags.some(t => videoTags.includes(t))
-      })
+      return items.filter(item =>
+        item.tags.some(t => normalizedPlaylistTags.includes(normalizeTag(t)))
+      )
     }
-    if (!selectedTag) return videos
+    if (!selectedTag) return items
     const normalizedSelected = normalizeTag(selectedTag)
-    return videos.filter(v => {
-      if (!v.tags) return false
-      const videoTags = v.tags.split(',').map(t => normalizeTag(t.trim()))
-      return videoTags.includes(normalizedSelected)
-    })
+    return items.filter(item => item.tags.some(t => normalizeTag(t) === normalizedSelected))
   }
 
   async function addVideo() {
@@ -289,11 +320,132 @@ export default function PersonalLibrary({
     setVideos(prev => prev.filter(v => v.id !== videoId))
   }
 
+  function renderThumbnail(item: ContentItem) {
+    if (item.type === 'video' && item.url) {
+      const thumb = getThumbnailUrl(item.url)
+      return (
+        <div
+          className="flex-shrink-0 w-20 h-15 cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => playVideoUrl(item.url!)}
+        >
+          {thumb ? (
+            <img
+              src={thumb}
+              alt={item.titre}
+              className="w-full h-full rounded object-cover border border-[#E5E5E5]"
+              onError={e => e.currentTarget.style.display = 'none'}
+            />
+          ) : (
+            <div className="w-full h-full rounded bg-[#0A0A0A] flex items-center justify-center">
+              <span className="text-white text-[8px] text-center px-1">{getVideoLabel(detectVideoType(item.url))}</span>
+            </div>
+          )}
+        </div>
+      )
+    }
+    if (item.type === 'pdf') {
+      return (
+        <div className="flex-shrink-0 w-20 h-15 rounded bg-red-50 border border-red-200 flex items-center justify-center">
+          <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+      )
+    }
+    return (
+      <div className="flex-shrink-0 w-20 h-15 rounded bg-[#F0F0F0] border border-[#E5E5E5] flex items-center justify-center">
+        <svg className="w-6 h-6 text-[#999999]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 6h16M4 12h16M4 18h7" />
+        </svg>
+      </div>
+    )
+  }
+
+  function renderBadge(item: ContentItem) {
+    if (item.type === 'video' && item.url) {
+      const videoType = detectVideoType(item.url)
+      const label = getVideoLabel(videoType)
+      const cls =
+        videoType === 'youtube' ? 'bg-red-50 text-red-600 border-red-200' :
+        videoType === 'vimeo' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+        videoType === 'instagram' ? 'bg-pink-50 text-pink-600 border-pink-200' :
+        videoType === 'gdrive' ? 'bg-green-50 text-green-600 border-green-200' :
+        videoType === 'facebook' ? 'bg-blue-100 text-blue-700 border-blue-300' :
+        'bg-[#F5F5F5] text-[#666666] border-[#E5E5E5]'
+      return <span className={`text-[9px] px-1.5 py-0.5 rounded border font-medium ${cls}`}>{label}</span>
+    }
+    if (item.type === 'pdf') {
+      return <span className="text-[9px] px-1.5 py-0.5 rounded border font-medium bg-red-50 text-red-600 border-red-200">PDF</span>
+    }
+    return <span className="text-[9px] px-1.5 py-0.5 rounded border font-medium bg-[#F5F5F5] text-[#666666] border-[#E5E5E5]">Article</span>
+  }
+
+  function renderHazumiAction(item: ContentItem) {
+    if (item.type === 'video') {
+      return (
+        <button
+          onClick={() => item.url && playVideoUrl(item.url)}
+          className="text-[#999999] hover:text-[#0A0A0A] transition-colors p-1 text-xs font-semibold"
+        >
+          Voir
+        </button>
+      )
+    }
+    if (item.type === 'pdf') {
+      return (
+        <a
+          href={item.url ?? '#'}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#999999] hover:text-[#0A0A0A] transition-colors p-1 text-xs font-semibold"
+        >
+          Voir
+        </a>
+      )
+    }
+    return (
+      <button
+        onClick={() => setArticleOpen(item)}
+        className="text-[#999999] hover:text-[#0A0A0A] transition-colors p-1 text-xs font-semibold"
+      >
+        Lire
+      </button>
+    )
+  }
+
+  function renderItemRow(item: ContentItem) {
+    return (
+      <div key={item.id} className="bg-white rounded-lg border border-[#E5E5E5] p-3 flex gap-3 items-center hover:shadow-sm transition-shadow">
+        {renderThumbnail(item)}
+
+        <div className="flex-1 min-w-0">
+          <h3 className="font-medium text-[#0A0A0A] text-sm leading-snug line-clamp-1">{item.titre}</h3>
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            {renderBadge(item)}
+            {item.tags.map(tag => (
+              <span key={tag} className="text-[9px] px-1.5 py-0.5 bg-[#F5F5F5] text-[#666666] rounded border border-[#E5E5E5]">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex-shrink-0 flex gap-1">
+          {renderHazumiAction(item)}
+        </div>
+      </div>
+    )
+  }
+
   if (loading) return <div className="text-center py-16 text-[#999999] text-sm">Chargement…</div>
 
-  const allTags = getAllTags()
   const combinedTags = getCombinedTags()
-  const filteredVideos = getFilteredVideos()
+  const hazumiItems = catalogueItems.map(catalogueToItem)
+  const persoItems = videos.map(v => videoToItem(v, parcours))
+  const filteredHazumi = getFilteredItems(hazumiItems)
+  const filteredPersoItems = getFilteredItems(persoItems)
+  const filteredPersoIds = new Set(filteredPersoItems.map(i => i.id))
+  const filteredVideos = videos.filter(v => filteredPersoIds.has(v.id))
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -307,7 +459,14 @@ export default function PersonalLibrary({
         </div>
       </div>
 
-      <CatalogueSection parcours={parcours} onItemsLoaded={setCatalogueItems} />
+      {hazumiItems.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-bold text-[#0A0A0A] mb-3">Contenu Hazumi</h2>
+          <div className="space-y-2">
+            {filteredHazumi.map(item => renderItemRow(item))}
+          </div>
+        </div>
+      )}
 
       <h2 className="text-lg font-bold text-[#0A0A0A] mb-3">Ma bibliothèque</h2>
 
@@ -359,7 +518,7 @@ export default function PersonalLibrary({
           {/* Ligne 2 — Tags individuels */}
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[10px] text-[#999999] font-medium">Tags :</span>
-            {allTags.map(tag => (
+            {combinedTags.map(tag => (
               <button
                 key={tag}
                 onClick={() => { setSelectedTag(tag); setSelectedPlaylistId(null) }}
@@ -507,12 +666,11 @@ export default function PersonalLibrary({
         </div>
       ) : (
         <div className="space-y-2">
-          {/* Vidéos */}
           {filteredVideos.map(video => {
             const isEditing = editingId === video.id
             const videoType = detectVideoType(video.video_url)
             const label = getVideoLabel(videoType)
-            const tags = video.tags ? video.tags.split(',').map(t => t.trim()) : []
+            const tags = splitTags(video.tags)
             const thumbnailUrl = getThumbnailUrl(video.video_url)
 
             if (isEditing) {
@@ -563,7 +721,7 @@ export default function PersonalLibrary({
             return (
               <div key={video.id} className="bg-white rounded-lg border border-[#E5E5E5] p-3 flex gap-3 items-center hover:shadow-sm transition-shadow">
                 {thumbnailUrl && (
-                  <div className="flex-shrink-0 w-20 h-15 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => playVideo(video)}>
+                  <div className="flex-shrink-0 w-20 h-15 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => playVideoUrl(video.video_url)}>
                     <img
                       src={thumbnailUrl}
                       alt={video.title}
@@ -671,6 +829,21 @@ export default function PersonalLibrary({
                 return <p className="text-white text-center text-sm px-4" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Ouverture dans un nouvel onglet...</p>
               })()}
             </div>
+          </div>
+        </div>
+      )}
+
+      {articleOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+          onClick={() => setArticleOpen(null)}
+        >
+          <div
+            className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold text-[#0A0A0A] mb-3">{articleOpen.titre}</h2>
+            <p className="text-sm text-[#333333] whitespace-pre-wrap">{articleOpen.contenu}</p>
           </div>
         </div>
       )}

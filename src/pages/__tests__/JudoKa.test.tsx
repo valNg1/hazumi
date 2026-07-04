@@ -192,4 +192,80 @@ describe('JudoKa (PersonalLibrary parcours=judo-ka)', () => {
       expect(screen.getByText('Créer une playlist')).toBeInTheDocument()
     })
   })
+
+  it('un item PDF du catalogue Hazumi s\'affiche au format ligne unifié (badge + bouton Voir)', async () => {
+    h.store.catalogue = [
+      { id: 'c1', titre: 'Fiche PDF Judo-Ka', type: 'pdf', parcours: 'judo-ka', url: 'https://example.com/fiche.pdf', tags: [] },
+    ]
+    renderPage()
+    await waitFor(() => {
+      expect(screen.getByText('Fiche PDF Judo-Ka')).toBeInTheDocument()
+      expect(screen.getByText('PDF')).toBeInTheDocument()
+    })
+    const link = screen.getByText('Voir').closest('a')
+    expect(link).toHaveAttribute('href', 'https://example.com/fiche.pdf')
+    expect(link).toHaveAttribute('target', '_blank')
+  })
+
+  it('un item Article du catalogue Hazumi s\'affiche au format ligne unifié (badge + bouton Lire ouvrant une modale)', async () => {
+    h.store.catalogue = [
+      { id: 'c1', titre: 'Article Judo-Ka', type: 'article', parcours: 'judo-ka', contenu: 'Contenu complet de l\'article', tags: [] },
+    ]
+    renderPage()
+    await waitFor(() => {
+      expect(screen.getByText('Article Judo-Ka')).toBeInTheDocument()
+      expect(screen.getByText('Article')).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByText('Lire'))
+    await waitFor(() => {
+      expect(screen.getByText('Contenu complet de l\'article')).toBeInTheDocument()
+    })
+  })
+
+  it('la vidéo perso a Modifier/Supprimer, la vidéo Hazumi a un bouton Voir (pas d\'édition)', async () => {
+    h.store.videos = [
+      { id: 'v1', title: 'Vidéo perso', video_url: 'https://youtube.com/watch?v=aaaaaaaaaaa', tags: '', parcours: 'judo-ka', uploaded_by: 'user-1' },
+    ]
+    h.store.catalogue = [
+      { id: 'c1', titre: 'Vidéo Hazumi', type: 'video', parcours: 'judo-ka', url: 'https://youtube.com/watch?v=bbbbbbbbbbb', tags: [] },
+    ]
+    renderPage()
+    await waitFor(() => {
+      expect(screen.getByText('Vidéo perso')).toBeInTheDocument()
+      expect(screen.getByText('Vidéo Hazumi')).toBeInTheDocument()
+    })
+    const persoRow = screen.getByText('Vidéo perso').closest('div')!.parentElement!.parentElement!
+    expect(within(persoRow).getByText('Modifier')).toBeInTheDocument()
+    expect(within(persoRow).getByText('Supprimer')).toBeInTheDocument()
+
+    const hazumiRow = screen.getByText('Vidéo Hazumi').closest('div')!.parentElement!.parentElement!
+    expect(within(hazumiRow).getByText('Voir')).toBeInTheDocument()
+    expect(within(hazumiRow).queryByText('Modifier')).toBeNull()
+  })
+
+  it('le filtrage par tag fonctionne à travers les deux sources (catalogue + perso)', async () => {
+    h.store.videos = [
+      { id: 'v1', title: 'Vidéo perso kata', video_url: 'https://youtube.com/watch?v=aaaaaaaaaaa', tags: 'kata', parcours: 'judo-ka', uploaded_by: 'user-1' },
+      { id: 'v2', title: 'Vidéo perso histoire', video_url: 'https://youtube.com/watch?v=ccccccccccc', tags: 'histoire', parcours: 'judo-ka', uploaded_by: 'user-1' },
+    ]
+    h.store.catalogue = [
+      { id: 'c1', titre: 'Article kata Hazumi', type: 'article', parcours: 'judo-ka', contenu: 'x', tags: ['kata'] },
+      { id: 'c2', titre: 'Article culture Hazumi', type: 'article', parcours: 'judo-ka', contenu: 'x', tags: ['culture'] },
+    ]
+    renderPage()
+    await waitFor(() => {
+      expect(screen.getByText('Vidéo perso kata')).toBeInTheDocument()
+      expect(screen.getByText('Article kata Hazumi')).toBeInTheDocument()
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'kata' }))
+
+    await waitFor(() => {
+      // le tag 'kata' filtre les DEUX sources simultanément
+      expect(screen.getByText('Vidéo perso kata')).toBeInTheDocument()
+      expect(screen.getByText('Article kata Hazumi')).toBeInTheDocument()
+      expect(screen.queryByText('Vidéo perso histoire')).toBeNull()
+      expect(screen.queryByText('Article culture Hazumi')).toBeNull()
+    })
+  })
 })
