@@ -107,7 +107,7 @@ export default function Messages() {
     <div className="max-w-2xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
       <div className="mb-4">
         <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Messagerie</h1>
-        <p className="text-[#999999] text-sm mt-0.5">Échange avec ton club.</p>
+        <p className="text-[#999999] text-sm mt-0.5">Echanges avec Hazumi.</p>
       </div>
 
       <div className="flex-1 overflow-y-auto bg-white rounded-xl border border-[#E5E5E5] p-4 space-y-3">
