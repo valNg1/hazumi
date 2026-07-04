@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { detectVideoType, getVideoLabel, getThumbnailUrl, getEmbedUrl } from '../../lib/video'
+import CatalogueSection from '../../components/CatalogueSection'
 
 interface Video {
   id: string
@@ -270,6 +271,8 @@ export default function Shiai() {
           </div>
         </div>
       </div>
+
+      <CatalogueSection parcours="shiai" />
 
       {/* Bouton + Filtres en 2 lignes */}
       {allTags.length > 0 && (

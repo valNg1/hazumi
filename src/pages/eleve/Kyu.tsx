@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { CURRICULUM, getCategorieLabel, getBeltIndex } from '../../lib/curriculum'
+import CatalogueSection from '../../components/CatalogueSection'
 import type { Belt } from '../../types'
 import type { TechniqueStatus } from '../../lib/curriculum'
 
@@ -112,6 +113,8 @@ export default function Kyu() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight mb-4">🥋 Kyu — Passage de grades</h1>
       </div>
+
+      <CatalogueSection parcours="kyu" />
 
       <>
                   {toast && (

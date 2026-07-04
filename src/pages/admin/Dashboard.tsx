@@ -118,6 +118,12 @@ export default function AdminDashboard() {
             </span>
           )}
         </button>
+        <button
+          onClick={() => navigate('/admin/catalogue')}
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-[#666666] border-b-2 border-transparent hover:text-[#0A0A0A] transition-colors"
+        >
+          Catalogue
+        </button>
       </div>
 
       {/* Statistiques */}
