@@ -4,6 +4,7 @@ import { signOut } from '../lib/auth'
 import { clearSpace, getSpace } from '../lib/space'
 import { supabase } from '../lib/supabase'
 import Footer from './Footer'
+import NavbarNotificationBadge from './NavbarNotificationBadge'
 
 const NAV: Record<'eleve' | 'club', { to: string; label: string }[]> = {
   eleve: [
@@ -123,6 +124,7 @@ export default function Layout() {
                   {unread}
                 </span>
               )}
+              {item.to === '/eleve/messages' && <NavbarNotificationBadge />}
             </NavLink>
           ))}
         </nav>

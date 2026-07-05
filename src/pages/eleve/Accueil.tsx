@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { CURRICULUM, getBeltIndex } from '../../lib/curriculum'
 import type { Belt } from '../../types'
 import type { TechniqueStatus } from '../../lib/curriculum'
+import HomeMessagingCard from '../../components/HomeMessagingCard'
 
 interface AgendaItem {
   key: string
@@ -288,6 +289,8 @@ export default function Accueil() {
         </div>
         <img src="/logo.png" alt="Hazumi" title="Hazumi" className="h-12 w-12 object-contain opacity-80" />
       </div>
+
+      <HomeMessagingCard />
 
       <div className="space-y-4">
         {/* Bloc grade actuel */}

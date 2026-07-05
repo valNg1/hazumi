@@ -14,6 +14,7 @@ import Kyu from './pages/eleve/Kyu'
 import Entrainements from './pages/eleve/Entrainements'
 import MonAgenda from './pages/eleve/MonAgenda'
 import Messages from './pages/eleve/Messages'
+import ConversationView from './pages/eleve/ConversationView'
 import OnboardingJudoka from './pages/eleve/OnboardingJudoka'
 import Confidentialite from './pages/Confidentialite'
 import MentionsLegales from './pages/MentionsLegales'
@@ -111,6 +112,7 @@ export default function App() {
               <Route path="/eleve/entrainements" element={<Entrainements />} />
               <Route path="/eleve/agenda" element={<MonAgenda />} />
               <Route path="/eleve/messages" element={<Messages />} />
+              <Route path="/messages/:conversationId" element={<ConversationView />} />
             </Route>
             <Route path="/" element={<SmartRedirect />} />
             <Route path="*" element={<SmartRedirect />} />
