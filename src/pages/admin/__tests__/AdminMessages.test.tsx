@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import AdminMessagesList from '../MessagesList'
 import AdminMessages from '../Messages'
-import AdminDashboard from '../Dashboard'
 
 const h = vi.hoisted(() => ({
   store: {
@@ -182,32 +181,6 @@ describe('AdminMessages (fil d\'un judoka)', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Réponse temps réel du judoka')).toBeInTheDocument()
-    })
-  })
-})
-
-describe('Badge non-lus admin (Dashboard, Realtime)', () => {
-  it('le badge de non-lus se met à jour en temps réel', async () => {
-    render(
-      <MemoryRouter>
-        <AdminDashboard />
-      </MemoryRouter>
-    )
-    await waitFor(() => {
-      expect(h.store.channels.length).toBeGreaterThan(0)
-    })
-
-    h.store.emitInsert({
-      id: 'rt-b1',
-      judoka_id: 'j1',
-      sender: 'judoka',
-      content: 'Nouveau message non lu',
-      created_at: new Date().toISOString(),
-      read_at: null,
-    })
-
-    await waitFor(() => {
-      expect(screen.getByText('1')).toBeInTheDocument()
     })
   })
 })

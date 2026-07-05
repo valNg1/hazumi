@@ -1,41 +1,31 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { useUnreadConversations } from '../../hooks/useUnreadConversations'
 
-interface Judoka {
-  id: string
-  user_id: string
-  first_name: string
-  last_name: string
-  email: string
-  birth_date: string | null
-  subscription_active: boolean
-  subscription_expires_at: string | null
+interface CatalogueCounts {
+  video: number
+  pdf: number
+  autres: number
 }
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
-  const [judokas, setJudokas] = useState<Judoka[]>([])
+  const { conversations } = useUnreadConversations()
   const [loading, setLoading] = useState(true)
   const [hasAccess, setHasAccess] = useState(false)
-  const [unreadTotal, setUnreadTotal] = useState(0)
+  const [adminJudokaId, setAdminJudokaId] = useState<string | null>(null)
+
+  const [judokasActifs, setJudokasActifs] = useState(0)
+  const [judokasRecents, setJudokasRecents] = useState(0)
+  const [catalogueCounts, setCatalogueCounts] = useState<CatalogueCounts>({ video: 0, pdf: 0, autres: 0 })
+  const [messagesTotal, setMessagesTotal] = useState(0)
+
+  const [notes, setNotes] = useState('')
+  const [savingNotes, setSavingNotes] = useState(false)
 
   useEffect(() => {
     loadData()
-    const channel = supabase
-      .channel('badge-admin')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages' },
-        (payload) => {
-          const m = payload.new as { sender: string; read_at: string | null }
-          if (m.sender === 'judoka' && m.read_at === null) setUnreadTotal((u) => u + 1)
-        }
-      )
-      .subscribe()
-    return () => {
-      supabase.removeChannel(channel)
-    }
   }, [])
 
   async function loadData() {
@@ -45,37 +35,55 @@ export default function AdminDashboard() {
       return
     }
 
-    const { data: judoka } = await supabase
-      .from('judokas')
-      .select('role')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!judoka || judoka.role !== 'admin') {
+    const { data: me } = await supabase.from('judokas').select('role, id').eq('user_id', user.id).single()
+    if (!me || me.role !== 'admin') {
       setLoading(false)
       return
     }
-
     setHasAccess(true)
+    setAdminJudokaId(me.id)
 
-    const { data, error } = await supabase
+    const { count: actifsCount } = await supabase
       .from('judokas')
-      .select('id, user_id, first_name, last_name, email, birth_date, subscription_active, subscription_expires_at')
-      .eq('role', 'judoka')
-      .order('first_name')
-
-    if (!error && data) {
-      setJudokas(data)
-    }
-
-    const { count } = await supabase
-      .from('messages')
       .select('*', { count: 'exact', head: true })
-      .eq('sender', 'judoka')
-      .is('read_at', null)
-    setUnreadTotal(count ?? 0)
+      .eq('role', 'judoka')
+    setJudokasActifs(actifsCount ?? 0)
+
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    const { count: recentsCount } = await supabase
+      .from('judokas')
+      .select('*', { count: 'exact', head: true })
+      .eq('role', 'judoka')
+      .gte('last_active_at', cutoff)
+    setJudokasRecents(recentsCount ?? 0)
+
+    const { data: catalogue } = await supabase.from('catalogue_hazumi').select('type')
+    const counts: CatalogueCounts = { video: 0, pdf: 0, autres: 0 }
+    for (const item of (catalogue as { type: string }[]) ?? []) {
+      if (item.type === 'video') counts.video++
+      else if (item.type === 'pdf') counts.pdf++
+      else counts.autres++
+    }
+    setCatalogueCounts(counts)
+
+    const { data: msgs } = await supabase.from('messages').select('conversation_id').not('conversation_id', 'is', null)
+    setMessagesTotal((msgs ?? []).length)
+
+    const { data: note } = await supabase.from('admin_notes').select('content').eq('admin_id', me.id).single()
+    setNotes(note?.content ?? '')
 
     setLoading(false)
+  }
+
+  async function saveNotes() {
+    if (!adminJudokaId) return
+    setSavingNotes(true)
+    await supabase.from('admin_notes').upsert({
+      admin_id: adminJudokaId,
+      content: notes,
+      updated_at: new Date().toISOString(),
+    })
+    setSavingNotes(false)
   }
 
   if (loading) {
@@ -98,102 +106,86 @@ export default function AdminDashboard() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#0A0A0A] mb-1">Dashboard Admin</h1>
-        <p className="text-[#666666]">Gestion des élèves et des interactions</p>
+        <h1 className="text-3xl font-bold text-[#0A0A0A] mb-1">Dashboard</h1>
+        <p className="text-[#666666]">Vue d'ensemble de l'activité Hazumi</p>
       </div>
 
-      {/* Onglets */}
-      <div className="flex items-center gap-1 mb-8 border-b border-[#E5E5E5]">
-        <span className="px-4 py-2.5 text-sm font-semibold text-[#0A0A0A] border-b-2 border-[#C41230] -mb-px">
-          Membres
-        </span>
-        <button
-          onClick={() => navigate('/admin/messages')}
-          className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-[#666666] border-b-2 border-transparent hover:text-[#0A0A0A] transition-colors"
-        >
-          Messages
-          {unreadTotal > 0 && (
-            <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-[#C41230] text-white text-xs font-bold leading-none">
-              {unreadTotal}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => navigate('/admin/catalogue')}
-          className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-[#666666] border-b-2 border-transparent hover:text-[#0A0A0A] transition-colors"
-        >
-          Catalogue
-        </button>
-      </div>
-
-      {/* Statistiques */}
-      <div className="bg-white rounded-lg p-6 mb-8 border border-[#E5E5E5] shadow-sm">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div>
-            <p className="text-[#999999] text-sm uppercase tracking-widest mb-1">Total des élèves</p>
-            <p className="text-4xl font-bold text-[#0A0A0A]">{judokas.length}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        {/* Bloc Judokas */}
+        <div className="bg-white rounded-lg p-6 border border-[#E5E5E5] shadow-sm">
+          <p className="text-xs uppercase tracking-widest text-[#999999] mb-4">Judokas</p>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm text-[#666666]">Judokas actifs</span>
+            <span data-testid="stat-judokas-actifs" className="text-2xl font-bold text-[#0A0A0A]">{judokasActifs}</span>
           </div>
-          <div>
-            <p className="text-[#999999] text-sm uppercase tracking-widest mb-1">Abonnés actifs</p>
-            <p className="text-4xl font-bold text-[#C41230]">{judokas.filter(j => j.subscription_active).length}</p>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-[#666666]">Connectés (24h)</span>
+            <span data-testid="stat-judokas-recents" className="text-2xl font-bold text-[#0A0A0A]">{judokasRecents}</span>
           </div>
         </div>
-      </div>
 
-      {/* Liste des judokas */}
-      <div className="bg-white rounded-lg border border-[#E5E5E5] shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-[#F5F5F5] border-b border-[#E5E5E5]">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#666666] uppercase tracking-widest">Nom</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#666666] uppercase tracking-widest">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#666666] uppercase tracking-widest">Abonnement</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#666666] uppercase tracking-widest">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#E5E5E5]">
-              {judokas.map(judoka => (
-                <tr key={judoka.id} className="hover:bg-[#F5F5F5] transition-colors">
-                  <td className="px-6 py-4 text-sm font-medium text-[#0A0A0A]">
-                    {judoka.first_name} {judoka.last_name}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-[#666666]">{judoka.email}</td>
-                  <td className="px-6 py-4 text-sm">
-                    <div className="flex flex-col gap-1">
-                      <span className={`inline-flex w-fit px-2 py-1 rounded text-xs font-medium ${
-                        judoka.subscription_active
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {judoka.subscription_active ? '✓ Actif' : 'Inactif'}
-                      </span>
-                      {judoka.subscription_expires_at && (
-                        <span className="text-xs text-[#999999]">
-                          Expire: {new Date(judoka.subscription_expires_at).toLocaleDateString('fr-FR')}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <button
-                      onClick={() => navigate(`/admin/messages/${judoka.id}`)}
-                      className="px-3 py-1.5 bg-[#C41230] hover:bg-[#9B0E25] text-white rounded text-xs font-semibold transition-colors"
-                    >
-                      Messagerie
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Bloc Catalogues */}
+        <div className="bg-white rounded-lg p-6 border border-[#E5E5E5] shadow-sm">
+          <p className="text-xs uppercase tracking-widest text-[#999999] mb-4">Catalogues</p>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-[#666666]">Vidéos</span>
+            <span data-testid="stat-catalogue-video" className="text-lg font-bold text-[#0A0A0A]">{catalogueCounts.video}</span>
+          </div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-[#666666]">PDF</span>
+            <span data-testid="stat-catalogue-pdf" className="text-lg font-bold text-[#0A0A0A]">{catalogueCounts.pdf}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-[#666666]">Autres</span>
+            <span data-testid="stat-catalogue-autres" className="text-lg font-bold text-[#0A0A0A]">{catalogueCounts.autres}</span>
+          </div>
         </div>
 
-        {judokas.length === 0 && (
-          <div className="px-6 py-12 text-center">
-            <p className="text-[#999999]">Aucun élève inscrit</p>
+        {/* Bloc Messagerie */}
+        <div className="bg-white rounded-lg p-6 border border-[#E5E5E5] shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs uppercase tracking-widest text-[#999999]">Messagerie</p>
+            <button
+              data-testid="link-messagerie"
+              onClick={() => navigate('/admin/messagerie')}
+              className="text-[#C41230] hover:text-[#9B0E25] transition-colors"
+              title="Aller à la messagerie"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </button>
           </div>
-        )}
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-[#666666]">Messages reçus</span>
+            <span data-testid="stat-messages-total" className="text-lg font-bold text-[#0A0A0A]">{messagesTotal}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-[#666666]">Non lus</span>
+            <span data-testid="stat-messages-non-lus" className="text-lg font-bold text-[#C41230]">{conversations.length}</span>
+          </div>
+        </div>
+
+        {/* Bloc To Do */}
+        <div className="bg-white rounded-lg p-6 border border-[#E5E5E5] shadow-sm flex flex-col">
+          <p className="text-xs uppercase tracking-widest text-[#999999] mb-3">To Do</p>
+          <textarea
+            data-testid="todo-textarea"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Notes libres…"
+            rows={4}
+            className="flex-1 w-full rounded-lg border border-[#E5E5E5] p-2 text-sm resize-none focus:outline-none focus:border-[#C41230]"
+          />
+          <button
+            data-testid="todo-save"
+            onClick={saveNotes}
+            disabled={savingNotes}
+            className="mt-3 self-end px-4 py-2 bg-[#C41230] hover:bg-[#9B0E25] disabled:opacity-50 text-white rounded-lg text-xs font-semibold transition-colors"
+          >
+            {savingNotes ? 'Enregistrement…' : 'Enregistrer'}
+          </button>
+        </div>
       </div>
     </div>
   )

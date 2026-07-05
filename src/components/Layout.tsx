@@ -39,6 +39,15 @@ export default function Layout() {
   const navItems = NAV[space as keyof typeof NAV]
 
   useEffect(() => {
+    if (space !== 'eleve') return
+    ;(async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      await supabase.from('judokas').update({ last_active_at: new Date().toISOString() }).eq('user_id', user.id)
+    })()
+  }, [space])
+
+  useEffect(() => {
     const handler = () => {
       readRef.current = true
       setUnread(0)
