@@ -268,4 +268,17 @@ describe('JudoKa (PersonalLibrary parcours=judo-ka)', () => {
       expect(screen.queryByText('Article culture Hazumi')).toBeNull()
     })
   })
+
+  it('les mots-clés d\'un contenu ajouté par l\'admin sont visibles sur la ligne de l\'item (régression bug tags)', async () => {
+    h.store.catalogue = [
+      { id: 'c1', titre: 'Fiche technique Hazumi', type: 'pdf', parcours: 'judo-ka', url: 'https://x/f.pdf', tags: ['motcle-alpha', 'motcle-beta'] },
+    ]
+    renderPage()
+    const titre = await screen.findByText('Fiche technique Hazumi')
+    // les tags doivent être rendus dans la même ligne (carte) que le titre du contenu
+    const row = titre.closest('.bg-white') as HTMLElement
+    expect(row).not.toBeNull()
+    expect(within(row).getByText('motcle-alpha')).toBeInTheDocument()
+    expect(within(row).getByText('motcle-beta')).toBeInTheDocument()
+  })
 })

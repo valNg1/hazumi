@@ -251,6 +251,50 @@ describe('Messagerie (liste des vignettes)', () => {
     expect(participantUserIds).toEqual(expect.arrayContaining(['admin-user', 'user-j2']))
     expect(navigateMock).toHaveBeenCalledWith(`/admin/messagerie/${conv.id}`)
   })
+
+  it('la barre de recherche filtre la liste selon le contenu des messages (reçus + envoyés)', async () => {
+    h.store.judokas = [
+      { id: 'j1', user_id: 'user-j1', full_name: 'Ken Judo', role: 'judoka' },
+      { id: 'j2', user_id: 'user-j2', full_name: 'Mika Sato', role: 'judoka' },
+    ]
+    h.store.conversations = [
+      { id: 'c1', title: 'Ken Judo', type: 'direct', created_at: '2026-07-01T00:00:00Z' },
+      { id: 'c2', title: 'Mika Sato', type: 'direct', created_at: '2026-07-01T00:00:00Z' },
+    ]
+    h.store.participants = [
+      { conversation_id: 'c1', user_id: 'admin-user', last_read_at: null },
+      { conversation_id: 'c1', user_id: 'user-j1', last_read_at: null },
+      { conversation_id: 'c2', user_id: 'admin-user', last_read_at: null },
+      { conversation_id: 'c2', user_id: 'user-j2', last_read_at: null },
+    ]
+    h.store.messages = [
+      // reçu de Ken
+      { id: 'm1', conversation_id: 'c1', sender_id: 'j1', content: 'question sur uchimata', created_at: '2026-07-01T10:00:00Z' },
+      // envoyé par admin à Mika
+      { id: 'm2', conversation_id: 'c2', sender_id: 'admin-j1', content: 'rappel cotisation', created_at: '2026-07-01T11:00:00Z' },
+    ]
+
+    renderList()
+    await waitFor(() => {
+      expect(screen.getByText('Ken Judo')).toBeInTheDocument()
+      expect(screen.getByText('Mika Sato')).toBeInTheDocument()
+    })
+
+    // recherche sur un message reçu → ne garde que Ken
+    await userEvent.type(screen.getByPlaceholderText(/rechercher/i), 'uchimata')
+    await waitFor(() => {
+      expect(screen.getByText('Ken Judo')).toBeInTheDocument()
+      expect(screen.queryByText('Mika Sato')).toBeNull()
+    })
+
+    // recherche sur un message envoyé par l'admin → ne garde que Mika
+    await userEvent.clear(screen.getByPlaceholderText(/rechercher/i))
+    await userEvent.type(screen.getByPlaceholderText(/rechercher/i), 'cotisation')
+    await waitFor(() => {
+      expect(screen.getByText('Mika Sato')).toBeInTheDocument()
+      expect(screen.queryByText('Ken Judo')).toBeNull()
+    })
+  })
 })
 
 describe('MessagerieThread (fil de conversation admin)', () => {

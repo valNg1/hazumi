@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { supabase } from '../../lib/supabase'
 import { useUnreadConversations } from '../../hooks/useUnreadConversations'
+import { buildUserGrowthData, type GrowthPoint } from '../../lib/adminStats'
 
 interface CatalogueCounts {
   video: number
@@ -21,6 +23,7 @@ export default function AdminDashboard() {
   const [catalogueCounts, setCatalogueCounts] = useState<CatalogueCounts>({ video: 0, pdf: 0, autres: 0 })
   const [messagesTotal, setMessagesTotal] = useState(0)
 
+  const [growthData, setGrowthData] = useState<GrowthPoint[]>([])
   const [notes, setNotes] = useState('')
   const [savingNotes, setSavingNotes] = useState(false)
 
@@ -56,6 +59,12 @@ export default function AdminDashboard() {
       .eq('role', 'judoka')
       .gte('last_active_at', cutoff)
     setJudokasRecents(recentsCount ?? 0)
+
+    const { data: created } = await supabase
+      .from('judokas')
+      .select('created_at')
+      .eq('role', 'judoka')
+    setGrowthData(buildUserGrowthData((created as { created_at: string }[]) ?? []))
 
     const { data: catalogue } = await supabase.from('catalogue_hazumi').select('type')
     const counts: CatalogueCounts = { video: 0, pdf: 0, autres: 0 }
@@ -110,7 +119,7 @@ export default function AdminDashboard() {
         <p className="text-[#666666]">Vue d'ensemble de l'activité Hazumi</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         {/* Bloc Judokas */}
         <div className="bg-white rounded-lg p-6 border border-[#E5E5E5] shadow-sm">
           <p className="text-xs uppercase tracking-widest text-[#999999] mb-4">Judokas</p>
@@ -186,6 +195,38 @@ export default function AdminDashboard() {
             {savingNotes ? 'Enregistrement…' : 'Enregistrer'}
           </button>
         </div>
+      </div>
+
+      {/* Graphique croissance des utilisateurs */}
+      <div className="bg-white rounded-lg p-6 border border-[#E5E5E5] shadow-sm">
+        <p className="text-xs uppercase tracking-widest text-[#999999] mb-4">Croissance des judokas</p>
+        {growthData.length === 0 ? (
+          <p className="text-sm text-[#CCCCCC] text-center py-10">Pas encore de données</p>
+        ) : (
+          (() => {
+            const yMax = Math.ceil(Math.max(...growthData.map((d) => d.total), 0) / 5) * 5 + 5
+            return (
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={growthData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gGrowth" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#C41230" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#C41230" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0, yMax]} allowDecimals={false} tick={{ fontSize: 10, fill: '#AAAAAA' }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{ fontSize: 11, border: '1px solid #E5E5E5', borderRadius: 8, boxShadow: 'none' }}
+                    formatter={(v: unknown) => [`${v}`, 'Judokas']}
+                    labelStyle={{ color: '#333', fontWeight: 600 }}
+                  />
+                  <Area type="monotone" dataKey="total" stroke="#C41230" strokeWidth={2} fill="url(#gGrowth)" dot={false} activeDot={{ r: 4, fill: '#C41230' }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )
+          })()
+        )}
       </div>
     </div>
   )
