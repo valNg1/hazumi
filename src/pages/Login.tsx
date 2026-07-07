@@ -108,6 +108,7 @@ export default function Login() {
         <div className="w-full max-w-sm">
           <div className="flex flex-col items-center mb-10">
             <img src="/logo.png" alt="Hazumi" className="h-20 w-20 object-contain mb-4" />
+            <p className="text-[#999999] text-sm text-center tracking-wide">Le judo continue après l'entraînement</p>
           </div>
 
           {mode !== 'forgot' && (
