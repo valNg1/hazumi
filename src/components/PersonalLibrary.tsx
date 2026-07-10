@@ -20,6 +20,8 @@ interface RawCatalogueItem {
   url: string | null
   contenu: string | null
   tags: string[] | null
+  grade: string | null
+  famille: string | null
 }
 
 interface ContentItem {
@@ -31,6 +33,8 @@ interface ContentItem {
   tags: string[]
   source: 'hazumi' | 'perso'
   parcours: Parcours
+  grade?: string | null
+  famille?: string | null
 }
 
 interface PlaylistCollection {
@@ -72,6 +76,8 @@ function catalogueToItem(c: RawCatalogueItem): ContentItem {
     tags: c.tags ?? [],
     source: 'hazumi',
     parcours: c.parcours,
+    grade: c.grade ?? null,
+    famille: c.famille ?? null,
   }
 }
 
@@ -630,7 +636,7 @@ export default function PersonalLibrary({
           value={addFormData.titre}
           onChange={e => setAddFormData({ ...addFormData, titre: e.target.value })}
           placeholder="Titre"
-          className="flex-1 px-2 py-1.5 text-sm border border-[#E5E5E5] rounded bg-white focus:outline-none focus:border-[#C41230]"
+          className="flex-1 min-w-0 px-2 py-1.5 text-sm border border-[#E5E5E5] rounded bg-white focus:outline-none focus:border-[#C41230]"
         />
 
         <input
@@ -638,7 +644,7 @@ export default function PersonalLibrary({
           value={addFormData.url}
           onChange={e => setAddFormData({ ...addFormData, url: e.target.value })}
           placeholder="URL"
-          className="flex-1 px-2 py-1.5 text-sm border border-[#E5E5E5] rounded bg-white focus:outline-none focus:border-[#C41230]"
+          className="flex-1 min-w-0 px-2 py-1.5 text-sm border border-[#E5E5E5] rounded bg-white focus:outline-none focus:border-[#C41230]"
         />
 
         <input
@@ -646,7 +652,7 @@ export default function PersonalLibrary({
           value={addFormData.mots_cles}
           onChange={e => setAddFormData({ ...addFormData, mots_cles: e.target.value })}
           placeholder="Mots-clés"
-          className="flex-1 px-2 py-1.5 text-sm border border-[#E5E5E5] rounded bg-white focus:outline-none focus:border-[#C41230]"
+          className="flex-1 min-w-0 px-2 py-1.5 text-sm border border-[#E5E5E5] rounded bg-white focus:outline-none focus:border-[#C41230]"
         />
 
         <button
@@ -842,8 +848,34 @@ export default function PersonalLibrary({
             className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
-            <h2 className="text-lg font-bold text-[#0A0A0A] mb-3">{articleOpen.titre}</h2>
+            <h2 className="text-lg font-bold text-[#0A0A0A] mb-2">{articleOpen.titre}</h2>
+            {(articleOpen.famille || articleOpen.grade) && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {articleOpen.famille && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded border font-medium bg-[#F5F5F5] text-[#666666] border-[#E5E5E5]">
+                    {articleOpen.famille}
+                  </span>
+                )}
+                {articleOpen.grade && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded border font-medium bg-[#F5F5F5] text-[#666666] border-[#E5E5E5]">
+                    {articleOpen.grade}
+                  </span>
+                )}
+              </div>
+            )}
             <p className="text-sm text-[#333333] whitespace-pre-wrap">{articleOpen.contenu}</p>
+            {articleOpen.tags.length > 0 && (
+              <div className="mt-4 pt-3 border-t border-[#F0F0F0]">
+                <p className="text-[10px] uppercase tracking-widest text-[#999999] mb-2">Mots-clés</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {articleOpen.tags.map(tag => (
+                    <span key={tag} className="text-[9px] px-1.5 py-0.5 bg-[#F5F5F5] text-[#666666] rounded border border-[#E5E5E5]">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, beforeAll, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import Kyu from '../eleve/Kyu'
@@ -155,6 +155,47 @@ describe('Kyu (PersonalLibrary parcours=kyu + onglet Progression)', () => {
       expect(screen.getByText('Contenu Hazumi')).toBeInTheDocument()
       expect(screen.getByText('Fiche Kyu')).toBeInTheDocument()
     })
+  })
+
+  it("la fiche KYU affiche grade, famille et mots-clés dans le lecteur d'article (même charte que les articles existants)", async () => {
+    h.store.catalogue = [
+      {
+        id: 'c1',
+        titre: 'Harai-goshi',
+        type: 'article',
+        parcours: 'kyu',
+        grade: '1er dan',
+        famille: 'Koshi-waza',
+        contenu: 'Description de la technique Harai-goshi.',
+        tags: ['hanche', 'balayage'],
+      },
+    ]
+    renderPage()
+    await waitFor(() => screen.getByText('Harai-goshi'))
+    await userEvent.click(screen.getByRole('button', { name: 'Lire' }))
+
+    const contenu = await screen.findByText('Description de la technique Harai-goshi.')
+    const modal = contenu.closest('div') as HTMLElement
+    expect(modal).not.toBeNull()
+    expect(within(modal).getByText('1er dan')).toBeInTheDocument()
+    expect(within(modal).getByText('Koshi-waza')).toBeInTheDocument()
+    expect(within(modal).getByText('Mots-clés')).toBeInTheDocument()
+    expect(within(modal).getByText('hanche')).toBeInTheDocument()
+    expect(within(modal).getByText('balayage')).toBeInTheDocument()
+  })
+
+  it("un article sans grade/famille (contenu déjà en production) reste inchangé dans le lecteur : titre + contenu seuls", async () => {
+    h.store.catalogue = [
+      { id: 'c1', titre: 'Article Histoire', type: 'article', parcours: 'kyu', contenu: 'Texte historique.', tags: [] },
+    ]
+    renderPage()
+    await waitFor(() => screen.getByText('Article Histoire'))
+    await userEvent.click(screen.getByRole('button', { name: 'Lire' }))
+
+    const contenu = await screen.findByText('Texte historique.')
+    const modal = contenu.closest('div') as HTMLElement
+    expect(within(modal).getByText('Article Histoire')).toBeInTheDocument()
+    expect(within(modal).queryByText('Mots-clés')).toBeNull()
   })
 
   it('le système de progression est intact (onglet Ma progression)', async () => {
