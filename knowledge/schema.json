@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hazumi.org/knowledge/schema.json",
+  "title": "Hazumi Knowledge Document Metadata",
+  "description": "Modèle de métadonnées décrivant un document de la bibliothèque documentaire HAZUMI (knowledge/). Chaque document (fiche, quiz, parcours, source de référence, média…) est décrit par un objet conforme à ce schéma. Dates au format ISO 8601 (AAAA-MM-JJ). Le champ copyright ne doit jamais être vide.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "category",
+    "origin",
+    "language",
+    "copyright",
+    "status",
+    "version"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifiant unique et stable du document (slug kebab-case), ex. 'kyu-ceinture-jaune-techniques'."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Titre lisible du document."
+    },
+    "category": {
+      "type": "string",
+      "description": "Univers / dossier de premier niveau.",
+      "enum": ["references", "kyu", "grades-dan", "judo-ka", "shiai", "media", "metadata"]
+    },
+    "subcategory": {
+      "type": "string",
+      "description": "Sous-dossier ou thème (ex. 'ceintures', 'kodokan', 'tactique'). Optionnel."
+    },
+    "grade": {
+      "type": "string",
+      "description": "Grade concerné le cas échéant (ex. 'ceinture-jaune', '1er-dan'). Optionnel."
+    },
+    "kata": {
+      "type": "string",
+      "description": "Kata concerné le cas échéant (ex. 'nage-no-kata'). Optionnel."
+    },
+    "difficulty": {
+      "type": "string",
+      "description": "Niveau de difficulté indicatif.",
+      "enum": ["", "debutant", "intermediaire", "avance", "expert"]
+    },
+    "audience": {
+      "type": "string",
+      "description": "Public visé (ex. 'judoka', 'enseignant', 'competiteur', 'tous'). Optionnel."
+    },
+    "source": {
+      "type": "string",
+      "description": "Source de référence citée (institution, ouvrage, article). Obligatoire de fait pour origin='official'/'external'."
+    },
+    "origin": {
+      "type": "string",
+      "description": "Provenance du contenu. 'official' = document normatif d'une institution ; 'external' = œuvre tierce ; 'hazumi' = production originale HAZUMI.",
+      "enum": ["official", "hazumi", "external"]
+    },
+    "author": {
+      "type": "string",
+      "description": "Auteur(s) du document ou de la source."
+    },
+    "language": {
+      "type": "string",
+      "description": "Code langue ISO 639-1 (ex. 'fr', 'en', 'ja').",
+      "minLength": 2
+    },
+    "license": {
+      "type": "string",
+      "description": "Licence du document ou de la source (ex. 'CC-BY-4.0', 'tous droits réservés', 'propriétaire HAZUMI')."
+    },
+    "copyright": {
+      "type": "string",
+      "minLength": 1,
+      "default": "à vérifier",
+      "description": "Mention de droits. NE DOIT JAMAIS ÊTRE VIDE. Valeur par défaut : 'à vérifier' tant que le statut des droits n'est pas confirmé."
+    },
+    "status": {
+      "type": "string",
+      "description": "Cycle de vie éditorial.",
+      "default": "draft",
+      "enum": ["draft", "review", "published", "archived"]
+    },
+    "version": {
+      "type": "string",
+      "default": "1.0",
+      "description": "Version sémantique du document (ex. '1.0')."
+    },
+    "tags": {
+      "type": "array",
+      "description": "Mots-clés libres pour la recherche et l'indexation RAG.",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "created": {
+      "type": "string",
+      "description": "Date de création au format ISO 8601 (AAAA-MM-JJ).",
+      "pattern": "^$|^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "updated": {
+      "type": "string",
+      "description": "Date de dernière mise à jour au format ISO 8601 (AAAA-MM-JJ).",
+      "pattern": "^$|^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "url": {
+      "type": "string",
+      "description": "URL de la source originale ou du document publié. Optionnel."
+    },
+    "files": {
+      "type": "array",
+      "description": "Chemins relatifs des fichiers associés (contenu, médias, PDF), ex. '../media/o-soto-gari.png'.",
+      "items": { "type": "string" },
+      "default": []
+    }
+  }
+}
