@@ -13,6 +13,7 @@ const NAV: Record<'eleve' | 'club', { to: string; label: string }[]> = {
     { to: '/eleve/shiai', label: 'Shiai' },
     { to: '/eleve/judoka-culture', label: 'Judo-Ka' },
     { to: '/eleve/kyu', label: 'Kyu' },
+    { to: '/eleve/parcours', label: 'Parcours' },
     { to: '/eleve/entrainements', label: 'Mes entraînements' },
     { to: '/eleve/agenda', label: 'Mon agenda' },
     { to: '/eleve/messages', label: 'Messages' },
