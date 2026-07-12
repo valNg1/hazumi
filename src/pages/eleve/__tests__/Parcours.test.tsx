@@ -64,9 +64,9 @@ vi.mock('../../../lib/supabase', () => {
   }
 })
 
-function seed() {
+function seed(titre: string) {
   h.store.parcours = [
-    { id: 'p1', titre: 'Préparer le 1er Dan', description: 'Desc', niveau: '1er dan', image: null, duree_estimee: '≈ 8 semaines', ordre: 1, publie: true },
+    { id: 'p1', titre, description: 'Desc', niveau: '1er dan', image: null, duree_estimee: '≈ 8 semaines', ordre: 1, publie: true },
   ]
   h.store.parcours_ressources = [
     { id: 'l1', parcours_id: 'p1', ressource_id: 'r1', ordre: 1, obligatoire: true, commentaire: null },
@@ -79,27 +79,26 @@ function seed() {
   h.store.user_parcours = []
 }
 
-beforeEach(() => {
-  seed()
-})
-
 function renderPage() {
   return render(<MemoryRouter><Parcours /></MemoryRouter>)
 }
 
 describe('Parcours (moteur de parcours pedagogiques)', () => {
+  const TITRE = 'Test Parcours'
+  beforeEach(() => seed(TITRE))
+
   it('affiche la liste des parcours publies', async () => {
     renderPage()
     await waitFor(() => {
-      expect(screen.getByText('Préparer le 1er Dan')).toBeInTheDocument()
+      expect(screen.getByText(TITRE)).toBeInTheDocument()
       expect(screen.getByText('Non commencé')).toBeInTheDocument()
     })
   })
 
   it("ouvre un parcours et affiche ses ressources dans l'ordre avec 0%", async () => {
     renderPage()
-    await waitFor(() => screen.getByText('Préparer le 1er Dan'))
-    await userEvent.click(screen.getByText('Préparer le 1er Dan'))
+    await waitFor(() => screen.getByText(TITRE))
+    await userEvent.click(screen.getByText(TITRE))
 
     await waitFor(() => {
       expect(screen.getByText('Harai-goshi')).toBeInTheDocument()
@@ -111,8 +110,8 @@ describe('Parcours (moteur de parcours pedagogiques)', () => {
 
   it('marque une ressource terminee et met a jour la progression automatiquement', async () => {
     renderPage()
-    await waitFor(() => screen.getByText('Préparer le 1er Dan'))
-    await userEvent.click(screen.getByText('Préparer le 1er Dan'))
+    await waitFor(() => screen.getByText(TITRE))
+    await userEvent.click(screen.getByText(TITRE))
     await waitFor(() => screen.getByText('Harai-goshi'))
 
     const checkButtons = screen.getAllByTitle('Marquer comme terminé')
@@ -122,7 +121,6 @@ describe('Parcours (moteur de parcours pedagogiques)', () => {
       expect(screen.getByText('50%')).toBeInTheDocument()
       expect(screen.getByText('Reprendre')).toBeInTheDocument()
     })
-    // persistance: la ligne user_parcours reflete la progression
     const up = h.store.user_parcours.find((u) => u.parcours_id === 'p1')
     expect(up?.progression).toBe(50)
     expect(up?.ressources_terminees).toEqual(['r1'])
@@ -130,8 +128,8 @@ describe('Parcours (moteur de parcours pedagogiques)', () => {
 
   it("ouvre le lecteur d'article avec grade, famille et mots-cles", async () => {
     renderPage()
-    await waitFor(() => screen.getByText('Préparer le 1er Dan'))
-    await userEvent.click(screen.getByText('Préparer le 1er Dan'))
+    await waitFor(() => screen.getByText(TITRE))
+    await userEvent.click(screen.getByText(TITRE))
     await waitFor(() => screen.getByText('Harai-goshi'))
 
     await userEvent.click(screen.getAllByText('Lire')[0])
@@ -140,5 +138,55 @@ describe('Parcours (moteur de parcours pedagogiques)', () => {
     expect(within(modal).getByText('Koshi-waza')).toBeInTheDocument()
     expect(within(modal).getByText('1er dan')).toBeInTheDocument()
     expect(within(modal).getByText('hanche')).toBeInTheDocument()
+  })
+})
+
+describe('Parcours "Préparer le 1er Dan" — page d\'accueil enrichie', () => {
+  const PREMIER = 'Préparer le 1er Dan'
+  beforeEach(() => seed(PREMIER))
+
+  async function openPremierDan() {
+    const result = renderPage()
+    await waitFor(() => screen.getByText(PREMIER))
+    await userEvent.click(screen.getByText(PREMIER))
+    await waitFor(() => screen.getByText('Harai-goshi'))
+    return result
+  }
+
+  it('affiche le hero avec intro et CTA Commencer le parcours', async () => {
+    await openPremierDan()
+    expect(screen.getByText(/marque l'entrée dans la maîtrise des fondamentaux/i)).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /commencer le parcours/i }).length).toBeGreaterThan(0)
+  })
+
+  it('affiche les 4 UV avec UV3 marquee voie competition uniquement', async () => {
+    await openPremierDan()
+    const uv = document.getElementById('uv') as HTMLElement
+    expect(uv).not.toBeNull()
+    expect(within(uv).getByText('UV1')).toBeInTheDocument()
+    expect(within(uv).getByText('UV2')).toBeInTheDocument()
+    expect(within(uv).getByText('UV3')).toBeInTheDocument()
+    expect(within(uv).getByText('UV4')).toBeInTheDocument()
+    expect(within(uv).getAllByText(/voie compétition uniquement/i).length).toBeGreaterThan(0)
+    expect(within(uv).getAllByRole('button', { name: /découvrir l'uv/i })).toHaveLength(4)
+  })
+
+  it('affiche la checklist jury et une timeline dont Quiz final n’est pas cliquable', async () => {
+    await openPremierDan()
+    expect(screen.getByText('Sécurité')).toBeInTheDocument()
+    expect(screen.getByText('Quiz final')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /quiz final/i })).toBeNull()
+  })
+
+  it('liste les ressources seedees du parcours avec un bouton Lire', async () => {
+    await openPremierDan()
+    expect(screen.getByText('Harai-goshi')).toBeInTheDocument()
+    expect(screen.getByText('O-soto-gari')).toBeInTheDocument()
+    expect(screen.getAllByText('Lire').length).toBeGreaterThan(0)
+  })
+
+  it('ne mentionne pas "FFJ" dans le rendu affiche', async () => {
+    const { container } = await openPremierDan()
+    expect(container.textContent).not.toMatch(/ffj/i)
   })
 })

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { computeProgress, nextRessourceId, toggleCompleted, type ParcoursRessourceLink } from '../../lib/parcoursProgress'
+import PremierDanSections from '../../components/PremierDanSections'
+import { PREMIER_DAN_TITRE } from '../../lib/premierDanContent'
 
 type ContentType = 'video' | 'article' | 'pdf'
 
@@ -184,6 +186,48 @@ export default function Parcours() {
     const links: ParcoursRessourceLink[] = ressources.map((r) => ({ ressource_id: r.id, obligatoire: r.obligatoire }))
     const prog = computeProgress(links, completedIds)
     const allDone = prog.termine
+    const isPremierDan = selected.titre === PREMIER_DAN_TITRE
+
+    const renderRessourceRow = (r: Ressource, i: number) => {
+      const done = completedIds.includes(r.id)
+      return (
+        <div key={r.id} className="bg-white rounded-lg border border-[#E5E5E5] p-3 flex gap-3 items-center hover:shadow-sm transition-shadow">
+          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#F5F5F5] border border-[#E5E5E5] flex items-center justify-center text-xs font-semibold text-[#666666]">
+            {i + 1}
+          </span>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium text-[#0A0A0A] text-sm leading-snug line-clamp-1">{r.titre}</h3>
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              <span className="text-[9px] px-1.5 py-0.5 rounded border font-medium bg-[#F5F5F5] text-[#666666] border-[#E5E5E5]">
+                {TYPE_LABEL[r.type]}
+              </span>
+              {r.famille && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded border font-medium bg-[#F5F5F5] text-[#666666] border-[#E5E5E5]">
+                  {r.famille}
+                </span>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => openRessource(r)}
+            className="flex-shrink-0 text-[#999999] hover:text-[#0A0A0A] transition-colors p-1 text-xs font-semibold"
+          >
+            {r.type === 'article' ? 'Lire' : 'Voir'}
+          </button>
+          <button
+            onClick={() => toggleRessource(r.id)}
+            title={done ? 'Marquer comme non terminé' : 'Marquer comme terminé'}
+            className={`flex-shrink-0 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${
+              done ? 'bg-green-500 border-green-500' : 'border-[#E5E5E5] hover:border-green-400'
+            }`}
+          >
+            <svg className={`w-3.5 h-3.5 ${done ? 'text-white' : 'text-[#DDDDDD]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          </button>
+        </div>
+      )
+    }
 
     return (
       <div className="max-w-3xl mx-auto">
@@ -197,77 +241,61 @@ export default function Parcours() {
           Tous les parcours
         </button>
 
-        <div className="bg-white rounded-xl border border-[#E5E5E5] p-5 mb-5">
-          <div className="flex items-start justify-between gap-4 mb-1">
-            <div>
-              {selected.niveau && (
-                <span className="text-[10px] uppercase tracking-widest text-[#999999]">{selected.niveau}</span>
-              )}
-              <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">{selected.titre}</h1>
-            </div>
-            <div className="text-right flex-shrink-0">
-              <p className="text-2xl font-bold text-[#0A0A0A]">{prog.percent}%</p>
-              <p className="text-xs text-[#999999]">{prog.done}/{prog.total} terminé{prog.done > 1 ? 's' : ''}</p>
-            </div>
-          </div>
-          {selected.description && <p className="text-sm text-[#666666] mb-3">{selected.description}</p>}
-          <div className="h-2 bg-[#F0F0F0] rounded-full overflow-hidden mb-4">
-            <div className="h-full bg-[#C41230] rounded-full transition-all duration-500" style={{ width: `${prog.percent}%` }} />
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={reprendre}
-              disabled={allDone}
-              className="bg-[#C41230] hover:bg-[#9B0E25] disabled:bg-[#CCCCCC] text-white text-xs uppercase tracking-widest px-5 py-2.5 rounded-lg transition-colors"
-            >
-              {allDone ? 'Parcours terminé' : prog.done > 0 ? 'Reprendre' : 'Commencer'}
-            </button>
-            {selected.duree_estimee && <span className="text-xs text-[#999999]">{selected.duree_estimee}</span>}
-          </div>
-        </div>
+        {isPremierDan ? (
+          <>
+            <PremierDanSections progress={prog} onCommencer={reprendre} />
 
-        <div className="space-y-2">
-          {ressources.map((r, i) => {
-            const done = completedIds.includes(r.id)
-            return (
-              <div key={r.id} className="bg-white rounded-lg border border-[#E5E5E5] p-3 flex gap-3 items-center hover:shadow-sm transition-shadow">
-                <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#F5F5F5] border border-[#E5E5E5] flex items-center justify-center text-xs font-semibold text-[#666666]">
-                  {i + 1}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-[#0A0A0A] text-sm leading-snug line-clamp-1">{r.titre}</h3>
-                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                    <span className="text-[9px] px-1.5 py-0.5 rounded border font-medium bg-[#F5F5F5] text-[#666666] border-[#E5E5E5]">
-                      {TYPE_LABEL[r.type]}
-                    </span>
-                    {r.famille && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded border font-medium bg-[#F5F5F5] text-[#666666] border-[#E5E5E5]">
-                        {r.famille}
-                      </span>
-                    )}
-                  </div>
+            <section id="ressources" className="mt-8">
+              <h2 className="text-lg font-bold text-[#0A0A0A] mb-3">Ressources du parcours</h2>
+              <div className="space-y-2">{ressources.map(renderRessourceRow)}</div>
+            </section>
+
+            <section id="commencer" className="mt-8 bg-white rounded-xl border border-[#E5E5E5] p-6 text-center">
+              <h2 className="text-lg font-bold text-[#0A0A0A] mb-1">Prêt à démarrer ?</h2>
+              <p className="text-sm text-[#666666] mb-4">Lancez votre progression et avancez fiche après fiche, à votre rythme.</p>
+              <button
+                onClick={reprendre}
+                disabled={allDone}
+                className="bg-[#C41230] hover:bg-[#9B0E25] disabled:bg-[#CCCCCC] text-white text-xs uppercase tracking-widest px-6 py-3 rounded-lg transition-colors font-semibold"
+              >
+                {allDone ? 'Parcours terminé' : prog.done > 0 ? '🥋 Reprendre le parcours' : '🥋 Commencer le parcours'}
+              </button>
+            </section>
+          </>
+        ) : (
+          <>
+            <div className="bg-white rounded-xl border border-[#E5E5E5] p-5 mb-5">
+              <div className="flex items-start justify-between gap-4 mb-1">
+                <div>
+                  {selected.niveau && (
+                    <span className="text-[10px] uppercase tracking-widest text-[#999999]">{selected.niveau}</span>
+                  )}
+                  <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">{selected.titre}</h1>
                 </div>
-                <button
-                  onClick={() => openRessource(r)}
-                  className="flex-shrink-0 text-[#999999] hover:text-[#0A0A0A] transition-colors p-1 text-xs font-semibold"
-                >
-                  {r.type === 'article' ? 'Lire' : 'Voir'}
-                </button>
-                <button
-                  onClick={() => toggleRessource(r.id)}
-                  title={done ? 'Marquer comme non terminé' : 'Marquer comme terminé'}
-                  className={`flex-shrink-0 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${
-                    done ? 'bg-green-500 border-green-500' : 'border-[#E5E5E5] hover:border-green-400'
-                  }`}
-                >
-                  <svg className={`w-3.5 h-3.5 ${done ? 'text-white' : 'text-[#DDDDDD]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                  </svg>
-                </button>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-2xl font-bold text-[#0A0A0A]">{prog.percent}%</p>
+                  <p className="text-xs text-[#999999]">{prog.done}/{prog.total} terminé{prog.done > 1 ? 's' : ''}</p>
+                </div>
               </div>
-            )
-          })}
-        </div>
+              {selected.description && <p className="text-sm text-[#666666] mb-3">{selected.description}</p>}
+              <div className="h-2 bg-[#F0F0F0] rounded-full overflow-hidden mb-4">
+                <div className="h-full bg-[#C41230] rounded-full transition-all duration-500" style={{ width: `${prog.percent}%` }} />
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={reprendre}
+                  disabled={allDone}
+                  className="bg-[#C41230] hover:bg-[#9B0E25] disabled:bg-[#CCCCCC] text-white text-xs uppercase tracking-widest px-5 py-2.5 rounded-lg transition-colors"
+                >
+                  {allDone ? 'Parcours terminé' : prog.done > 0 ? 'Reprendre' : 'Commencer'}
+                </button>
+                {selected.duree_estimee && <span className="text-xs text-[#999999]">{selected.duree_estimee}</span>}
+              </div>
+            </div>
+
+            <div className="space-y-2">{ressources.map(renderRessourceRow)}</div>
+          </>
+        )}
 
         {reading && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setReading(null)}>
