@@ -14,6 +14,7 @@ const h = vi.hoisted(() => ({
     playlists: [] as any[],
     catalogue: [] as any[],
     masteries: [] as any[],
+    lessons: [] as any[],
   },
 }))
 
@@ -71,6 +72,9 @@ vi.mock('../../lib/supabase', () => {
       delete: () => builder,
       upsert: () => Promise.resolve({ data: null, error: null }),
       then: (resolve: any) => {
+        if (table === 'lesson') {
+          return resolve({ data: store.lessons, error: null })
+        }
         if (table === 'technique_mastery') {
           return resolve({ data: store.masteries, error: null })
         }
@@ -107,6 +111,7 @@ beforeEach(() => {
   h.store.playlists = []
   h.store.catalogue = []
   h.store.masteries = []
+  h.store.lessons = []
 })
 
 function renderPage() {
@@ -196,6 +201,28 @@ describe('Kyu (PersonalLibrary parcours=kyu + onglet Progression)', () => {
     const modal = contenu.closest('div') as HTMLElement
     expect(within(modal).getByText('Article Histoire')).toBeInTheDocument()
     expect(within(modal).queryByText('Mots-clés')).toBeNull()
+  })
+
+  it('une ressource AVEC une leçon publiée affiche "Étudier" (lien vers la leçon)', async () => {
+    h.store.catalogue = [
+      { id: 'c1', titre: 'Fiche avec leçon', type: 'article', parcours: 'kyu', contenu: 'texte', tags: [] },
+    ]
+    h.store.lessons = [{ ressource_id: 'c1' }]
+    renderPage()
+    const etudier = await screen.findByText('Étudier')
+    expect(etudier.closest('a')?.getAttribute('href')).toBe('/eleve/lecon/c1')
+    expect(screen.queryByText('Lire')).toBeNull()
+  })
+
+  it('une ressource SANS leçon garde "Lire" (aucune régression d’accès)', async () => {
+    h.store.catalogue = [
+      { id: 'c1', titre: 'Fiche sans leçon', type: 'article', parcours: 'kyu', contenu: 'texte', tags: [] },
+    ]
+    h.store.lessons = []
+    renderPage()
+    await waitFor(() => screen.getByText('Fiche sans leçon'))
+    expect(screen.getByText('Lire')).toBeInTheDocument()
+    expect(screen.queryByText('Étudier')).toBeNull()
   })
 
   it('le système de progression est intact (onglet Ma progression)', async () => {

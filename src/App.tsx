@@ -12,6 +12,7 @@ import Shiai from './pages/eleve/Shiai'
 import JudoKa from './pages/eleve/JudoKa'
 import Kyu from './pages/eleve/Kyu'
 import Parcours from './pages/eleve/Parcours'
+import Lecon from './pages/eleve/Lecon'
 import Entrainements from './pages/eleve/Entrainements'
 import MonAgenda from './pages/eleve/MonAgenda'
 import Messages from './pages/eleve/Messages'
@@ -115,6 +116,7 @@ export default function App() {
               <Route path="/eleve/judoka-culture" element={<JudoKa />} />
               <Route path="/eleve/kyu" element={<Kyu />} />
               <Route path="/eleve/parcours" element={<Parcours />} />
+              <Route path="/eleve/lecon/:ressourceId" element={<Lecon />} />
               <Route path="/eleve/entrainements" element={<Entrainements />} />
               <Route path="/eleve/agenda" element={<MonAgenda />} />
               <Route path="/eleve/messages" element={<Messages />} />

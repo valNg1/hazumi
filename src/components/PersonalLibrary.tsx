@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { detectVideoType, getVideoLabel, getThumbnailUrl, getEmbedUrl } from '../lib/video'
 
@@ -112,6 +113,7 @@ export default function PersonalLibrary({
   const quickAddRef = useRef<HTMLDivElement>(null)
   const [playingVideoUrl, setPlayingVideoUrl] = useState<string | null>(null)
   const [articleOpen, setArticleOpen] = useState<ContentItem | null>(null)
+  const [lessonIds, setLessonIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     async function load() {
@@ -120,6 +122,7 @@ export default function PersonalLibrary({
       const { data: judoka } = await supabase.from('judokas').select('id').eq('user_id', user.id).single()
       if (judoka) {
         setJudokaId(judoka.id)
+        await loadLessons()
         await loadVideos(user.id)
         await loadPlaylists(judoka.id)
         await loadCatalogue()
@@ -157,6 +160,11 @@ export default function PersonalLibrary({
       .eq('parcours', parcours)
       .order('created_at', { ascending: false })
     setCatalogueItems((data as RawCatalogueItem[]) ?? [])
+  }
+
+  async function loadLessons() {
+    const { data } = await supabase.from('lesson').select('ressource_id').eq('published', true)
+    setLessonIds(new Set(((data as { ressource_id: string }[]) ?? []).map((l) => l.ressource_id)))
   }
 
   function getCombinedTags(): string[] {
@@ -387,6 +395,16 @@ export default function PersonalLibrary({
   }
 
   function renderHazumiAction(item: ContentItem) {
+    if (item.source === 'hazumi' && lessonIds.has(item.id)) {
+      return (
+        <Link
+          to={`/eleve/lecon/${item.id}`}
+          className="flex-shrink-0 text-[#C41230] hover:text-[#9B0E25] transition-colors p-1 text-xs font-semibold"
+        >
+          Étudier
+        </Link>
+      )
+    }
     if (item.type === 'video') {
       return (
         <button
