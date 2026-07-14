@@ -55,21 +55,10 @@ async function main() {
     console.log('Lecon existante mise a jour:', lessonId)
   }
 
-  // Chapitres — timestamps cales sur la duree reelle de la video (~1:04).
-  // Synchro corrective : met a jour par (lesson_id, ordre), insere si absent.
-  const chaptersDef = [
-    { ordre: 1, titre: 'Présentation', timestamp_seconds: 0, description: null as string | null },
-    { ordre: 2, titre: 'Le kuzushi (déséquilibre)', timestamp_seconds: 12, description: 'Orienter Uke vers l’avant' },
-    { ordre: 3, titre: 'Placement de la hanche', timestamp_seconds: 28, description: null },
-    { ordre: 4, titre: 'Le balayage', timestamp_seconds: 45, description: 'Jambe tendue, hanche engagée' },
-  ]
-  const { data: existingChaps } = await supabase.from('lesson_chapters').select('id, ordre').eq('lesson_id', lessonId)
-  for (const def of chaptersDef) {
-    const found = (existingChaps ?? []).find((c: any) => c.ordre === def.ordre)
-    if (found) await supabase.from('lesson_chapters').update(def).eq('id', found.id)
-    else await supabase.from('lesson_chapters').insert({ lesson_id: lessonId, ...def })
-  }
-  console.log('Chapitres synchronises (timestamps <= ~1:04)')
+  // Chapitres : on n'invente JAMAIS les timestamps. Ils sont importes depuis la
+  // liste de reperes de la video elle-meme via scripts/import-lesson-chapters.ts
+  // (format "0:00 Titre"). Le seed ne cree donc aucun chapitre fictif.
+  console.log('Chapitres : gérés via import-lesson-chapters.ts (aucun timestamp inventé)')
 
   // Quiz (idem)
   const { count: quizCount } = await supabase
