@@ -21,7 +21,7 @@ Harai-goshi appartient aux **koshi-waza** (techniques de hanche). La projection 
 - **Kake** : balaie la cuisse en prolongeant la traction des bras.
 
 ## Erreur fréquente
-Faucher la jambe sans engager le buste : la projection perd toute sa puissance.
+Faucher la jambe sans engager la hanche : la projection perd toute sa puissance.
 
 > Cherche la propreté du geste avant la vitesse.`
 
@@ -39,7 +39,7 @@ async function main() {
       ressource_id: res.id,
       youtube_url: 'https://www.youtube.com/watch?v=6wZnMYWCeJE',
       duree_estimee: '12 min',
-      objectif: 'Comprendre les trois temps de Harai-goshi et éviter l’erreur classique du balayage sans buste.',
+      objectif: 'Comprendre les trois temps de Harai-goshi et éviter l’erreur classique du balayage sans engagement de la hanche.',
       fiche_hazumi: FICHE,
       published: true,
     }).select('id').single()
@@ -47,24 +47,29 @@ async function main() {
     lessonId = created!.id
     console.log('Lecon creee:', lessonId)
   } else {
-    await supabase.from('lesson').update({ published: true, fiche_hazumi: FICHE, youtube_url: 'https://www.youtube.com/watch?v=6wZnMYWCeJE', duree_estimee: '12 min' }).eq('id', lessonId)
+    await supabase.from('lesson').update({
+      published: true, fiche_hazumi: FICHE,
+      objectif: 'Comprendre les trois temps de Harai-goshi et éviter l’erreur classique du balayage sans engagement de la hanche.',
+      youtube_url: 'https://www.youtube.com/watch?v=6wZnMYWCeJE', duree_estimee: '12 min',
+    }).eq('id', lessonId)
     console.log('Lecon existante mise a jour:', lessonId)
   }
 
-  // Chapitres (inseres seulement si aucun, pour rester idempotent sans suppression)
-  const { count: chapCount } = await supabase
-    .from('lesson_chapters').select('id', { count: 'exact', head: true }).eq('lesson_id', lessonId)
-  if (!chapCount) {
-    await supabase.from('lesson_chapters').insert([
-      { lesson_id: lessonId, ordre: 1, titre: 'Présentation', timestamp_seconds: 0, description: null },
-      { lesson_id: lessonId, ordre: 2, titre: 'Le kuzushi (déséquilibre)', timestamp_seconds: 30, description: 'Orienter Uke vers l’avant' },
-      { lesson_id: lessonId, ordre: 3, titre: 'Placement de la hanche', timestamp_seconds: 75, description: null },
-      { lesson_id: lessonId, ordre: 4, titre: 'Le balayage', timestamp_seconds: 120, description: 'Jambe tendue, buste engagé' },
-    ])
-    console.log('4 chapitres inseres')
-  } else {
-    console.log('Chapitres deja presents:', chapCount)
+  // Chapitres — timestamps cales sur la duree reelle de la video (~1:04).
+  // Synchro corrective : met a jour par (lesson_id, ordre), insere si absent.
+  const chaptersDef = [
+    { ordre: 1, titre: 'Présentation', timestamp_seconds: 0, description: null as string | null },
+    { ordre: 2, titre: 'Le kuzushi (déséquilibre)', timestamp_seconds: 12, description: 'Orienter Uke vers l’avant' },
+    { ordre: 3, titre: 'Placement de la hanche', timestamp_seconds: 28, description: null },
+    { ordre: 4, titre: 'Le balayage', timestamp_seconds: 45, description: 'Jambe tendue, hanche engagée' },
+  ]
+  const { data: existingChaps } = await supabase.from('lesson_chapters').select('id, ordre').eq('lesson_id', lessonId)
+  for (const def of chaptersDef) {
+    const found = (existingChaps ?? []).find((c: any) => c.ordre === def.ordre)
+    if (found) await supabase.from('lesson_chapters').update(def).eq('id', found.id)
+    else await supabase.from('lesson_chapters').insert({ lesson_id: lessonId, ...def })
   }
+  console.log('Chapitres synchronises (timestamps <= ~1:04)')
 
   // Quiz (idem)
   const { count: quizCount } = await supabase

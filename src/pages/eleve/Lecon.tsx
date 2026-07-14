@@ -34,6 +34,7 @@ export default function Lecon() {
   const [answers, setAnswers] = useState<Record<string, number[]>>({})
   const [submitted, setSubmitted] = useState(false)
   const [statut, setStatut] = useState<'en_cours' | 'etudiee'>('en_cours')
+  const [previousScore, setPreviousScore] = useState<{ score: number; total: number } | null>(null)
 
   const notesTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const notesLoaded = useRef(false)
@@ -74,9 +75,12 @@ export default function Lecon() {
       if (noteRow?.contenu) setNotes(noteRow.contenu)
       notesLoaded.current = true
 
+      // Reprise : on rappelle le dernier score mais on ne pre-revele PAS les
+      // reponses. L'utilisateur repart sur un quiz vierge ; la correction (vert)
+      // n'apparait qu'apres une nouvelle validation.
       const { data: qr } = await supabase
-        .from('lesson_quiz_results').select('reponses, score').eq('judoka_id', judoka.id).eq('lesson_id', les.id).maybeSingle()
-      if (qr?.reponses) { setAnswers(qr.reponses as Record<string, number[]>); setSubmitted(true) }
+        .from('lesson_quiz_results').select('score, total').eq('judoka_id', judoka.id).eq('lesson_id', les.id).maybeSingle()
+      if (qr) setPreviousScore({ score: qr.score as number, total: qr.total as number })
 
       const { data: prog } = await supabase
         .from('lesson_progress').select('statut').eq('judoka_id', judoka.id).eq('lesson_id', les.id).maybeSingle()
@@ -123,6 +127,7 @@ export default function Lecon() {
     if (!judokaId || !lesson) return
     const graded = gradeQuiz(quiz, answers)
     setSubmitted(true)
+    setPreviousScore({ score: graded.score, total: graded.total })
     await supabase.from('lesson_quiz_results').upsert(
       { judoka_id: judokaId, lesson_id: lesson.id, score: graded.score, total: graded.total, reponses: answers, updated_at: new Date().toISOString() },
       { onConflict: 'judoka_id,lesson_id' }
@@ -242,7 +247,10 @@ export default function Lecon() {
       {/* 5. QUIZ */}
       {quiz.length > 0 && (
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
-          <h2 className="text-lg font-bold text-[#0A0A0A] mb-3">Quiz</h2>
+          <h2 className="text-lg font-bold text-[#0A0A0A] mb-1">Quiz</h2>
+          {previousScore && !submitted && (
+            <p className="text-xs text-[#999999] mb-3">Dernier score : {previousScore.score} / {previousScore.total} — refaites le quiz quand vous voulez.</p>
+          )}
           <div className="space-y-5">
             {quiz.map((q, qi) => {
               const sel = answers[q.id] ?? []

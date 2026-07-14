@@ -174,6 +174,20 @@ describe('Lecon (page générique)', () => {
     )
   })
 
+  it('un quiz déjà passé ne pré-révèle pas les réponses (affiche le dernier score, quiz vierge)', async () => {
+    h.store.lesson_quiz_results = [{ judoka_id: 'j1', lesson_id: 'L1', score: 1, total: 1, reponses: { q1: [0] } }]
+    renderLecon()
+    await waitFor(() => screen.getByText(/Direction du kuzushi/))
+    // pas en etat corrige : le bouton Valider est present, aucun "Score :" affiche
+    expect(screen.getByText('Valider le quiz')).toBeInTheDocument()
+    expect(screen.queryByText(/^Score\s*:/)).toBeNull()
+    // le dernier score est rappele
+    expect(screen.getByText(/Dernier score\s*:\s*1\s*\/\s*1/)).toBeInTheDocument()
+    // aucune reponse n'est pre-cochee
+    const radios = screen.getAllByRole('radio') as HTMLInputElement[]
+    expect(radios.every((r) => !r.checked)).toBe(true)
+  })
+
   it('affiche un repli si aucune leçon publiée', async () => {
     h.store.lesson = []
     renderLecon()
