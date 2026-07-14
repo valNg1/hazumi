@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { computeProgress, nextRessourceId, toggleCompleted, type ParcoursRessourceLink } from '../../lib/parcoursProgress'
 import PremierDanSections from '../../components/PremierDanSections'
@@ -45,11 +46,25 @@ interface Ressource extends CatalogueRow {
 
 const TYPE_LABEL: Record<ContentType, string> = { video: 'Vidéo', article: 'Article', pdf: 'PDF' }
 
-export default function Parcours() {
+interface ParcoursProps {
+  univers?: 'shiai' | 'kyu' | 'judo-ka'
+  titre?: string
+  intro?: string
+  icone?: string
+}
+
+export default function Parcours({
+  univers,
+  titre = 'Parcours',
+  intro = 'Des chemins pédagogiques guidés à travers le catalogue Hazumi',
+  icone = '🧭',
+}: ParcoursProps = {}) {
   const [judokaId, setJudokaId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [list, setList] = useState<ParcoursRow[]>([])
   const [progressByParcours, setProgressByParcours] = useState<Record<string, number>>({})
+  const [lessonCount, setLessonCount] = useState<Record<string, number>>({})
+  const [lessonIds, setLessonIds] = useState<Set<string>>(new Set())
 
   const [selected, setSelected] = useState<ParcoursRow | null>(null)
   const [ressources, setRessources] = useState<Ressource[]>([])
@@ -67,16 +82,32 @@ export default function Parcours() {
       setLoading(false)
     }
     load()
-  }, [])
+  }, [univers])
 
   async function loadList(jId: string) {
-    const { data: parcours } = await supabase
-      .from('parcours')
-      .select('*')
-      .eq('publie', true)
-      .order('ordre', { ascending: true })
+    // Filtre par univers (vue SHIAI/KYU/JUDO-KA) le cas echeant.
+    let universIds: string[] | null = null
+    if (univers) {
+      const { data: pu } = await supabase.from('parcours_univers').select('parcours_id').eq('univers', univers)
+      universIds = ((pu as { parcours_id: string }[]) ?? []).map((x) => x.parcours_id)
+    }
+
+    let query = supabase.from('parcours').select('*').eq('publie', true)
+    if (universIds) query = query.in('id', universIds)
+    const { data: parcours } = await query.order('ordre', { ascending: true })
     const rows = (parcours as ParcoursRow[]) ?? []
     setList(rows)
+
+    // Nombre de lecons par parcours.
+    const rowIds = rows.map((r) => r.id)
+    if (rowIds.length > 0) {
+      const { data: liens } = await supabase.from('parcours_ressources').select('parcours_id').in('parcours_id', rowIds)
+      const counts: Record<string, number> = {}
+      for (const l of (liens as { parcours_id: string }[]) ?? []) counts[l.parcours_id] = (counts[l.parcours_id] ?? 0) + 1
+      setLessonCount(counts)
+    } else {
+      setLessonCount({})
+    }
 
     const { data: ups } = await supabase
       .from('user_parcours')
@@ -87,6 +118,10 @@ export default function Parcours() {
       map[u.parcours_id] = u.progression
     }
     setProgressByParcours(map)
+
+    // Lecons publiees -> bouton "Etudier" sur les ressources concernees.
+    const { data: les } = await supabase.from('lesson').select('ressource_id').eq('published', true)
+    setLessonIds(new Set(((les as { ressource_id: string }[]) ?? []).map((l) => l.ressource_id)))
   }
 
   async function openParcours(p: ParcoursRow) {
@@ -208,12 +243,21 @@ export default function Parcours() {
               )}
             </div>
           </div>
-          <button
-            onClick={() => openRessource(r)}
-            className="flex-shrink-0 text-[#999999] hover:text-[#0A0A0A] transition-colors p-1 text-xs font-semibold"
-          >
-            {r.type === 'article' ? 'Lire' : 'Voir'}
-          </button>
+          {lessonIds.has(r.id) ? (
+            <Link
+              to={`/eleve/lecon/${r.id}`}
+              className="flex-shrink-0 text-[#C41230] hover:text-[#9B0E25] transition-colors p-1 text-xs font-semibold"
+            >
+              Étudier
+            </Link>
+          ) : (
+            <button
+              onClick={() => openRessource(r)}
+              className="flex-shrink-0 text-[#999999] hover:text-[#0A0A0A] transition-colors p-1 text-xs font-semibold"
+            >
+              {r.type === 'article' ? 'Lire' : 'Voir'}
+            </button>
+          )}
           <button
             onClick={() => toggleRessource(r.id)}
             title={done ? 'Marquer comme non terminé' : 'Marquer comme terminé'}
@@ -342,10 +386,10 @@ export default function Parcours() {
     <div className="max-w-5xl mx-auto">
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-1">
-          <span className="text-2xl sm:text-3xl font-bold" style={{ color: '#C41230' }}>🧭</span>
+          <span className="text-2xl sm:text-3xl font-bold" style={{ color: '#C41230' }}>{icone}</span>
           <div>
-            <h1 className="text-3xl font-bold text-[#0A0A0A] tracking-tight">Parcours</h1>
-            <p className="text-[#666666] text-sm">Des chemins pédagogiques guidés à travers le catalogue Hazumi</p>
+            <h1 className="text-3xl font-bold text-[#0A0A0A] tracking-tight">{titre}</h1>
+            <p className="text-[#666666] text-sm">{intro}</p>
           </div>
         </div>
       </div>
@@ -374,13 +418,19 @@ export default function Parcours() {
                   <h3 className="font-bold text-[#0A0A0A] text-sm leading-snug mb-1">{p.titre}</h3>
                   {p.description && <p className="text-xs text-[#666666] line-clamp-2 mb-3 flex-1">{p.description}</p>}
                   <div className="mt-auto">
+                    <div className="flex items-center justify-between mb-1 text-[10px] text-[#999999]">
+                      <span>{lessonCount[p.id] ?? 0} leçon{(lessonCount[p.id] ?? 0) > 1 ? 's' : ''}</span>
+                      {p.duree_estimee && <span>{p.duree_estimee}</span>}
+                    </div>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[10px] text-[#999999]">{percent > 0 ? `${percent}% terminé` : 'Non commencé'}</span>
-                      {p.duree_estimee && <span className="text-[10px] text-[#999999]">{p.duree_estimee}</span>}
                     </div>
-                    <div className="h-1.5 bg-[#F0F0F0] rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-[#F0F0F0] rounded-full overflow-hidden mb-3">
                       <div className="h-full bg-[#C41230] rounded-full transition-all duration-500" style={{ width: `${percent}%` }} />
                     </div>
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-white bg-[#C41230] group-hover:bg-[#9B0E25] rounded-lg px-3 py-1.5">
+                      ▶ {percent > 0 ? 'Continuer' : 'Commencer'}
+                    </span>
                   </div>
                 </div>
               </button>

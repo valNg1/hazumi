@@ -1,94 +1,64 @@
 import { describe, it, expect, beforeEach, beforeAll, vi } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import Kyu from '../eleve/Kyu'
 
 const h = vi.hoisted(() => ({
   store: {
-    judokaId: 'judoka-1',
-    userId: 'user-1',
-    belt: 'jaune' as string,
-    objectif: '',
-    videos: [] as any[],
-    playlists: [] as any[],
-    catalogue: [] as any[],
-    masteries: [] as any[],
-    lessons: [] as any[],
+    userId: 'u1',
+    judokas: [{ id: 'j1', user_id: 'u1', belt: 'jaune', objectif: '', parcours: 'kyu' }] as any[],
+    parcours: [] as any[],
+    parcours_univers: [] as any[],
+    parcours_ressources: [] as any[],
+    catalogue_hazumi: [] as any[],
+    lesson: [] as any[],
+    user_parcours: [] as any[],
+    technique_mastery: [] as any[],
   },
 }))
 
 vi.mock('../../lib/supabase', () => {
   const { store } = h
   function from(table: string) {
-    let filters: Record<string, unknown> = {}
-    let mode: 'select' | 'insert' | 'update' | 'upsert' = 'select'
+    const filters: Record<string, unknown> = {}
+    let inFilter: { col: string; vals: unknown[] } | null = null
+    let mode: 'select' | 'insert' | 'update' = 'select'
     let payload: any = null
-    let head = false
+    function rows() {
+      return ((store as any)[table] ?? []).filter(
+        (r: any) =>
+          Object.entries(filters).every(([k, v]) => r[k] === v) &&
+          (inFilter ? inFilter.vals.includes(r[inFilter.col]) : true)
+      )
+    }
+    function resolve() {
+      if (mode === 'insert') {
+        const arr = Array.isArray(payload) ? payload : [payload]
+        ;(store as any)[table].push(...arr)
+        return { data: payload, error: null }
+      }
+      if (mode === 'update') {
+        rows().forEach((r: any) => Object.assign(r, payload))
+        return { data: null, error: null }
+      }
+      return { data: rows(), error: null }
+    }
     const builder: any = {
-      select: (_arg?: string, opts?: any) => {
-        head = !!opts?.head
-        return builder
+      select: () => builder,
+      eq: (c: string, v: unknown) => { filters[c] = v; return builder },
+      in: (c: string, v: unknown[]) => { inFilter = { col: c, vals: v }; return builder },
+      order: () => Promise.resolve(resolve()),
+      single: () => Promise.resolve({ data: rows()[0] ?? null, error: null }),
+      maybeSingle: () => Promise.resolve({ data: rows()[0] ?? null, error: null }),
+      insert: (p: any) => { mode = 'insert'; payload = p; return builder },
+      update: (p: any) => { mode = 'update'; payload = p; return builder },
+      upsert: (p: any) => {
+        const arr = Array.isArray(p) ? p : [p]
+        ;(store as any)[table].push(...arr)
+        return Promise.resolve({ data: p, error: null })
       },
-      eq: (col: string, val: unknown) => {
-        filters[col] = val
-        return builder
-      },
-      order: () => {
-        if (table === 'videos') {
-          const filtered = store.videos.filter((v) => Object.entries(filters).every(([k, val]) => v[k] === val))
-          return Promise.resolve({ data: filtered, error: null })
-        }
-        if (table === 'playlists_collections') {
-          const filtered = store.playlists.filter((p) => Object.entries(filters).every(([k, val]) => p[k] === val))
-          return Promise.resolve({ data: filtered, error: null })
-        }
-        if (table === 'catalogue_hazumi') {
-          const filtered = store.catalogue.filter((c) => Object.entries(filters).every(([k, val]) => c[k] === val))
-          return Promise.resolve({ data: filtered, error: null })
-        }
-        return Promise.resolve({ data: null, error: null })
-      },
-      single: () => {
-        if (table === 'judokas') {
-          return Promise.resolve({
-            data: { id: store.judokaId, belt: store.belt, objectif: store.objectif, parcours: 'judo-ka' },
-            error: null,
-          })
-        }
-        if (mode === 'insert') {
-          const v = { id: 'v-' + (store.videos.length + 1), created_at: new Date().toISOString(), ...payload }
-          store.videos.push(v)
-          return Promise.resolve({ data: v, error: null })
-        }
-        return Promise.resolve({ data: null, error: null })
-      },
-      insert: (p: any) => {
-        mode = 'insert'
-        payload = p
-        return builder
-      },
-      update: () => builder,
-      delete: () => builder,
-      upsert: () => Promise.resolve({ data: null, error: null }),
-      then: (resolve: any) => {
-        if (table === 'lesson') {
-          return resolve({ data: store.lessons, error: null })
-        }
-        if (table === 'technique_mastery') {
-          return resolve({ data: store.masteries, error: null })
-        }
-        if (head && table === 'catalogue_hazumi') {
-          const count = store.catalogue.filter((c) => Object.entries(filters).every(([k, val]) => c[k] === val)).length
-          return resolve({ count, data: null, error: null })
-        }
-        if (mode === 'insert' && table === 'videos') {
-          const v = { id: 'v-' + (store.videos.length + 1), created_at: new Date().toISOString(), ...payload }
-          store.videos.push(v)
-          return resolve({ data: v, error: null })
-        }
-        return resolve({ data: null, error: null })
-      },
+      then: (res: any) => res(resolve()),
     }
     return builder
   }
@@ -105,135 +75,53 @@ beforeAll(() => {
 })
 
 beforeEach(() => {
-  h.store.belt = 'jaune'
-  h.store.objectif = ''
-  h.store.videos = []
-  h.store.playlists = []
-  h.store.catalogue = []
-  h.store.masteries = []
-  h.store.lessons = []
+  h.store.judokas = [{ id: 'j1', user_id: 'u1', belt: 'jaune', objectif: '', parcours: 'kyu' }]
+  h.store.parcours = [
+    { id: 'p1', titre: 'Parcours Kyu Test', description: 'Desc', niveau: '1er dan', image: null, duree_estimee: '8 sem', ordre: 1, publie: true },
+  ]
+  h.store.parcours_univers = [{ parcours_id: 'p1', univers: 'kyu' }]
+  h.store.parcours_ressources = [{ id: 'l1', parcours_id: 'p1', ressource_id: 'r1', ordre: 1, obligatoire: true, commentaire: null }]
+  h.store.catalogue_hazumi = [{ id: 'r1', titre: 'Harai-goshi', type: 'article', url: null, contenu: 'Texte', tags: [], grade: '1er dan', famille: 'Koshi-waza' }]
+  h.store.lesson = []
+  h.store.user_parcours = []
+  h.store.technique_mastery = []
 })
 
 function renderPage() {
-  return render(
-    <MemoryRouter>
-      <Kyu />
-    </MemoryRouter>
-  )
+  return render(<MemoryRouter><Kyu /></MemoryRouter>)
 }
 
-describe('Kyu (PersonalLibrary parcours=kyu + onglet Progression)', () => {
-  it('la page se charge sans erreur', async () => {
+describe('Kyu — bascule parcours-first (Phase 2)', () => {
+  it('affiche l’onglet Parcours par défaut avec les parcours KYU publiés', async () => {
     renderPage()
     await waitFor(() => {
-      expect(screen.getByText('Kyu')).toBeInTheDocument()
+      expect(screen.getByText('Parcours Kyu Test')).toBeInTheDocument()
     })
+    // onglets attendus
+    expect(screen.getByRole('button', { name: 'Parcours' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ma progression' })).toBeInTheDocument()
   })
 
-  it('les deux onglets sont présents', async () => {
+  it('n’expose plus la bibliothèque de ressources comme écran d’accueil', async () => {
     renderPage()
-    await waitFor(() => {
-      expect(screen.getByText('Ma bibliothèque')).toBeInTheDocument()
-      expect(screen.getByText('Ma progression')).toBeInTheDocument()
-    })
+    await waitFor(() => screen.getByText('Parcours Kyu Test'))
+    expect(screen.queryByText('Ma bibliothèque')).toBeNull()
+    // la barre d’ajout de contenu perso a disparu de KYU
+    expect(screen.queryByPlaceholderText('Titre')).toBeNull()
+    expect(screen.queryByPlaceholderText('URL')).toBeNull()
   })
 
-  it('le judoka peut ajouter du contenu', async () => {
+  it('ouvrir un parcours affiche ses leçons (les ressources)', async () => {
     renderPage()
-    await waitFor(() => screen.getByPlaceholderText('Titre'))
-    await userEvent.type(screen.getByPlaceholderText('Titre'), 'Uchi-mata expliqué')
-    await userEvent.type(screen.getByPlaceholderText('URL'), 'https://youtube.com/watch?v=abc12345678')
-    await userEvent.click(screen.getByText('✓'))
-
-    await waitFor(() => {
-      expect(screen.getByText('Uchi-mata expliqué')).toBeInTheDocument()
-    })
-    expect(h.store.videos[0].parcours).toBe('kyu')
+    await waitFor(() => screen.getByText('Parcours Kyu Test'))
+    await userEvent.click(screen.getByText('Parcours Kyu Test'))
+    await waitFor(() => expect(screen.getByText('Harai-goshi')).toBeInTheDocument())
   })
 
-  it('la section Contenu Hazumi est présente', async () => {
-    h.store.catalogue = [
-      { id: 'c1', titre: 'Fiche Kyu', type: 'article', parcours: 'kyu', contenu: 'texte', tags: [] },
-    ]
-    renderPage()
-    await waitFor(() => {
-      expect(screen.getByText('Contenu Hazumi')).toBeInTheDocument()
-      expect(screen.getByText('Fiche Kyu')).toBeInTheDocument()
-    })
-  })
-
-  it("la fiche KYU affiche grade, famille et mots-clés dans le lecteur d'article (même charte que les articles existants)", async () => {
-    h.store.catalogue = [
-      {
-        id: 'c1',
-        titre: 'Harai-goshi',
-        type: 'article',
-        parcours: 'kyu',
-        grade: '1er dan',
-        famille: 'Koshi-waza',
-        contenu: 'Description de la technique Harai-goshi.',
-        tags: ['hanche', 'balayage'],
-      },
-    ]
-    renderPage()
-    await waitFor(() => screen.getByText('Harai-goshi'))
-    await userEvent.click(screen.getByRole('button', { name: 'Lire' }))
-
-    const contenu = await screen.findByText('Description de la technique Harai-goshi.')
-    const modal = contenu.closest('div') as HTMLElement
-    expect(modal).not.toBeNull()
-    expect(within(modal).getByText('1er dan')).toBeInTheDocument()
-    expect(within(modal).getByText('Koshi-waza')).toBeInTheDocument()
-    expect(within(modal).getByText('Mots-clés')).toBeInTheDocument()
-    expect(within(modal).getByText('hanche')).toBeInTheDocument()
-    expect(within(modal).getByText('balayage')).toBeInTheDocument()
-  })
-
-  it("un article sans grade/famille (contenu déjà en production) reste inchangé dans le lecteur : titre + contenu seuls", async () => {
-    h.store.catalogue = [
-      { id: 'c1', titre: 'Article Histoire', type: 'article', parcours: 'kyu', contenu: 'Texte historique.', tags: [] },
-    ]
-    renderPage()
-    await waitFor(() => screen.getByText('Article Histoire'))
-    await userEvent.click(screen.getByRole('button', { name: 'Lire' }))
-
-    const contenu = await screen.findByText('Texte historique.')
-    const modal = contenu.closest('div') as HTMLElement
-    expect(within(modal).getByText('Article Histoire')).toBeInTheDocument()
-    expect(within(modal).queryByText('Mots-clés')).toBeNull()
-  })
-
-  it('une ressource AVEC une leçon publiée affiche "Étudier" (lien vers la leçon)', async () => {
-    h.store.catalogue = [
-      { id: 'c1', titre: 'Fiche avec leçon', type: 'article', parcours: 'kyu', contenu: 'texte', tags: [] },
-    ]
-    h.store.lessons = [{ ressource_id: 'c1' }]
-    renderPage()
-    const etudier = await screen.findByText('Étudier')
-    expect(etudier.closest('a')?.getAttribute('href')).toBe('/eleve/lecon/c1')
-    expect(screen.queryByText('Lire')).toBeNull()
-  })
-
-  it('une ressource SANS leçon garde "Lire" (aucune régression d’accès)', async () => {
-    h.store.catalogue = [
-      { id: 'c1', titre: 'Fiche sans leçon', type: 'article', parcours: 'kyu', contenu: 'texte', tags: [] },
-    ]
-    h.store.lessons = []
-    renderPage()
-    await waitFor(() => screen.getByText('Fiche sans leçon'))
-    expect(screen.getByText('Lire')).toBeInTheDocument()
-    expect(screen.queryByText('Étudier')).toBeNull()
-  })
-
-  it('le système de progression est intact (onglet Ma progression)', async () => {
+  it('l’onglet Ma progression conserve le suivi par ceinture', async () => {
     renderPage()
     await waitFor(() => screen.getByText('Ma progression'))
     await userEvent.click(screen.getByText('Ma progression'))
-
-    await waitFor(() => {
-      expect(screen.getByText(/acquis/)).toBeInTheDocument()
-    })
-    // La bibliothèque perso ne doit plus être visible dans cet onglet
-    expect(screen.queryByPlaceholderText('Titre')).toBeNull()
+    await waitFor(() => expect(screen.getByText(/acquis/)).toBeInTheDocument())
   })
 })

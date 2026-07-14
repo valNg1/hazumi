@@ -10,7 +10,9 @@ const h = vi.hoisted(() => ({
     judokas: [{ id: 'j1', user_id: 'u1' }] as any[],
     parcours: [] as any[],
     parcours_ressources: [] as any[],
+    parcours_univers: [] as any[],
     catalogue_hazumi: [] as any[],
+    lesson: [] as any[],
     user_parcours: [] as any[],
   },
 }))
@@ -24,7 +26,7 @@ vi.mock('../../../lib/supabase', () => {
     let payload: any = null
 
     function rows() {
-      return (store as any)[table].filter(
+      return ((store as any)[table] ?? []).filter(
         (r: any) =>
           Object.entries(filters).every(([k, v]) => r[k] === v) &&
           (inFilter ? inFilter.vals.includes(r[inFilter.col]) : true)
@@ -77,10 +79,16 @@ function seed(titre: string) {
     { id: 'r2', titre: 'O-soto-gari', type: 'article', url: null, contenu: 'Texte 2', tags: ['jambe'], grade: '1er dan', famille: 'Ashi-waza' },
   ]
   h.store.user_parcours = []
+  h.store.parcours_univers = []
+  h.store.lesson = []
 }
 
 function renderPage() {
   return render(<MemoryRouter><Parcours /></MemoryRouter>)
+}
+
+function renderUnivers(univers: string) {
+  return render(<MemoryRouter><Parcours univers={univers as any} /></MemoryRouter>)
 }
 
 describe('Parcours (moteur de parcours pedagogiques)', () => {
@@ -188,5 +196,41 @@ describe('Parcours "Préparer le 1er Dan" — page d\'accueil enrichie', () => {
   it('ne mentionne pas "FFJ" dans le rendu affiche', async () => {
     const { container } = await openPremierDan()
     expect(container.textContent).not.toMatch(/ffj/i)
+  })
+})
+
+describe('Parcours — filtre par univers + bouton Étudier', () => {
+  beforeEach(() => seed('Parcours KYU'))
+
+  it('ne montre que les parcours de l’univers demandé', async () => {
+    h.store.parcours_univers = [{ parcours_id: 'p1', univers: 'kyu' }]
+    renderUnivers('kyu')
+    await waitFor(() => expect(screen.getByText('Parcours KYU')).toBeInTheDocument())
+  })
+
+  it('une vue sans parcours affiche l’état vide', async () => {
+    h.store.parcours_univers = [] // aucun parcours rattaché à SHIAI
+    renderUnivers('shiai')
+    await waitFor(() => expect(screen.getByText(/Aucun parcours disponible/i)).toBeInTheDocument())
+  })
+
+  it('affiche le nombre de leçons + le bouton Continuer sur la carte', async () => {
+    h.store.parcours_univers = [{ parcours_id: 'p1', univers: 'kyu' }]
+    renderUnivers('kyu')
+    await waitFor(() => screen.getByText('Parcours KYU'))
+    expect(screen.getByText(/2 leçons/)).toBeInTheDocument()
+    expect(screen.getByText(/▶/)).toBeInTheDocument()
+  })
+
+  it('propose "Étudier" (lien vers la leçon) quand une leçon publiée existe, sinon "Lire"', async () => {
+    h.store.parcours_univers = [{ parcours_id: 'p1', univers: 'kyu' }]
+    h.store.lesson = [{ ressource_id: 'r1', published: true }]
+    renderUnivers('kyu')
+    await waitFor(() => screen.getByText('Parcours KYU'))
+    await userEvent.click(screen.getByText('Parcours KYU'))
+    await waitFor(() => screen.getByText('Harai-goshi'))
+    const etudier = screen.getByText('Étudier')
+    expect(etudier.closest('a')?.getAttribute('href')).toBe('/eleve/lecon/r1')
+    expect(screen.getByText('Lire')).toBeInTheDocument() // r2 n'a pas de leçon
   })
 })

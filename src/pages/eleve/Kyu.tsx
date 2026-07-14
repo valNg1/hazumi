@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { CURRICULUM, getCategorieLabel, getBeltIndex } from '../../lib/curriculum'
-import PersonalLibrary from '../../components/PersonalLibrary'
+import Parcours from './Parcours'
 import type { Belt } from '../../types'
 import type { TechniqueStatus } from '../../lib/curriculum'
 
@@ -278,21 +278,21 @@ function KyuProgression() {
   )
 }
 
-type Tab = 'bibliotheque' | 'progression'
+type Tab = 'parcours' | 'progression'
 
 export default function Kyu() {
-  const [tab, setTab] = useState<Tab>('bibliotheque')
+  const [tab, setTab] = useState<Tab>('parcours')
 
   return (
     <div>
       <div className="flex items-center gap-1 mb-6 border-b border-[#E5E5E5]">
         <button
-          onClick={() => setTab('bibliotheque')}
+          onClick={() => setTab('parcours')}
           className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
-            tab === 'bibliotheque' ? 'text-[#0A0A0A] border-[#C41230]' : 'text-[#666666] border-transparent hover:text-[#0A0A0A]'
+            tab === 'parcours' ? 'text-[#0A0A0A] border-[#C41230]' : 'text-[#666666] border-transparent hover:text-[#0A0A0A]'
           }`}
         >
-          Ma bibliothèque
+          Parcours
         </button>
         <button
           onClick={() => setTab('progression')}
@@ -304,12 +304,12 @@ export default function Kyu() {
         </button>
       </div>
 
-      {tab === 'bibliotheque' ? (
-        <PersonalLibrary
-          parcours="kyu"
+      {tab === 'parcours' ? (
+        <Parcours
+          univers="kyu"
           titre="Kyu"
           icone="🥋"
-          description="Progression par grade et maîtrise des formes fondamentales"
+          intro="Choisis ton parcours et progresse leçon après leçon."
         />
       ) : (
         <KyuProgression />
