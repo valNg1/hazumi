@@ -164,6 +164,22 @@ describe('Lecon (page générique)', () => {
     expect(screen.getByText('✓ Leçon étudiée')).toBeInTheDocument()
   })
 
+  it('affiche la section Chapitres même vide (gabarit)', async () => {
+    h.store.lesson_chapters = []
+    renderLecon()
+    await waitFor(() => screen.getByText('Harai-goshi'))
+    expect(screen.getByText('Chapitres')).toBeInTheDocument()
+    expect(screen.getByText(/Aucun chapitre pour l'instant/i)).toBeInTheDocument()
+  })
+
+  it('affiche la section Quiz même vide (gabarit)', async () => {
+    h.store.lesson_quiz = []
+    renderLecon()
+    await waitFor(() => screen.getByText('Harai-goshi'))
+    expect(screen.getByText('Quiz')).toBeInTheDocument()
+    expect(screen.getByText(/Aucune question pour l'instant/i)).toBeInTheDocument()
+  })
+
   it('sauvegarde automatiquement les notes (debounce)', async () => {
     renderLecon()
     await waitFor(() => screen.getByText('Harai-goshi'))

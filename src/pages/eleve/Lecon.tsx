@@ -197,9 +197,11 @@ export default function Lecon() {
               allowFullScreen
             />
           </div>
-          {chapters.length > 0 && (
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-[#999999] mb-2">Chapitres</p>
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-[#999999] mb-2">Chapitres</p>
+            {chapters.length === 0 ? (
+              <p className="text-xs text-[#999999] italic">Aucun chapitre pour l'instant.</p>
+            ) : (
               <div className="space-y-1">
                 {chapters.map((c) => (
                   <button
@@ -217,8 +219,8 @@ export default function Lecon() {
                   </button>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 
@@ -245,9 +247,13 @@ export default function Lecon() {
       </div>
 
       {/* 5. QUIZ */}
-      {quiz.length > 0 && (
-        <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
-          <h2 className="text-lg font-bold text-[#0A0A0A] mb-1">Quiz</h2>
+      <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
+        <h2 className="text-lg font-bold text-[#0A0A0A] mb-1">Quiz</h2>
+        {quiz.length === 0 && (
+          <p className="text-sm text-[#999999] italic">Aucune question pour l'instant.</p>
+        )}
+        {quiz.length > 0 && (
+          <>
           {previousScore && !submitted && (
             <p className="text-xs text-[#999999] mb-3">Dernier score : {previousScore.score} / {previousScore.total} — refaites le quiz quand vous voulez.</p>
           )}
@@ -311,8 +317,9 @@ export default function Lecon() {
               </>
             )}
           </div>
+          </>
+        )}
         </div>
-      )}
     </div>
   )
 }
