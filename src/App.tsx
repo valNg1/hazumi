@@ -11,7 +11,6 @@ import Progression from './pages/eleve/Progression'
 import Shiai from './pages/eleve/Shiai'
 import JudoKa from './pages/eleve/JudoKa'
 import Kyu from './pages/eleve/Kyu'
-import Parcours from './pages/eleve/Parcours'
 import Lecon from './pages/eleve/Lecon'
 import Entrainements from './pages/eleve/Entrainements'
 import MonAgenda from './pages/eleve/MonAgenda'
@@ -115,7 +114,10 @@ export default function App() {
               <Route path="/eleve/shiai" element={<Shiai />} />
               <Route path="/eleve/judoka-culture" element={<JudoKa />} />
               <Route path="/eleve/kyu" element={<Kyu />} />
-              <Route path="/eleve/parcours" element={<Parcours />} />
+              {/* Les parcours ne sont plus un menu principal : ils vivent dans
+                  chaque univers. On conserve l'URL historique via une redirection
+                  pour ne pas casser les favoris / liens directs. */}
+              <Route path="/eleve/parcours" element={<Navigate to="/eleve/accueil" replace />} />
               <Route path="/eleve/lecon/:ressourceId" element={<Lecon />} />
               <Route path="/eleve/entrainements" element={<Entrainements />} />
               <Route path="/eleve/agenda" element={<MonAgenda />} />

@@ -6,14 +6,13 @@ import { supabase } from '../lib/supabase'
 import Footer from './Footer'
 import NavbarNotificationBadge from './NavbarNotificationBadge'
 
-const NAV: Record<'eleve' | 'club', { to: string; label: string }[]> = {
+export const NAV: Record<'eleve' | 'club', { to: string; label: string }[]> = {
   eleve: [
     { to: '/eleve/accueil', label: 'Accueil' },
     { to: '/eleve/profil', label: 'Mon profil' },
     { to: '/eleve/shiai', label: 'Shiai' },
     { to: '/eleve/judoka-culture', label: 'Judo-Ka' },
     { to: '/eleve/kyu', label: 'Kyu' },
-    { to: '/eleve/parcours', label: 'Parcours' },
     { to: '/eleve/entrainements', label: 'Mes entraînements' },
     { to: '/eleve/agenda', label: 'Mon agenda' },
     { to: '/eleve/messages', label: 'Messages' },
