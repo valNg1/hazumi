@@ -97,18 +97,25 @@ describe('Kyu — bascule parcours-first (Phase 2)', () => {
     await waitFor(() => {
       expect(screen.getByText('Parcours Kyu Test')).toBeInTheDocument()
     })
-    // onglets attendus
-    expect(screen.getByRole('button', { name: 'Parcours' })).toBeInTheDocument()
+    // onglets attendus : Parcours Hazumi + Mon Dojo + Ma progression
+    expect(screen.getByRole('button', { name: 'Parcours Hazumi' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Mon Dojo/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Ma progression' })).toBeInTheDocument()
   })
 
-  it('n’expose plus la bibliothèque de ressources comme écran d’accueil', async () => {
+  it('l’onglet Parcours Hazumi (accueil) ne montre pas la bibliothèque perso', async () => {
     renderPage()
     await waitFor(() => screen.getByText('Parcours Kyu Test'))
     expect(screen.queryByText('Ma bibliothèque')).toBeNull()
-    // la barre d’ajout de contenu perso a disparu de KYU
     expect(screen.queryByPlaceholderText('Titre')).toBeNull()
-    expect(screen.queryByPlaceholderText('URL')).toBeNull()
+  })
+
+  it('l’onglet Mon Dojo affiche la bibliothèque personnelle, sans contenu Hazumi', async () => {
+    renderPage()
+    await waitFor(() => screen.getByText('Parcours Kyu Test'))
+    await userEvent.click(screen.getByRole('button', { name: /Mon Dojo/ }))
+    await waitFor(() => expect(screen.getByPlaceholderText('Titre')).toBeInTheDocument())
+    expect(screen.queryByText('Contenu Hazumi')).toBeNull()
   })
 
   it('ouvrir un parcours affiche ses leçons (les ressources)', async () => {

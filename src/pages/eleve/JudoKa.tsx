@@ -1,8 +1,8 @@
-import Parcours from './Parcours'
+import UniversTabs from '../../components/UniversTabs'
 
 export default function JudoKa() {
   return (
-    <Parcours
+    <UniversTabs
       univers="judo-ka"
       titre="Judo-Ka"
       icone="🎌"

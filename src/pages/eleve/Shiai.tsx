@@ -1,8 +1,8 @@
-import Parcours from './Parcours'
+import UniversTabs from '../../components/UniversTabs'
 
 export default function Shiai() {
   return (
-    <Parcours
+    <UniversTabs
       univers="shiai"
       titre="Shiai"
       icone="🥊"

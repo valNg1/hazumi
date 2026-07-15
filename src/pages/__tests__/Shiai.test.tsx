@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import Shiai from '../eleve/Shiai'
 
@@ -45,10 +46,19 @@ beforeEach(() => {
   h.store.parcours_univers = []
 })
 
-describe('Shiai — bascule parcours-first', () => {
-  it('affiche l’en-tête Shiai et l’état vide quand aucun parcours compétition publié', async () => {
+describe('Shiai — parcours-first + Mon Dojo', () => {
+  it('affiche les deux onglets et l’état vide de Parcours Hazumi', async () => {
     render(<MemoryRouter><Shiai /></MemoryRouter>)
     await waitFor(() => expect(screen.getByText('Shiai')).toBeInTheDocument())
+    expect(screen.getByRole('button', { name: 'Parcours Hazumi' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Mon Dojo/ })).toBeInTheDocument()
     expect(screen.getByText(/Aucun parcours disponible/i)).toBeInTheDocument()
+  })
+
+  it('l’onglet Mon Dojo ouvre la bibliothèque personnelle', async () => {
+    render(<MemoryRouter><Shiai /></MemoryRouter>)
+    await waitFor(() => screen.getByText('Shiai'))
+    await userEvent.click(screen.getByRole('button', { name: /Mon Dojo/ }))
+    await waitFor(() => expect(screen.getByPlaceholderText('Titre')).toBeInTheDocument())
   })
 })

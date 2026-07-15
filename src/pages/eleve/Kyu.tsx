@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { CURRICULUM, getCategorieLabel, getBeltIndex } from '../../lib/curriculum'
 import Parcours from './Parcours'
+import PersonalLibrary from '../../components/PersonalLibrary'
 import type { Belt } from '../../types'
 import type { TechniqueStatus } from '../../lib/curriculum'
 
@@ -278,42 +279,43 @@ function KyuProgression() {
   )
 }
 
-type Tab = 'parcours' | 'progression'
+type Tab = 'parcours' | 'dojo' | 'progression'
+
+const TAB_CLS = (active: boolean) =>
+  `px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
+    active ? 'text-[#0A0A0A] border-[#C41230]' : 'text-[#666666] border-transparent hover:text-[#0A0A0A]'
+  }`
 
 export default function Kyu() {
   const [tab, setTab] = useState<Tab>('parcours')
 
   return (
     <div>
-      <div className="flex items-center gap-1 mb-6 border-b border-[#E5E5E5]">
-        <button
-          onClick={() => setTab('parcours')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
-            tab === 'parcours' ? 'text-[#0A0A0A] border-[#C41230]' : 'text-[#666666] border-transparent hover:text-[#0A0A0A]'
-          }`}
-        >
-          Parcours
+      <div className="flex items-center gap-1 mb-6 border-b border-[#E5E5E5] overflow-x-auto">
+        <button onClick={() => setTab('parcours')} className={TAB_CLS(tab === 'parcours') + ' whitespace-nowrap'}>
+          Parcours Hazumi
         </button>
-        <button
-          onClick={() => setTab('progression')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
-            tab === 'progression' ? 'text-[#0A0A0A] border-[#C41230]' : 'text-[#666666] border-transparent hover:text-[#0A0A0A]'
-          }`}
-        >
+        <button onClick={() => setTab('dojo')} className={TAB_CLS(tab === 'dojo') + ' whitespace-nowrap'}>
+          🥋 Mon Dojo
+        </button>
+        <button onClick={() => setTab('progression')} className={TAB_CLS(tab === 'progression') + ' whitespace-nowrap'}>
           Ma progression
         </button>
       </div>
 
-      {tab === 'parcours' ? (
-        <Parcours
-          univers="kyu"
-          titre="Kyu"
-          icone="🥋"
-          intro="Choisis ton parcours et progresse leçon après leçon."
-        />
-      ) : (
-        <KyuProgression />
+      {tab === 'parcours' && (
+        <Parcours univers="kyu" titre="Kyu" icone="🥋" intro="Choisis ton parcours et progresse leçon après leçon." />
       )}
+      {tab === 'dojo' && (
+        <PersonalLibrary
+          parcours="kyu"
+          personalOnly
+          titre="Mon Dojo"
+          icone="🥋"
+          description="Ta bibliothèque personnelle : tes vidéos, tes tags, tes playlists."
+        />
+      )}
+      {tab === 'progression' && <KyuProgression />}
     </div>
   )
 }

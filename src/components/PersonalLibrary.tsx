@@ -87,6 +87,8 @@ interface PersonalLibraryProps {
   titre: string
   icone: string
   description: string
+  /** Mon Dojo : n'affiche QUE le contenu personnel (jamais le contenu Hazumi). */
+  personalOnly?: boolean
 }
 
 export default function PersonalLibrary({
@@ -94,6 +96,7 @@ export default function PersonalLibrary({
   titre,
   icone,
   description,
+  personalOnly = false,
 }: PersonalLibraryProps) {
   const [videos, setVideos] = useState<Video[]>([])
   const [catalogueItems, setCatalogueItems] = useState<RawCatalogueItem[]>([])
@@ -122,10 +125,10 @@ export default function PersonalLibrary({
       const { data: judoka } = await supabase.from('judokas').select('id').eq('user_id', user.id).single()
       if (judoka) {
         setJudokaId(judoka.id)
-        await loadLessons()
+        if (!personalOnly) await loadLessons()
         await loadVideos(user.id)
         await loadPlaylists(judoka.id)
-        await loadCatalogue()
+        if (!personalOnly) await loadCatalogue()
       }
       setLoading(false)
     }
