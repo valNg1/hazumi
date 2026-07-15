@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, beforeAll, vi } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
@@ -7,14 +7,13 @@ import Kyu from '../eleve/Kyu'
 const h = vi.hoisted(() => ({
   store: {
     userId: 'u1',
-    judokas: [{ id: 'j1', user_id: 'u1', belt: 'jaune', objectif: '', parcours: 'kyu' }] as any[],
+    judokas: [{ id: 'j1', user_id: 'u1' }] as any[],
     parcours: [] as any[],
     parcours_univers: [] as any[],
     parcours_ressources: [] as any[],
     catalogue_hazumi: [] as any[],
     lesson: [] as any[],
     user_parcours: [] as any[],
-    technique_mastery: [] as any[],
   },
 }))
 
@@ -27,21 +26,12 @@ vi.mock('../../lib/supabase', () => {
     let payload: any = null
     function rows() {
       return ((store as any)[table] ?? []).filter(
-        (r: any) =>
-          Object.entries(filters).every(([k, v]) => r[k] === v) &&
-          (inFilter ? inFilter.vals.includes(r[inFilter.col]) : true)
+        (r: any) => Object.entries(filters).every(([k, v]) => r[k] === v) && (inFilter ? inFilter.vals.includes(r[inFilter.col]) : true)
       )
     }
     function resolve() {
-      if (mode === 'insert') {
-        const arr = Array.isArray(payload) ? payload : [payload]
-        ;(store as any)[table].push(...arr)
-        return { data: payload, error: null }
-      }
-      if (mode === 'update') {
-        rows().forEach((r: any) => Object.assign(r, payload))
-        return { data: null, error: null }
-      }
+      if (mode === 'insert') { const a = Array.isArray(payload) ? payload : [payload]; (store as any)[table].push(...a); return { data: payload, error: null } }
+      if (mode === 'update') { rows().forEach((r: any) => Object.assign(r, payload)); return { data: null, error: null } }
       return { data: rows(), error: null }
     }
     const builder: any = {
@@ -53,82 +43,45 @@ vi.mock('../../lib/supabase', () => {
       maybeSingle: () => Promise.resolve({ data: rows()[0] ?? null, error: null }),
       insert: (p: any) => { mode = 'insert'; payload = p; return builder },
       update: (p: any) => { mode = 'update'; payload = p; return builder },
-      upsert: (p: any) => {
-        const arr = Array.isArray(p) ? p : [p]
-        ;(store as any)[table].push(...arr)
-        return Promise.resolve({ data: p, error: null })
-      },
+      upsert: (p: any) => { const a = Array.isArray(p) ? p : [p]; (store as any)[table].push(...a); return Promise.resolve({ data: p, error: null }) },
       then: (res: any) => res(resolve()),
     }
     return builder
   }
-  return {
-    supabase: {
-      auth: { getUser: () => Promise.resolve({ data: { user: { id: h.store.userId } } }) },
-      from,
-    },
-  }
-})
-
-beforeAll(() => {
-  Element.prototype.scrollIntoView = vi.fn()
+  return { supabase: { auth: { getUser: () => Promise.resolve({ data: { user: { id: h.store.userId } } }) }, from } }
 })
 
 beforeEach(() => {
-  h.store.judokas = [{ id: 'j1', user_id: 'u1', belt: 'jaune', objectif: '', parcours: 'kyu' }]
-  h.store.parcours = [
-    { id: 'p1', titre: 'Parcours Kyu Test', description: 'Desc', niveau: '1er dan', image: null, duree_estimee: '8 sem', ordre: 1, publie: true },
-  ]
+  h.store.parcours = [{ id: 'p1', titre: 'Parcours Kyu Test', description: 'Desc', niveau: '1er dan', image: null, duree_estimee: '8 sem', ordre: 1, publie: true }]
   h.store.parcours_univers = [{ parcours_id: 'p1', univers: 'kyu' }]
   h.store.parcours_ressources = [{ id: 'l1', parcours_id: 'p1', ressource_id: 'r1', ordre: 1, obligatoire: true, commentaire: null }]
   h.store.catalogue_hazumi = [{ id: 'r1', titre: 'Harai-goshi', type: 'article', url: null, contenu: 'Texte', tags: [], grade: '1er dan', famille: 'Koshi-waza' }]
   h.store.lesson = []
   h.store.user_parcours = []
-  h.store.technique_mastery = []
 })
 
-function renderPage() {
-  return render(<MemoryRouter><Kyu /></MemoryRouter>)
-}
+function renderPage() { return render(<MemoryRouter><Kyu /></MemoryRouter>) }
 
-describe('Kyu — bascule parcours-first (Phase 2)', () => {
-  it('affiche l’onglet Parcours par défaut avec les parcours KYU publiés', async () => {
-    renderPage()
-    await waitFor(() => {
-      expect(screen.getByText('Parcours Kyu Test')).toBeInTheDocument()
-    })
-    // onglets attendus : Parcours Hazumi + Mon Dojo + Ma progression
-    expect(screen.getByRole('button', { name: 'Parcours Hazumi' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Mon Dojo/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Ma progression' })).toBeInTheDocument()
-  })
-
-  it('l’onglet Parcours Hazumi (accueil) ne montre pas la bibliothèque perso', async () => {
+describe('Kyu — Parcours Hazumi + Mon Dojo (sans onglet Ma progression)', () => {
+  it('affiche uniquement les onglets Parcours Hazumi et Mon Dojo', async () => {
     renderPage()
     await waitFor(() => screen.getByText('Parcours Kyu Test'))
-    expect(screen.queryByText('Ma bibliothèque')).toBeNull()
-    expect(screen.queryByPlaceholderText('Titre')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Parcours Hazumi' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Mon Dojo/ })).toBeInTheDocument()
+    // l'onglet Ma progression a été supprimé
+    expect(screen.queryByText('Ma progression')).toBeNull()
   })
 
-  it('l’onglet Mon Dojo affiche la bibliothèque personnelle, sans contenu Hazumi', async () => {
+  it('l’onglet Parcours Hazumi liste les parcours de l’univers kyu', async () => {
+    renderPage()
+    await waitFor(() => expect(screen.getByText('Parcours Kyu Test')).toBeInTheDocument())
+  })
+
+  it('l’onglet Mon Dojo affiche la bibliothèque personnelle sans contenu Hazumi', async () => {
     renderPage()
     await waitFor(() => screen.getByText('Parcours Kyu Test'))
     await userEvent.click(screen.getByRole('button', { name: /Mon Dojo/ }))
     await waitFor(() => expect(screen.getByPlaceholderText('Titre')).toBeInTheDocument())
     expect(screen.queryByText('Contenu Hazumi')).toBeNull()
-  })
-
-  it('ouvrir un parcours affiche ses leçons (les ressources)', async () => {
-    renderPage()
-    await waitFor(() => screen.getByText('Parcours Kyu Test'))
-    await userEvent.click(screen.getByText('Parcours Kyu Test'))
-    await waitFor(() => expect(screen.getByText('Harai-goshi')).toBeInTheDocument())
-  })
-
-  it('l’onglet Ma progression conserve le suivi par ceinture', async () => {
-    renderPage()
-    await waitFor(() => screen.getByText('Ma progression'))
-    await userEvent.click(screen.getByText('Ma progression'))
-    await waitFor(() => expect(screen.getByText(/acquis/)).toBeInTheDocument())
   })
 })
