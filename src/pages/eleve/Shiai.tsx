@@ -1,12 +1,12 @@
-import PersonalLibrary from '../../components/PersonalLibrary'
+import Parcours from './Parcours'
 
 export default function Shiai() {
   return (
-    <PersonalLibrary
-      parcours="shiai"
+    <Parcours
+      univers="shiai"
       titre="Shiai"
-      icone="試合"
-      description="Mes vidéos de judo — techniques, combats, conseils"
+      icone="🥊"
+      intro="Les parcours orientés compétition. Choisis un parcours et progresse leçon après leçon."
     />
   )
 }

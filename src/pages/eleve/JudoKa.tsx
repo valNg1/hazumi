@@ -1,12 +1,12 @@
-import PersonalLibrary from '../../components/PersonalLibrary'
+import Parcours from './Parcours'
 
 export default function JudoKa() {
   return (
-    <PersonalLibrary
-      parcours="judo-ka"
+    <Parcours
+      univers="judo-ka"
       titre="Judo-Ka"
       icone="🎌"
-      description="Culture, histoire et philosophie du judo"
+      intro="Culture, histoire et philosophie du judo, en parcours."
     />
   )
 }
