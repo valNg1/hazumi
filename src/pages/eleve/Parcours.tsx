@@ -70,6 +70,7 @@ export default function Parcours({
   const [ressources, setRessources] = useState<Ressource[]>([])
   const [completedIds, setCompletedIds] = useState<string[]>([])
   const [reading, setReading] = useState<Ressource | null>(null)
+  const [browsingResources, setBrowsingResources] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -148,6 +149,7 @@ export default function Parcours({
       .filter((r): r is Ressource => r !== null)
 
     setRessources(merged)
+    setBrowsingResources(false)
     setSelected(p)
 
     const completed = await ensureUserParcours(p.id)
@@ -276,36 +278,39 @@ export default function Parcours({
     return (
       <div className="max-w-3xl mx-auto">
         <button
-          onClick={() => { setSelected(null); setReading(null) }}
+          onClick={() => { if (browsingResources) { setBrowsingResources(false) } else { setSelected(null); setReading(null) } }}
           className="text-xs text-[#666666] hover:text-[#0A0A0A] transition-colors mb-4 flex items-center gap-1"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Tous les parcours
+          {browsingResources ? 'Retour au parcours' : 'Tous les parcours'}
         </button>
 
         {isPremierDan ? (
-          <>
-            <PremierDanSections progress={prog} onCommencer={reprendre} />
-
-            <section id="ressources" className="mt-8">
-              <h2 className="text-lg font-bold text-[#0A0A0A] mb-3">Ressources du parcours</h2>
+          browsingResources ? (
+            <section>
+              <h2 className="text-lg font-bold text-[#0A0A0A] mb-1">Ressources du parcours</h2>
+              <p className="text-sm text-[#666666] mb-4">Toutes les briques pédagogiques de ce parcours. Choisis une leçon à étudier.</p>
               <div className="space-y-2">{ressources.map(renderRessourceRow)}</div>
             </section>
+          ) : (
+            <>
+              <PremierDanSections progress={prog} onCommencer={reprendre} onBrowseResources={() => setBrowsingResources(true)} />
 
-            <section id="commencer" className="mt-8 bg-white rounded-xl border border-[#E5E5E5] p-6 text-center">
-              <h2 className="text-lg font-bold text-[#0A0A0A] mb-1">Prêt à démarrer ?</h2>
-              <p className="text-sm text-[#666666] mb-4">Lancez votre progression et avancez fiche après fiche, à votre rythme.</p>
-              <button
-                onClick={reprendre}
-                disabled={allDone}
-                className="bg-[#C41230] hover:bg-[#9B0E25] disabled:bg-[#CCCCCC] text-white text-xs uppercase tracking-widest px-6 py-3 rounded-lg transition-colors font-semibold"
-              >
-                {allDone ? 'Parcours terminé' : prog.done > 0 ? '🥋 Reprendre le parcours' : '🥋 Commencer le parcours'}
-              </button>
-            </section>
-          </>
+              <section id="commencer" className="mt-8 bg-white rounded-xl border border-[#E5E5E5] p-6 text-center">
+                <h2 className="text-lg font-bold text-[#0A0A0A] mb-1">Prêt à démarrer ?</h2>
+                <p className="text-sm text-[#666666] mb-4">Lancez votre progression et avancez fiche après fiche, à votre rythme.</p>
+                <button
+                  onClick={reprendre}
+                  disabled={allDone}
+                  className="bg-[#C41230] hover:bg-[#9B0E25] disabled:bg-[#CCCCCC] text-white text-xs uppercase tracking-widest px-6 py-3 rounded-lg transition-colors font-semibold"
+                >
+                  {allDone ? 'Parcours terminé' : prog.done > 0 ? '🥋 Reprendre le parcours' : '🥋 Commencer le parcours'}
+                </button>
+              </section>
+            </>
+          )
         ) : (
           <>
             <div className="bg-white rounded-xl border border-[#E5E5E5] p-5 mb-5">

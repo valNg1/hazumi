@@ -157,7 +157,7 @@ describe('Parcours "Préparer le 1er Dan" — page d\'accueil enrichie', () => {
     const result = renderPage()
     await waitFor(() => screen.getByText(PREMIER))
     await userEvent.click(screen.getByText(PREMIER))
-    await waitFor(() => screen.getByText('Harai-goshi'))
+    await waitFor(() => screen.getByText(/marque l'entrée dans la maîtrise des fondamentaux/i))
     return result
   }
 
@@ -179,18 +179,22 @@ describe('Parcours "Préparer le 1er Dan" — page d\'accueil enrichie', () => {
     expect(within(uv).getAllByRole('button', { name: /découvrir l'uv/i })).toHaveLength(4)
   })
 
-  it('affiche la checklist jury et une timeline dont Quiz final n’est pas cliquable', async () => {
+  it('timeline présente ; le bloc "Ce que le jury attend" n’est plus sur le landing', async () => {
     await openPremierDan()
-    expect(screen.getByText('Sécurité')).toBeInTheDocument()
     expect(screen.getByText('Quiz final')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /quiz final/i })).toBeNull()
+    // le jury a été déplacé dans la leçon
+    expect(screen.queryByText('Ce que le jury attend')).toBeNull()
   })
 
-  it('liste les ressources seedees du parcours avec un bouton Lire', async () => {
+  it('masque les ressources sur le landing ; "Parcourir les ressources" ouvre la page dédiée', async () => {
     await openPremierDan()
-    expect(screen.getByText('Harai-goshi')).toBeInTheDocument()
+    // masquées par défaut (clarté du landing)
+    expect(screen.queryByText('Harai-goshi')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: /parcourir les ressources/i }))
+    await waitFor(() => expect(screen.getByText('Harai-goshi')).toBeInTheDocument())
     expect(screen.getByText('O-soto-gari')).toBeInTheDocument()
-    expect(screen.getAllByText('Lire').length).toBeGreaterThan(0)
+    expect(screen.getByText('Ressources du parcours')).toBeInTheDocument()
   })
 
   it('ne mentionne pas "FFJ" dans le rendu affiche', async () => {

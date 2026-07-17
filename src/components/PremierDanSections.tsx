@@ -4,13 +4,13 @@ import {
   PREMIER_DAN_UVS,
   PREMIER_DAN_VOIES,
   PREMIER_DAN_EXAMEN,
-  PREMIER_DAN_JURY,
   PREMIER_DAN_TIMELINE,
 } from '../lib/premierDanContent'
 
 interface Props {
   progress: { percent: number; done: number; total: number; termine: boolean }
   onCommencer: () => void
+  onBrowseResources: () => void
 }
 
 function scrollToAnchor(anchor?: string) {
@@ -22,7 +22,7 @@ function scrollToAnchor(anchor?: string) {
   document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-export default function PremierDanSections({ progress, onCommencer }: Props) {
+export default function PremierDanSections({ progress, onCommencer, onBrowseResources }: Props) {
   const [openUV, setOpenUV] = useState<string | null>(null)
   const started = progress.done > 0
   const primaryLabel = started ? '▶ Reprendre le parcours' : PREMIER_DAN_HERO.ctaPrimary
@@ -57,7 +57,7 @@ export default function PremierDanSections({ progress, onCommencer }: Props) {
             {primaryLabel}
           </button>
           <button
-            onClick={() => scrollToAnchor('ressources')}
+            onClick={onBrowseResources}
             className="border border-white/20 hover:border-white/40 text-white text-xs uppercase tracking-widest px-5 py-3 rounded-lg transition-colors"
           >
             {PREMIER_DAN_HERO.ctaSecondary}
@@ -131,28 +131,7 @@ export default function PremierDanSections({ progress, onCommencer }: Props) {
         </div>
       </section>
 
-      {/* ── SECTION 4 — CE QUE LE JURY ATTEND ────────────────────────────── */}
-      <section>
-        <h2 className="text-lg font-bold text-[#0A0A0A] mb-3">Ce que le jury attend</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {PREMIER_DAN_JURY.map((j) => (
-            <div key={j.label} className="bg-white rounded-xl border border-[#E5E5E5] p-4 flex gap-3">
-              <span className="text-xl flex-shrink-0">{j.icone}</span>
-              <div>
-                <h3 className="text-sm font-semibold text-[#0A0A0A] flex items-center gap-1.5">
-                  <svg className="w-3.5 h-3.5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {j.label}
-                </h3>
-                <p className="text-xs text-[#666666] leading-relaxed mt-1">{j.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── SECTION 5 — LE PARCOURS HAZUMI (timeline) ────────────────────── */}
+      {/* ── SECTION — LE PARCOURS HAZUMI (timeline) ──────────────────────── */}
       <section>
         <h2 className="text-lg font-bold text-[#0A0A0A] mb-3">Le parcours Hazumi</h2>
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
