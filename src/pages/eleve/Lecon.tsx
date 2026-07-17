@@ -203,21 +203,29 @@ export default function Lecon() {
               <p className="text-xs text-[#999999] italic">Aucun chapitre pour l'instant.</p>
             ) : (
               <div className="space-y-1">
-                {chapters.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => setStartSeconds(c.timestamp_seconds)}
-                    className="w-full text-left flex items-start gap-3 p-2 rounded-lg hover:bg-[#FAFAFA] transition-colors"
-                  >
-                    <span className="flex-shrink-0 text-xs font-semibold text-[#C41230] bg-[#C41230]/5 rounded px-2 py-0.5 tabular-nums">
-                      {formatTimestamp(c.timestamp_seconds)}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-sm font-medium text-[#0A0A0A]">{c.titre}</span>
-                      {c.description && <span className="block text-xs text-[#999999]">{c.description}</span>}
-                    </span>
-                  </button>
-                ))}
+                {chapters.map((c) => {
+                  const active = startSeconds === c.timestamp_seconds
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => setStartSeconds(c.timestamp_seconds)}
+                      aria-current={active ? 'true' : undefined}
+                      className={`w-full text-left flex items-start gap-3 p-2 rounded-lg transition-colors ${
+                        active ? 'bg-[#C41230]/5 ring-1 ring-[#C41230]/20' : 'hover:bg-[#FAFAFA]'
+                      }`}
+                    >
+                      <span className={`flex-shrink-0 text-xs font-semibold rounded px-2 py-0.5 tabular-nums ${
+                        active ? 'bg-[#C41230] text-white' : 'text-[#C41230] bg-[#C41230]/5'
+                      }`}>
+                        {formatTimestamp(c.timestamp_seconds)}
+                      </span>
+                      <span className="min-w-0">
+                        <span className={`block text-sm font-medium ${active ? 'text-[#C41230]' : 'text-[#0A0A0A]'}`}>{c.titre}</span>
+                        {c.description && <span className="block text-xs text-[#999999]">{c.description}</span>}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
             )}
           </div>

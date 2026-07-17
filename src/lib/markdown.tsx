@@ -71,7 +71,7 @@ export function renderMarkdown(markdown: string): ReactNode {
       const level = heading[1].length
       const content = parseInline(heading[2], `h${key}`)
       const cls = level === 1 ? 'text-xl font-bold text-[#0A0A0A] mt-4 mb-2'
-        : level === 2 ? 'text-lg font-bold text-[#0A0A0A] mt-4 mb-2'
+        : level === 2 ? 'text-base font-bold text-[#0A0A0A] mt-5 mb-2 pl-3 border-l-[3px] border-[#C41230]'
         : 'text-base font-semibold text-[#0A0A0A] mt-3 mb-1'
       if (level === 1) blocks.push(<h1 key={key++} className={cls}>{content}</h1>)
       else if (level === 2) blocks.push(<h2 key={key++} className={cls}>{content}</h2>)

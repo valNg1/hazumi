@@ -135,6 +135,15 @@ describe('Lecon (page générique)', () => {
     expect(after).toContain('autoplay=1')
   })
 
+  it('met en évidence le chapitre actif après le clic (aria-current)', async () => {
+    renderLecon()
+    await waitFor(() => screen.getByText('Kuzushi'))
+    const chapterBtn = screen.getByText('Kuzushi').closest('button') as HTMLButtonElement
+    expect(chapterBtn.getAttribute('aria-current')).toBeNull()
+    await userEvent.click(screen.getByText('Kuzushi'))
+    expect(chapterBtn.getAttribute('aria-current')).toBe('true')
+  })
+
   it('corrige le quiz et affiche le score', async () => {
     renderLecon()
     await waitFor(() => screen.getByText(/Direction du kuzushi/))
