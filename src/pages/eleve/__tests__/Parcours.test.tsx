@@ -1,8 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import Parcours from '../Parcours'
+
+function LocationSearch() {
+  const loc = useLocation()
+  return <div data-testid="loc-search">{loc.search}</div>
+}
 
 const h = vi.hoisted(() => ({
   store: {
@@ -236,5 +241,21 @@ describe('Parcours — filtre par univers + bouton Étudier', () => {
     const etudier = screen.getByText('Étudier')
     expect(etudier.closest('a')?.getAttribute('href')).toBe('/eleve/lecon/r1')
     expect(screen.getByText('Lire')).toBeInTheDocument() // r2 n'a pas de leçon
+  })
+})
+
+describe('Parcours — URL adressable (?p=)', () => {
+  beforeEach(() => seed('Test Parcours'))
+
+  it('ouvrir un parcours reflète son id dans l’URL (?p=)', async () => {
+    render(<MemoryRouter><Parcours /><LocationSearch /></MemoryRouter>)
+    await waitFor(() => screen.getByText('Test Parcours'))
+    await userEvent.click(screen.getByText('Test Parcours'))
+    await waitFor(() => expect(screen.getByTestId('loc-search').textContent).toContain('p=p1'))
+  })
+
+  it('une URL ?p=<id> ouvre directement le parcours', async () => {
+    render(<MemoryRouter initialEntries={['/eleve/kyu?p=p1']}><Parcours /></MemoryRouter>)
+    await waitFor(() => expect(screen.getByText('Harai-goshi')).toBeInTheDocument())
   })
 })

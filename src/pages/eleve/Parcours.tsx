@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { computeProgress, nextRessourceId, toggleCompleted, type ParcoursRessourceLink } from '../../lib/parcoursProgress'
 import PremierDanSections from '../../components/PremierDanSections'
@@ -71,6 +71,8 @@ export default function Parcours({
   const [completedIds, setCompletedIds] = useState<string[]>([])
   const [reading, setReading] = useState<Ressource | null>(null)
   const [browsingResources, setBrowsingResources] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const loadedRef = useRef<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -84,6 +86,32 @@ export default function Parcours({
     }
     load()
   }, [univers])
+
+  // Synchronisation URL <-> parcours ouvert : ?p=<id> (et &vue=ressources).
+  // Permet l'acces direct, les favoris, le partage et le bouton retour.
+  useEffect(() => {
+    if (!judokaId) return
+    const pid = searchParams.get('p')
+    if (!pid) {
+      loadedRef.current = null
+      setSelected(null)
+      setReading(null)
+      setBrowsingResources(false)
+      return
+    }
+    setBrowsingResources(searchParams.get('vue') === 'ressources')
+    if (loadedRef.current !== pid) {
+      loadedRef.current = pid
+      openParcoursById(pid)
+    }
+  }, [searchParams, judokaId])
+
+  async function openParcoursById(pid: string) {
+    const inList = list.find((p) => p.id === pid)
+    if (inList) { await openParcours(inList); return }
+    const { data } = await supabase.from('parcours').select('*').eq('id', pid).maybeSingle()
+    if (data) await openParcours(data as ParcoursRow)
+  }
 
   async function loadList(jId: string) {
     // Filtre par univers (vue SHIAI/KYU/JUDO-KA) le cas echeant.
@@ -149,7 +177,6 @@ export default function Parcours({
       .filter((r): r is Ressource => r !== null)
 
     setRessources(merged)
-    setBrowsingResources(false)
     setSelected(p)
 
     const completed = await ensureUserParcours(p.id)
@@ -278,7 +305,7 @@ export default function Parcours({
     return (
       <div className="max-w-3xl mx-auto">
         <button
-          onClick={() => { if (browsingResources) { setBrowsingResources(false) } else { setSelected(null); setReading(null) } }}
+          onClick={() => { if (browsingResources && selected) { setSearchParams({ p: selected.id }) } else { setSearchParams({}) } }}
           className="text-xs text-[#666666] hover:text-[#0A0A0A] transition-colors mb-4 flex items-center gap-1"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -296,7 +323,7 @@ export default function Parcours({
             </section>
           ) : (
             <>
-              <PremierDanSections progress={prog} onCommencer={reprendre} onBrowseResources={() => setBrowsingResources(true)} />
+              <PremierDanSections progress={prog} onCommencer={reprendre} onBrowseResources={() => setSearchParams({ p: selected.id, vue: 'ressources' })} />
 
               <section id="commencer" className="mt-8 bg-white rounded-xl border border-[#E5E5E5] p-6 text-center">
                 <h2 className="text-lg font-bold text-[#0A0A0A] mb-1">Prêt à démarrer ?</h2>
@@ -408,7 +435,7 @@ export default function Parcours({
             return (
               <button
                 key={p.id}
-                onClick={() => openParcours(p)}
+                onClick={() => setSearchParams({ p: p.id })}
                 className="text-left bg-white rounded-xl border border-[#E5E5E5] overflow-hidden hover:border-[#CCCCCC] hover:shadow-sm transition-all flex flex-col"
               >
                 <div className="aspect-[16/9] bg-gradient-to-br from-[#0A0A0A] to-[#3A0A12] flex items-center justify-center">
