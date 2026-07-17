@@ -4,6 +4,9 @@ import { supabase } from '../../lib/supabase'
 import { youtubeEmbedUrl, formatTimestamp } from '../../lib/youtube'
 import { renderMarkdown } from '../../lib/markdown'
 import { gradeQuiz, type QuizQuestion } from '../../lib/lessonQuiz'
+import { getPremiumContent, QUIZ_NIVEAUX } from '../../lib/lessonPremium'
+import LessonMeta from '../../components/lesson/LessonMeta'
+import PremiumLessonContentView from '../../components/lesson/PremiumLessonContent'
 
 const NOTES_DEBOUNCE_MS = 800
 
@@ -157,6 +160,7 @@ export default function Lecon() {
 
   const graded = submitted ? gradeQuiz(quiz, answers) : null
   const embedUrl = lesson.youtube_url ? youtubeEmbedUrl(lesson.youtube_url, startSeconds) : null
+  const premium = getPremiumContent(ressource.id)
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -182,6 +186,7 @@ export default function Lecon() {
             {statut === 'etudiee' ? '✓ Leçon étudiée' : 'Marquer comme étudiée'}
           </button>
         </div>
+        {premium && <LessonMeta meta={premium.meta} />}
       </div>
 
       {/* 2. VIDEO + CHAPITRES */}
@@ -232,13 +237,15 @@ export default function Lecon() {
         </div>
       )}
 
-      {/* 3. FICHE HAZUMI */}
-      {lesson.fiche_hazumi && (
+      {/* 3. FICHE HAZUMI — premium (structuree) ou markdown generique */}
+      {premium ? (
+        <PremiumLessonContentView content={premium} />
+      ) : lesson.fiche_hazumi ? (
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
           <h2 className="text-lg font-bold text-[#0A0A0A] mb-2">Fiche Hazumi</h2>
           {renderMarkdown(lesson.fiche_hazumi)}
         </div>
-      )}
+      ) : null}
 
       {/* 4. NOTES PERSONNELLES */}
       <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
@@ -270,8 +277,12 @@ export default function Lecon() {
               const sel = answers[q.id] ?? []
               const correctSet = new Set(q.bonne_reponse)
               const isMulti = q.type === 'choix_multiple'
+              const niveau = quiz.length >= 15 ? QUIZ_NIVEAUX.find((n) => n.start === qi) : undefined
               return (
                 <div key={q.id}>
+                  {niveau && (
+                    <p className={`text-[11px] font-bold uppercase tracking-widest text-[#C41230] mb-2 ${qi > 0 ? 'pt-4 border-t border-[#F0F0F0]' : ''}`}>{niveau.label}</p>
+                  )}
                   <p className="text-sm font-medium text-[#0A0A0A] mb-2">{qi + 1}. {q.question}</p>
                   <div className="space-y-1.5">
                     {q.reponses.map((opt, idx) => {

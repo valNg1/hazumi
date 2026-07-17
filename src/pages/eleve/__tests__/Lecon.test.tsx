@@ -219,3 +219,52 @@ describe('Lecon (page générique)', () => {
     await waitFor(() => expect(screen.getByText(/pas encore disponible/i)).toBeInTheDocument())
   })
 })
+
+describe('Lecon premium (Nage-no-kata)', () => {
+  const NAGE = '04375145-35c7-4569-9409-6df8358caa13'
+  beforeEach(() => {
+    h.store.catalogue_hazumi = [{ id: NAGE, titre: 'Nage-no-kata', famille: 'Kata', grade: '1er dan', type: 'video' }]
+    h.store.lesson = [{ id: 'L1', ressource_id: NAGE, youtube_url: 'https://youtu.be/bkhBZzE2HpM', duree_estimee: null, objectif: null, fiche_hazumi: '## Objectif', published: true }]
+    h.store.lesson_chapters = [{ id: 'c1', lesson_id: 'L1', ordre: 1, titre: 'Introduction au kata', timestamp_seconds: 0, description: null }]
+    h.store.lesson_quiz = Array.from({ length: 15 }, (_, i) => ({
+      id: 'q' + i, lesson_id: 'L1', ordre: i + 1, question: `Question ${i + 1} ?`, type: 'choix_unique',
+      reponses: ['A', 'B', 'C', 'D'], bonne_reponse: [0], explication: 'exp',
+    }))
+    h.store.lesson_notes = []; h.store.lesson_progress = []; h.store.lesson_quiz_results = []
+  })
+  function renderPremium() {
+    return render(
+      <MemoryRouter initialEntries={[`/eleve/lecon/${NAGE}`]}>
+        <Routes><Route path="/eleve/lecon/:ressourceId" element={<Lecon />} /></Routes>
+      </MemoryRouter>
+    )
+  }
+
+  it('affiche le meta premium (temps de lecture, difficulté)', async () => {
+    renderPremium()
+    await waitFor(() => screen.getByText('Nage-no-kata'))
+    expect(screen.getByText('Temps de lecture')).toBeInTheDocument()
+    expect(screen.getByText('15 minutes')).toBeInTheDocument()
+    expect(screen.getByText('Difficulté')).toBeInTheDocument()
+  })
+
+  it('affiche la fiche premium : principes, séries, timeline, sections à venir', async () => {
+    renderPremium()
+    await waitFor(() => screen.getByText('Nage-no-kata'))
+    expect(screen.getByText('Les principes du judo')).toBeInTheDocument()
+    expect(screen.getByText('Adaptation (Ju)')).toBeInTheDocument()
+    expect(screen.getByText('Uki-otoshi')).toBeInTheDocument() // 1re série Te waza
+    expect(screen.getByText('1906')).toBeInTheDocument() // timeline
+    expect(screen.getByText("Le regard de l'examinateur")).toBeInTheDocument()
+    expect(screen.getByText('Conseils Hazumi')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'À retenir' })).toBeInTheDocument()
+  })
+
+  it('quiz premium : affiche les 3 niveaux (15 questions)', async () => {
+    renderPremium()
+    await waitFor(() => screen.getByText('Nage-no-kata'))
+    expect(screen.getByText(/Niveau 1 · Comprendre/)).toBeInTheDocument()
+    expect(screen.getByText(/Niveau 2 · Observer/)).toBeInTheDocument()
+    expect(screen.getByText(/Niveau 3 · Analyser/)).toBeInTheDocument()
+  })
+})
