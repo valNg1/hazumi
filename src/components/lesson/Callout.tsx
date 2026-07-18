@@ -12,9 +12,11 @@ export default function Callout({ icone, titre, items, emptyLabel = 'Contenu à 
   const empty = items.filter((i) => i.trim()).length === 0
   return (
     <div className={`rounded-xl border ${border} ${bg} p-5`}>
-      <h3 className="text-base font-bold text-[#0A0A0A] flex items-center gap-2 mb-3">
-        <span>{icone}</span> {titre}
-      </h3>
+      {titre && (
+        <h3 className="text-base font-bold text-[#0A0A0A] flex items-center gap-2 mb-3">
+          <span>{icone}</span> {titre}
+        </h3>
+      )}
       {empty ? (
         <p className="text-sm text-[#999999] italic">{emptyLabel}</p>
       ) : (

@@ -4,22 +4,12 @@ import {
   PREMIER_DAN_UVS,
   PREMIER_DAN_VOIES,
   PREMIER_DAN_EXAMEN,
-  PREMIER_DAN_TIMELINE,
 } from '../lib/premierDanContent'
 
 interface Props {
   progress: { percent: number; done: number; total: number; termine: boolean }
   onCommencer: () => void
   onBrowseResources: () => void
-}
-
-function scrollToAnchor(anchor?: string) {
-  if (!anchor) return
-  if (anchor === 'top') {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-    return
-  }
-  document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 export default function PremierDanSections({ progress, onCommencer, onBrowseResources }: Props) {
@@ -131,53 +121,6 @@ export default function PremierDanSections({ progress, onCommencer, onBrowseReso
         </div>
       </section>
 
-      {/* ── SECTION — LE PARCOURS HAZUMI (timeline) ──────────────────────── */}
-      <section>
-        <h2 className="text-lg font-bold text-[#0A0A0A] mb-3">Le parcours Hazumi</h2>
-        <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
-          <ol className="space-y-1">
-            {PREMIER_DAN_TIMELINE.map((step, i) => {
-              const last = i === PREMIER_DAN_TIMELINE.length - 1
-              const dot = (
-                <span
-                  className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
-                    step.aVenir ? 'bg-[#F0F0F0] text-[#BBBBBB]' : 'bg-[#C41230] text-white'
-                  }`}
-                >
-                  {i + 1}
-                </span>
-              )
-              const body = (
-                <span className="flex items-center gap-2 flex-wrap">
-                  <span className={`text-sm font-medium ${step.aVenir ? 'text-[#BBBBBB]' : 'text-[#0A0A0A]'}`}>{step.label}</span>
-                  {step.note && (
-                    <span className={`text-[10px] ${step.aVenir ? 'text-[#BBBBBB]' : 'text-[#999999]'}`}>({step.note})</span>
-                  )}
-                </span>
-              )
-              return (
-                <li key={step.label} className="flex items-stretch gap-3">
-                  <div className="flex flex-col items-center">
-                    {step.clickable ? (
-                      <button onClick={() => scrollToAnchor(step.anchor)} className="hover:opacity-80 transition-opacity">{dot}</button>
-                    ) : (
-                      dot
-                    )}
-                    {!last && <span className="w-px flex-1 bg-[#E5E5E5] my-1" />}
-                  </div>
-                  <div className="pb-4 pt-0.5">
-                    {step.clickable ? (
-                      <button onClick={() => scrollToAnchor(step.anchor)} className="text-left hover:opacity-80 transition-opacity">{body}</button>
-                    ) : (
-                      <div className="cursor-default select-none" title="À venir">{body}</div>
-                    )}
-                  </div>
-                </li>
-              )
-            })}
-          </ol>
-        </div>
-      </section>
     </div>
   )
 }

@@ -184,12 +184,15 @@ describe('Parcours "Préparer le 1er Dan" — page d\'accueil enrichie', () => {
     expect(within(uv).getAllByRole('button', { name: /découvrir l'uv/i })).toHaveLength(4)
   })
 
-  it('timeline présente ; le bloc "Ce que le jury attend" n’est plus sur le landing', async () => {
+  it('landing épuré : ni timeline "Le parcours Hazumi", ni bloc jury (déplacés)', async () => {
     await openPremierDan()
-    expect(screen.getByText('Quiz final')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /quiz final/i })).toBeNull()
+    // la timeline est supprimée (redondante avec le bouton principal)
+    expect(screen.queryByText('Le parcours Hazumi')).toBeNull()
+    expect(screen.queryByText('Quiz final')).toBeNull()
     // le jury a été déplacé dans la leçon
     expect(screen.queryByText('Ce que le jury attend')).toBeNull()
+    // le bouton principal reste l'accès au parcours
+    expect(screen.getAllByRole('button', { name: /commencer le parcours|reprendre le parcours/i }).length).toBeGreaterThan(0)
   })
 
   it('masque les ressources sur le landing ; "Parcourir les ressources" ouvre la page dédiée', async () => {

@@ -223,7 +223,11 @@ describe('Lecon (page générique)', () => {
 describe('Lecon premium (Nage-no-kata)', () => {
   const NAGE = '04375145-35c7-4569-9409-6df8358caa13'
   beforeEach(() => {
-    h.store.catalogue_hazumi = [{ id: NAGE, titre: 'Nage-no-kata', famille: 'Kata', grade: '1er dan', type: 'video' }]
+    h.store.catalogue_hazumi = [
+      { id: NAGE, titre: 'Nage-no-kata', famille: 'Kata', grade: '1er dan', type: 'video' },
+      // ressource Hazumi existante pour une technique citée -> action "Comprendre cette technique"
+      { id: 'harai', titre: 'Harai-goshi', famille: 'Koshi-waza', grade: '1er dan', type: 'article', contenu: 'Fiche Harai-goshi.', tags: ['hanche'] },
+    ]
     h.store.lesson = [{ id: 'L1', ressource_id: NAGE, youtube_url: 'https://youtu.be/bkhBZzE2HpM', duree_estimee: null, objectif: null, fiche_hazumi: '## Objectif', published: true }]
     h.store.lesson_chapters = [{ id: 'c1', lesson_id: 'L1', ordre: 1, titre: 'Introduction au kata', timestamp_seconds: 0, description: null }]
     h.store.lesson_quiz = Array.from({ length: 15 }, (_, i) => ({
@@ -248,16 +252,43 @@ describe('Lecon premium (Nage-no-kata)', () => {
     expect(screen.getByText('Difficulté')).toBeInTheDocument()
   })
 
-  it('affiche la fiche premium : principes, séries, timeline, sections à venir', async () => {
+  it('affiche les sections numérotées de la fiche premium', async () => {
     renderPremium()
     await waitFor(() => screen.getByText('Nage-no-kata'))
-    expect(screen.getByText('Les principes du judo')).toBeInTheDocument()
-    expect(screen.getByText('Adaptation (Ju)')).toBeInTheDocument()
-    expect(screen.getByText('Uki-otoshi')).toBeInTheDocument() // 1re série Te waza
-    expect(screen.getByText('1906')).toBeInTheDocument() // timeline
-    expect(screen.getByText("Le regard de l'examinateur")).toBeInTheDocument()
-    expect(screen.getByText('Conseils Hazumi')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'À retenir' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Pourquoi ce kata/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Ce que le jury attend/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Les repères sur le tatami/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Les trois séries du premier dan/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Le regard de l'examinateur/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Le conseil de l'expert/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /À retenir/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Quiz/ })).toBeInTheDocument()
+  })
+
+  it('objectif : liste des capacités visées', async () => {
+    renderPremium()
+    await waitFor(() => screen.getByText('Nage-no-kata'))
+    expect(screen.getByText(/tu seras capable de/i)).toBeInTheDocument()
+    expect(screen.getByText('comprendre la logique du Nage-no-kata')).toBeInTheDocument()
+  })
+
+  it('principes illustrés par une technique + 3 séries seulement', async () => {
+    renderPremium()
+    await waitFor(() => screen.getByText('Nage-no-kata'))
+    expect(screen.getByText(/Ju — adaptation/)).toBeInTheDocument()
+    expect(screen.getAllByText('Uki-otoshi').length).toBeGreaterThan(0)
+    expect(screen.getByText(/1re série — Te-waza/)).toBeInTheDocument()
+    expect(screen.getByText(/3e série — Ashi-waza/)).toBeInTheDocument()
+    expect(screen.queryByText(/sutemi/i)).toBeNull() // pas de 4e/5e série au 1er Dan
+  })
+
+  it('"Comprendre cette technique" ouvre la ressource en modale sans quitter la leçon', async () => {
+    renderPremium()
+    await waitFor(() => screen.getByText('Nage-no-kata'))
+    const btns = screen.getAllByRole('button', { name: /Comprendre cette technique/ })
+    expect(btns).toHaveLength(1) // seule Harai-goshi a une ressource
+    await userEvent.click(btns[0])
+    await waitFor(() => expect(screen.getByText('Fiche Harai-goshi.')).toBeInTheDocument())
   })
 
   it('quiz premium : affiche les 3 niveaux (15 questions)', async () => {
