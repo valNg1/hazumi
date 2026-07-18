@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { computeProgress, nextRessourceId, toggleCompleted, type ParcoursRessourceLink } from '../../lib/parcoursProgress'
 import PremierDanSections from '../../components/PremierDanSections'
@@ -72,6 +72,7 @@ export default function Parcours({
   const [reading, setReading] = useState<Ressource | null>(null)
   const [browsingResources, setBrowsingResources] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const loadedRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -232,7 +233,10 @@ export default function Parcours({
     const orderedIds = ressources.map((r) => r.id)
     const nextId = nextRessourceId(orderedIds, completedIds)
     const target = ressources.find((r) => r.id === nextId) ?? ressources[0]
-    if (target) setReading(target)
+    if (!target) return
+    // Si l'etape a une lecon publiee, on ouvre la lecon (et non le lecteur d'article).
+    if (lessonIds.has(target.id)) { navigate(`/eleve/lecon/${target.id}`); return }
+    openRessource(target)
   }
 
   function openRessource(r: Ressource) {

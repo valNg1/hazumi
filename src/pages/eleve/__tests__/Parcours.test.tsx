@@ -9,6 +9,11 @@ function LocationSearch() {
   return <div data-testid="loc-search">{loc.search}</div>
 }
 
+function LocationPath() {
+  const loc = useLocation()
+  return <div data-testid="loc-path">{loc.pathname}</div>
+}
+
 const h = vi.hoisted(() => ({
   store: {
     userId: 'u1',
@@ -203,6 +208,17 @@ describe('Parcours "Préparer le 1er Dan" — page d\'accueil enrichie', () => {
     await waitFor(() => expect(screen.getByText('Harai-goshi')).toBeInTheDocument())
     expect(screen.getByText('O-soto-gari')).toBeInTheDocument()
     expect(screen.getByText('Ressources du parcours')).toBeInTheDocument()
+  })
+
+  it('"Commencer le parcours" ouvre la leçon publiée, pas la modale "Marquer terminé"', async () => {
+    h.store.lesson = [{ ressource_id: 'r1', published: true }]
+    render(<MemoryRouter><Parcours /><LocationPath /></MemoryRouter>)
+    await waitFor(() => screen.getByText(PREMIER))
+    await userEvent.click(screen.getByText(PREMIER))
+    await waitFor(() => screen.getByText(/marque l'entrée dans la maîtrise des fondamentaux/i))
+    await userEvent.click(screen.getAllByRole('button', { name: /commencer le parcours/i })[0])
+    await waitFor(() => expect(screen.getByTestId('loc-path').textContent).toBe('/eleve/lecon/r1'))
+    expect(screen.queryByRole('button', { name: /marquer terminé/i })).toBeNull()
   })
 
   it('ne mentionne pas "FFJ" dans le rendu affiche', async () => {

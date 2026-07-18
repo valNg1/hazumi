@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { youtubeEmbedUrl, formatTimestamp } from '../../lib/youtube'
 import { renderMarkdown } from '../../lib/markdown'
 import { gradeQuiz, type QuizQuestion } from '../../lib/lessonQuiz'
-import { getPremiumContent, techniqueLookupTitles, QUIZ_NIVEAUX } from '../../lib/lessonPremium'
+import { getPremiumContent, QUIZ_NIVEAUX, type Technique } from '../../lib/lessonPremium'
 import LessonMeta from '../../components/lesson/LessonMeta'
 import PremiumLessonContentView from '../../components/lesson/PremiumLessonContent'
 
@@ -21,7 +21,6 @@ interface Lesson {
 }
 interface Ressource { id: string; titre: string; famille: string | null; grade: string | null; type: string }
 interface Chapter { id: string; ordre: number; titre: string; timestamp_seconds: number; description: string | null }
-interface TechniqueRes { id: string; titre: string; contenu: string | null; tags: string[] | null; famille: string | null; grade: string | null }
 interface QuizRow extends QuizQuestion { ordre: number; question: string; explication: string | null }
 
 export default function Lecon() {
@@ -39,8 +38,7 @@ export default function Lecon() {
   const [submitted, setSubmitted] = useState(false)
   const [statut, setStatut] = useState<'en_cours' | 'etudiee'>('en_cours')
   const [previousScore, setPreviousScore] = useState<{ score: number; total: number } | null>(null)
-  const [techniqueRows, setTechniqueRows] = useState<TechniqueRes[]>([])
-  const [techniqueOpen, setTechniqueOpen] = useState<TechniqueRes | null>(null)
+  const [techniqueOpen, setTechniqueOpen] = useState<Technique | null>(null)
 
   const notesTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const notesLoaded = useRef(false)
@@ -75,16 +73,6 @@ export default function Lecon() {
       setChapters((chaps as Chapter[]) ?? [])
       setQuiz((qz as QuizRow[]) ?? [])
 
-      // Ressources Hazumi existantes pour les techniques citees (action
-      // "Comprendre cette technique"). Si aucune ressource : rien n'est affiche.
-      const prem = getPremiumContent(ressourceId)
-      if (prem) {
-        const { data: techs } = await supabase
-          .from('catalogue_hazumi')
-          .select('id, titre, contenu, tags, famille, grade')
-          .in('titre', techniqueLookupTitles(prem))
-        if (active) setTechniqueRows((techs as TechniqueRes[]) ?? [])
-      }
 
       // Etat utilisateur (reprise).
       const { data: noteRow } = await supabase
@@ -253,11 +241,7 @@ export default function Lecon() {
 
       {/* 3. FICHE HAZUMI — premium (structuree) ou markdown generique */}
       {premium ? (
-        <PremiumLessonContentView
-          content={premium}
-          resourceIdByTitle={Object.fromEntries(techniqueRows.map((t) => [t.titre, t.id]))}
-          onOpenTechnique={(rid) => setTechniqueOpen(techniqueRows.find((t) => t.id === rid) ?? null)}
-        />
+        <PremiumLessonContentView content={premium} onOpenTechnique={setTechniqueOpen} />
       ) : lesson.fiche_hazumi ? (
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
           <h2 className="text-lg font-bold text-[#0A0A0A] mb-2">Fiche Hazumi</h2>
@@ -362,27 +346,28 @@ export default function Lecon() {
         </div>
 
       {/* Modale "Comprendre cette technique" — sans quitter la lecon */}
-      {techniqueOpen && (
+      {techniqueOpen?.detail && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setTechniqueOpen(null)}>
           <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-[#0A0A0A] mb-2">{techniqueOpen.titre}</h2>
-            {(techniqueOpen.famille || techniqueOpen.grade) && (
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {techniqueOpen.famille && <span className="text-[9px] px-1.5 py-0.5 rounded border font-medium bg-[#F5F5F5] text-[#666666] border-[#E5E5E5]">{techniqueOpen.famille}</span>}
-                {techniqueOpen.grade && <span className="text-[9px] px-1.5 py-0.5 rounded border font-medium bg-[#F5F5F5] text-[#666666] border-[#E5E5E5]">{techniqueOpen.grade}</span>}
-              </div>
-            )}
-            <p className="text-sm text-[#333333] whitespace-pre-wrap">{techniqueOpen.contenu}</p>
-            {(techniqueOpen.tags ?? []).length > 0 && (
-              <div className="mt-4 pt-3 border-t border-[#F0F0F0]">
-                <p className="text-[10px] uppercase tracking-widest text-[#999999] mb-2">Mots-clés</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {(techniqueOpen.tags ?? []).map((t) => (
-                    <span key={t} className="text-[9px] px-1.5 py-0.5 bg-[#F5F5F5] text-[#666666] rounded border border-[#E5E5E5]">{t}</span>
-                  ))}
+            <span className="text-[10px] uppercase tracking-widest text-[#999999]">Comprendre la technique</span>
+            <h2 className="text-lg font-bold text-[#0A0A0A] mb-3">{techniqueOpen.nom}</h2>
+            <div className="space-y-3">
+              {([
+                ['Kuzushi — déséquilibre', techniqueOpen.detail.kuzushi],
+                ['Tsukuri — placement', techniqueOpen.detail.tsukuri],
+                ['Kake — projection', techniqueOpen.detail.kake],
+                ['Rôle de Uke', techniqueOpen.detail.uke],
+              ] as [string, string][]).map(([label, texte]) => (
+                <div key={label} className="rounded-lg border border-[#E5E5E5] bg-[#FAFAFA] p-3">
+                  <p className="text-[10px] uppercase tracking-widest text-[#999999] mb-1">{label}</p>
+                  <p className="text-sm text-[#333333] leading-relaxed">{texte}</p>
                 </div>
+              ))}
+              <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3">
+                <p className="text-[10px] uppercase tracking-widest text-amber-700 mb-1">⚠ Erreur fréquente</p>
+                <p className="text-sm text-[#333333] leading-relaxed">{techniqueOpen.detail.erreur}</p>
               </div>
-            )}
+            </div>
             <div className="mt-5 flex justify-end">
               <button onClick={() => setTechniqueOpen(null)} className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-4 py-2 rounded-lg transition-colors">
                 Fermer

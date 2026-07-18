@@ -282,13 +282,21 @@ describe('Lecon premium (Nage-no-kata)', () => {
     expect(screen.queryByText(/sutemi/i)).toBeNull() // pas de 4e/5e série au 1er Dan
   })
 
-  it('"Comprendre cette technique" ouvre la ressource en modale sans quitter la leçon', async () => {
+  it('"Comprendre cette technique" ouvre la décomposition en modale sans quitter la leçon', async () => {
     renderPremium()
     await waitFor(() => screen.getByText('Nage-no-kata'))
     const btns = screen.getAllByRole('button', { name: /Comprendre cette technique/ })
-    expect(btns).toHaveLength(1) // seule Harai-goshi a une ressource
+    expect(btns).toHaveLength(9) // les 9 techniques du 1er Dan sont décomposées
     await userEvent.click(btns[0])
-    await waitFor(() => expect(screen.getByText('Fiche Harai-goshi.')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/Kuzushi — déséquilibre/)).toBeInTheDocument())
+    expect(screen.getByText(/Tsukuri — placement/)).toBeInTheDocument()
+    expect(screen.getByText(/Kake — projection/)).toBeInTheDocument()
+    expect(screen.getByText('Rôle de Uke')).toBeInTheDocument()
+    expect(screen.getByText(/Erreur fréquente/)).toBeInTheDocument()
+    // On reste dans la leçon.
+    expect(screen.getByText('Nage-no-kata')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Fermer' }))
+    await waitFor(() => expect(screen.queryByText(/Kuzushi — déséquilibre/)).toBeNull())
   })
 
   it('quiz premium : affiche les 3 niveaux (15 questions)', async () => {

@@ -1,4 +1,4 @@
-import type { PremiumLessonContent } from '../../lib/lessonPremium'
+import type { PremiumLessonContent, Technique } from '../../lib/lessonPremium'
 import Timeline from './Timeline'
 import Checklist from './Checklist'
 import PrincipleCard from './PrincipleCard'
@@ -8,8 +8,7 @@ import Callout from './Callout'
 
 interface Props {
   content: PremiumLessonContent
-  resourceIdByTitle: Record<string, string>
-  onOpenTechnique: (ressourceId: string) => void
+  onOpenTechnique: (t: Technique) => void
 }
 
 function Card({ children }: { children: React.ReactNode }) {
@@ -38,7 +37,7 @@ function Bullets({ items }: { items: string[] }) {
   )
 }
 
-export default function PremiumLessonContentView({ content, resourceIdByTitle, onOpenTechnique }: Props) {
+export default function PremiumLessonContentView({ content, onOpenTechnique }: Props) {
   return (
     <div className="space-y-6">
       {/* Objectif (intro, non numerote) */}
@@ -74,12 +73,23 @@ export default function PremiumLessonContentView({ content, resourceIdByTitle, o
       {/* 3. Les repères sur le tatami */}
       <Card>
         <SectionTitle n={3}>Les repères sur le tatami</SectionTitle>
-        {content.reperes.map((g) => (
-          <div key={g.titre}>
-            <SubTitle>{g.titre}</SubTitle>
-            <Bullets items={g.items} />
-          </div>
-        ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {content.reperes.map((g) => (
+            <div key={g.titre} className="rounded-xl border border-[#E5E5E5] bg-[#FAFAFA] p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg leading-none">{g.icone}</span>
+                <h4 className="text-sm font-bold text-[#0A0A0A]">{g.titre}</h4>
+              </div>
+              <ul className="space-y-2">
+                {g.items.map((it, i) => (
+                  <li key={i} className="text-xs text-[#333333] leading-relaxed flex gap-2">
+                    <span className="text-[#C41230] flex-shrink-0">›</span><span>{it}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
       </Card>
 
       {/* 4. Les trois séries du premier dan */}
@@ -87,7 +97,7 @@ export default function PremiumLessonContentView({ content, resourceIdByTitle, o
         <SectionTitle n={4}>Les trois séries du premier dan</SectionTitle>
         <div className="grid grid-cols-1 gap-3">
           {content.series.map((s, i) => (
-            <SeriesCard key={s.nom} serie={s} index={i} resourceIdByTitle={resourceIdByTitle} onOpenTechnique={onOpenTechnique} />
+            <SeriesCard key={s.nom} serie={s} index={i} onOpenTechnique={onOpenTechnique} />
           ))}
         </div>
       </Card>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getPremiumContent, techniqueLookupTitles, NAGE_NO_KATA_RESSOURCE_ID, QUIZ_NIVEAUX } from '../lessonPremium'
+import { getPremiumContent, NAGE_NO_KATA_RESSOURCE_ID, QUIZ_NIVEAUX } from '../lessonPremium'
 
 describe('lessonPremium — Nage-no-kata', () => {
   const c = getPremiumContent(NAGE_NO_KATA_RESSOURCE_ID)!
@@ -53,11 +53,29 @@ describe('lessonPremium — Nage-no-kata', () => {
     expect(c.conseilExpert.filter((x) => x.trim())).toHaveLength(0)
   })
 
-  it('techniqueLookupTitles renvoie les 9 titres à chercher au catalogue', () => {
-    const titles = techniqueLookupTitles(c)
-    expect(titles).toHaveLength(9)
-    expect(titles).toContain('Harai-goshi')
-    expect(titles).toContain('Okuri-ashi-barai') // titre catalogue (variante barai)
+  it('les 9 techniques sont décomposées (kuzushi/tsukuri/kake/uke/erreur)', () => {
+    const techniques = c.series.flatMap((s) => s.techniques)
+    expect(techniques).toHaveLength(9)
+    techniques.forEach((t) => {
+      expect(t.detail, `détail manquant pour ${t.nom}`).toBeDefined()
+      const d = t.detail!
+      ;[d.kuzushi, d.tsukuri, d.kake, d.uke, d.erreur].forEach((champ) =>
+        expect(champ.trim().length).toBeGreaterThan(40)
+      )
+    })
+  })
+
+  it('repères sur le tatami : chaque groupe a une icône (rendu graphique)', () => {
+    c.reperes.forEach((g) => {
+      expect(g.icone.trim().length).toBeGreaterThan(0)
+      expect(g.items.length).toBeGreaterThan(0)
+    })
+  })
+
+  it('le principe de contrôle est illustré par Uki-goshi : Tori ne lâche pas la saisie', () => {
+    const controle = c.pourquoi.principes.find((p) => /contrôle/i.test(p.titre))!
+    expect(controle.technique).toBe('Uki-goshi')
+    expect(controle.texte).toMatch(/ne lâche pas/i)
   })
 
   it('quiz : 3 niveaux par tranches de 5', () => {
