@@ -353,6 +353,7 @@ export default function Lecon() {
             <h2 className="text-lg font-bold text-[#0A0A0A] mb-3">{techniqueOpen.nom}</h2>
             <div className="space-y-3">
               {([
+                ['Mise en action', techniqueOpen.detail.miseEnAction],
                 ['Kuzushi — déséquilibre', techniqueOpen.detail.kuzushi],
                 ['Tsukuri — placement', techniqueOpen.detail.tsukuri],
                 ['Kake — projection', techniqueOpen.detail.kake],

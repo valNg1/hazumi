@@ -59,10 +59,29 @@ describe('lessonPremium — Nage-no-kata', () => {
     techniques.forEach((t) => {
       expect(t.detail, `détail manquant pour ${t.nom}`).toBeDefined()
       const d = t.detail!
-      ;[d.kuzushi, d.tsukuri, d.kake, d.uke, d.erreur].forEach((champ) =>
+      ;[d.miseEnAction, d.kuzushi, d.tsukuri, d.kake, d.uke, d.erreur].forEach((champ) =>
         expect(champ.trim().length).toBeGreaterThan(40)
       )
     })
+  })
+
+  it('décomposition au niveau "chorégraphie" : déplacements et appuis nommés', () => {
+    const techniques = c.series.flatMap((s) => s.techniques)
+    techniques.forEach((t) => {
+      const d = t.detail!
+      // le bloc mise en action decrit qui attaque / qui se deplace
+      expect(d.miseEnAction, t.nom).toMatch(/Uke|Tori/)
+      // vocabulaire de deplacement (pas, appui, pivot, tsugi-ashi...)
+      const texte = [d.miseEnAction, d.kuzushi, d.tsukuri, d.kake].join(' ')
+      expect(texte, t.nom).toMatch(/pas |appui|pied|pivot|tsugi-ashi|déplace/i)
+      // niveau de detail attendu : chaque phase est developpee
+      expect(d.kuzushi.length + d.tsukuri.length + d.kake.length, t.nom).toBeGreaterThan(600)
+    })
+  })
+
+  it('le contrôle de la chute (Tori ne lâche pas) est rappelé dans le rôle de Uke', () => {
+    const uki = c.series.flatMap((s) => s.techniques).find((t) => t.nom === 'Uki-goshi')!
+    expect(uki.detail!.uke).toMatch(/ne lâche pas/i)
   })
 
   it('repères sur le tatami : chaque groupe a une icône (rendu graphique)', () => {

@@ -289,6 +289,7 @@ describe('Lecon premium (Nage-no-kata)', () => {
     expect(btns).toHaveLength(9) // les 9 techniques du 1er Dan sont décomposées
     await userEvent.click(btns[0])
     await waitFor(() => expect(screen.getByText(/Kuzushi — déséquilibre/)).toBeInTheDocument())
+    expect(screen.getByText('Mise en action')).toBeInTheDocument()
     expect(screen.getByText(/Tsukuri — placement/)).toBeInTheDocument()
     expect(screen.getByText(/Kake — projection/)).toBeInTheDocument()
     expect(screen.getByText('Rôle de Uke')).toBeInTheDocument()
