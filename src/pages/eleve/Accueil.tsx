@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts'
 import { supabase } from '../../lib/supabase'
+import { toStr } from '../../lib/training'
 import { CURRICULUM, getBeltIndex } from '../../lib/curriculum'
 import type { Belt } from '../../types'
 import type { TechniqueStatus } from '../../lib/curriculum'
@@ -77,8 +78,8 @@ function buildChartData(raw: RawData, view: ChartView): { label: string; possibl
   }
 
   return periods.map(({ label, startDate, endDate }) => {
-    const startStr = startDate.toISOString().slice(0, 10)
-    const endStr = endDate.toISOString().slice(0, 10)
+    const startStr = toStr(startDate)
+    const endStr = toStr(endDate)
     const matchInRange = (s: { date: string }) => s.date >= startStr && s.date <= endStr
     const possible = toH(seancesList.filter(matchInRange).reduce((a,s) => a + s.duree_minutes, 0))
     const realise = toH(realiseList.filter(matchInRange).reduce((a,s) => a + s.duree_minutes, 0))
@@ -146,7 +147,7 @@ export default function Accueil() {
 
       // Entraînements
       const today = new Date()
-      const todayStr = today.toISOString().slice(0, 10)
+      const todayStr = toStr(today)
 
       // Fenêtre glissante: 3 mois avant + 1 mois après
       const dateDebut = new Date(today)
@@ -154,8 +155,8 @@ export default function Accueil() {
       const dateFin = new Date(today)
       dateFin.setMonth(today.getMonth() + 1)
 
-      const dateDebutStr = dateDebut.toISOString().split('T')[0]
-      const dateFinStr = dateFin.toISOString().split('T')[0]
+      const dateDebutStr = toStr(dateDebut)
+      const dateFinStr = toStr(dateFin)
 
       type SeanceRef = { date: string; duree_minutes: number }
 
@@ -211,7 +212,7 @@ export default function Accueil() {
       setCoursNouveaux(newCount ?? 0)
 
       // Agenda à venir (compétitions + événements)
-      const todayStr2 = new Date().toISOString().slice(0, 10)
+      const todayStr2 = toStr(new Date())
 
       // Calcul semaine (lundi-dimanche)
       const today3 = new Date(todayStr2)
@@ -220,14 +221,14 @@ export default function Accueil() {
       monday.setDate(today3.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1))
       const sunday = new Date(monday)
       sunday.setDate(monday.getDate() + 6)
-      const mondayStr = monday.toISOString().slice(0, 10)
-      const sundayStr = sunday.toISOString().slice(0, 10)
+      const mondayStr = toStr(monday)
+      const sundayStr = toStr(sunday)
 
       // Calcul mois (1er au dernier jour du mois courant)
       const monthStart = new Date(today3.getFullYear(), today3.getMonth(), 1)
       const monthEnd = new Date(today3.getFullYear(), today3.getMonth() + 1, 0)
-      const monthStartStr = monthStart.toISOString().slice(0, 10)
-      const monthEndStr = monthEnd.toISOString().slice(0, 10)
+      const monthStartStr = toStr(monthStart)
+      const monthEndStr = toStr(monthEnd)
 
       const [{ data: comps }, { data: evts }, { count: trainCount }, { count: trainMonthCount }] = await Promise.all([
         supabase.from('competitions').select('id, nom, date, lieu, niveau, tranche_age').gte('date', todayStr2).order('date'),

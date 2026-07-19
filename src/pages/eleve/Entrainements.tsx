@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
 import TrainingModal from '../../components/TrainingModal'
-import { generateRecurrenceDates } from '../../lib/training'
+import { generateRecurrenceDates, toStr, getMonday } from '../../lib/training'
 import type { TrainingForm } from '../../lib/training'
 
 interface Seance {
@@ -36,18 +36,6 @@ type ViewMode = 'semaine' | 'mois' | 'trimestre' | 'annee'
 
 const MOIS_LABELS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 const JOURS_COURTS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
-
-function getMonday(date: Date): Date {
-  const d = new Date(date)
-  const day = d.getDay()
-  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
-  d.setHours(0, 0, 0, 0)
-  return d
-}
-
-function toStr(date: Date): string {
-  return date.toISOString().slice(0, 10)
-}
 
 function addDays(date: Date, n: number): Date {
   const d = new Date(date)

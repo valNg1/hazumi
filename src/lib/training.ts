@@ -13,8 +13,25 @@ const JOURS_FERIES: Record<string, string[]> = {
 
 const JOURS_MAP = { lun: 1, mar: 2, mer: 3, jeu: 4, ven: 5, sam: 6, dim: 0 }
 
+// Jour LOCAL. toISOString() convertirait en UTC : en Europe/Paris, minuit du
+// 20 juillet devient 22h le 19 et la seance s'affichait un jour a cote.
 export function toStr(date: Date): string {
+  const mois = String(date.getMonth() + 1).padStart(2, '0')
+  const jour = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}-${mois}-${jour}`
+}
+
+// Jour UTC. Reserve aux calculs menes sur une base UTC (generateRecurrenceDates).
+export function toUTCDateStr(date: Date): string {
   return date.toISOString().slice(0, 10)
+}
+
+export function getMonday(date: Date): Date {
+  const d = new Date(date)
+  const day = d.getDay()
+  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
+  d.setHours(0, 0, 0, 0)
+  return d
 }
 
 export function addDays(date: Date, n: number): Date {
@@ -46,7 +63,7 @@ export function generateRecurrenceDates(
 
   let current = new Date(dateDebut + 'T00:00:00Z')
   while (current <= actualEndDate) {
-    const dateStr = toStr(current)
+    const dateStr = toUTCDateStr(current)
     const dayOfWeek = getDayOfWeek(dateStr)
     const dayKey = Object.entries(JOURS_MAP).find(([_, v]) => v === dayOfWeek)?.[0]
 
@@ -55,7 +72,10 @@ export function generateRecurrenceDates(
     if (include && excludeHolidays && isFerie(dateStr, zone)) include = false
 
     if (include) dates.push(dateStr)
-    current = addDays(current, 1)
+    // Increment en UTC : setDate() raisonne en heure locale et deriverait au
+    // changement d'heure.
+    current = new Date(current.getTime())
+    current.setUTCDate(current.getUTCDate() + 1)
   }
 
   return dates

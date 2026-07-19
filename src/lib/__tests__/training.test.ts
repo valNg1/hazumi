@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   toStr,
+  toUTCDateStr,
+  getMonday,
   addDays,
   getDayOfWeek,
   isFerie,
@@ -10,6 +12,47 @@ import {
 describe('toStr', () => {
   it('formate une date en YYYY-MM-DD', () => {
     expect(toStr(new Date('2026-07-03T12:00:00Z'))).toBe('2026-07-03')
+  })
+
+  // Regression : toISOString() convertit en UTC, ce qui decalait le jour d'un cran
+  // (une seance du lundi 20 s'affichait le mardi 21 en Europe/Paris).
+  it('rend le jour LOCAL, quel que soit le fuseau du navigateur', () => {
+    expect(toStr(new Date(2026, 6, 20, 0, 0, 0))).toBe('2026-07-20') // minuit local
+    expect(toStr(new Date(2026, 6, 20, 23, 59, 59))).toBe('2026-07-20') // fin de journee locale
+  })
+
+  it('conserve le zero de tete sur les mois et jours', () => {
+    expect(toStr(new Date(2026, 0, 5))).toBe('2026-01-05')
+  })
+})
+
+describe('grille de la semaine', () => {
+  // Le bug rapporte : semaine du 20 juillet 2026, une seance datee du 2026-07-20
+  // se retrouvait dans la case du mardi 21.
+  it('les 7 cases de la semaine portent bien les dates du lundi au dimanche', () => {
+    const lundi = getMonday(new Date(2026, 6, 22)) // un mercredi de cette semaine
+    const cles = Array.from({ length: 7 }, (_, i) => toStr(addDays(lundi, i)))
+    expect(cles).toEqual([
+      '2026-07-20', '2026-07-21', '2026-07-22', '2026-07-23',
+      '2026-07-24', '2026-07-25', '2026-07-26',
+    ])
+  })
+
+  it('la case du lundi correspond a la seance enregistree ce lundi', () => {
+    const lundi = getMonday(new Date(2026, 6, 20))
+    expect(toStr(lundi)).toBe('2026-07-20')
+    expect(lundi.getDate()).toBe(20) // le libelle affiche et la cle concordent
+  })
+
+  it('un dimanche est rattache a la semaine qui commence le lundi precedent', () => {
+    expect(toStr(getMonday(new Date(2026, 6, 26)))).toBe('2026-07-20')
+  })
+})
+
+describe('toUTCDateStr', () => {
+  it('rend le jour UTC (utilise par la generation de recurrence)', () => {
+    expect(toUTCDateStr(new Date('2026-07-20T00:00:00Z'))).toBe('2026-07-20')
+    expect(toUTCDateStr(new Date('2026-07-20T23:00:00Z'))).toBe('2026-07-20')
   })
 })
 

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toStr } from '../lib/training'
 import type { TrainingForm } from '../lib/training'
 
 interface TrainingModalProps {
@@ -26,8 +27,8 @@ export default function TrainingModal({ isOpen, onClose, onSave, onSuccess, isLo
     heureDebut: '',
     heureFin: '',
     isRecurrent: false,
-    dateSingle: new Date().toISOString().slice(0, 10),
-    dateDebut: new Date().toISOString().slice(0, 10),
+    dateSingle: toStr(new Date()),
+    dateDebut: toStr(new Date()),
     dateFin: '',
     joursRecurrence: [],
     excludeWeekends: false,

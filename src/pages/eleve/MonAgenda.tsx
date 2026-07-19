@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
+import { toStr } from '../../lib/training'
 
 type EventType = 'competition' | 'grade' | 'arbitrage' | 'stage' | 'ag' | 'autre'
 
@@ -48,7 +49,7 @@ function addDays(date: Date, n: number): Date {
 }
 
 function toYMD(date: Date): string {
-  return date.toISOString().slice(0, 10)
+  return toStr(date)
 }
 
 function startOfWeek(date: Date): Date {
@@ -142,7 +143,7 @@ export default function MonAgenda() {
       if (!j) { setLoading(false); return }
       setJudokaId(j.id)
 
-      const today = new Date().toISOString().slice(0, 10)
+      const today = toStr(new Date())
       const ageCategory = j.birth_date ? getAgeCategory(j.birth_date) : null
 
       const [{ data: comps }, { data: evts }] = await Promise.all([
@@ -226,7 +227,7 @@ export default function MonAgenda() {
       setCreateModalOpen(false)
       setCreateFormData({ titre: '', date: '', heure_debut: '', heure_fin: '', type: 'autre', lieu: '', description: '' })
       console.log('[Agenda] rechargement événements...')
-      const { data: evts } = await supabase.from('evenements').select('id, type, titre, date_debut, date_fin, lieu, notes').gte('date_debut', new Date().toISOString().slice(0, 10)).order('date_debut')
+      const { data: evts } = await supabase.from('evenements').select('id, type, titre, date_debut, date_fin, lieu, notes').gte('date_debut', toStr(new Date())).order('date_debut')
       console.log('[Agenda] événements rechargés:', evts)
       const agenda: AgendaItem[] = items.filter(i => i.sourceType !== 'evenement').concat((evts ?? []).map(e => ({
         key: `evt:${e.id}`,
