@@ -16,7 +16,7 @@ supplémentaire doit passer par le [workflow](WORKFLOW.md) avant d'être inscrit
 
 | ID | Intitulé | Objectif | Priorité | Statut | Sprint cible |
 |---|---|---|---|---|---|
-| HZ-001 | Référentiel projet Hazumi | Disposer d'un référentiel unique et versionné : gouvernance, workflow, vision, domaines, décisions, sprints, recettes | P0 | In Development | Sprint 0 |
+| HZ-001 | Référentiel projet Hazumi | Disposer d'un référentiel unique et versionné : gouvernance, workflow, vision, domaines, décisions, sprints, recettes | P0 | Accepted | Sprint 0 |
 
 ## Sprint 1 — Nouvelle navigation
 
@@ -24,11 +24,11 @@ Référence : [ADR-001](decisions/ADR-001-navigation.md)
 
 | ID | Intitulé | Objectif | Priorité | Statut | Sprint cible |
 |---|---|---|---|---|---|
-| HZ-010 | Entrée « Accueil » | Offrir un point d'entrée qui permet de reprendre immédiatement là où le judoka s'est arrêté | P1 | Draft | Sprint 1 |
-| HZ-011 | Entrée « Parcours » | Rendre les parcours accessibles au premier niveau de navigation | P1 | Draft | Sprint 1 |
-| HZ-012 | Entrée « Bibliothèque » | Donner un accès direct aux ressources, indépendamment des parcours | P1 | Draft | Sprint 1 |
-| HZ-013 | Entrée « Mon espace » | Regrouper ce qui appartient en propre au judoka | P1 | Draft | Sprint 1 |
-| HZ-014 | Retrait des univers de la navigation | Faire de KYU, SHIAI et JUDO-KÂ des métadonnées internes, sans perte d'accès aux contenus | P1 | Draft | Sprint 1 |
+| HZ-010 | Entrée « Accueil » | Offrir un point d'entrée qui permet de reprendre immédiatement là où le judoka s'est arrêté | P1 | Ready for Review | Sprint 1 |
+| HZ-011 | Entrée « Parcours » | Rendre les parcours accessibles au premier niveau de navigation | P1 | Ready for Review | Sprint 1 |
+| HZ-012 | Entrée « Bibliothèque » | Donner un accès direct aux ressources, indépendamment des parcours | P1 | Ready for Review | Sprint 1 |
+| HZ-013 | Entrée « Mon espace » | Regrouper ce qui appartient en propre au judoka | P1 | Ready for Review | Sprint 1 |
+| HZ-014 | Retrait des univers de la navigation | Faire de KYU, SHIAI et JUDO-KÂ des métadonnées internes, sans perte d'accès aux contenus | P1 | Ready for Review | Sprint 1 |
 
 ## Sprint 2 — Expérience de progression
 
@@ -47,6 +47,14 @@ Référence : [ADR-001](decisions/ADR-001-navigation.md)
 | HZ-031 | Sélection des ressources | Permettre de sélectionner plusieurs ressources au fil de la navigation | P1 | Backlog | Sprint 3 |
 | HZ-032 | Création d'un parcours depuis la Bibliothèque | Transformer une sélection en parcours personnel | P1 | Backlog | Sprint 3 |
 | HZ-033 | Apparition dans « Mes parcours » | Faire figurer les parcours personnels dans l'entrée Parcours | P1 | Backlog | Sprint 3 |
+
+## Dette connue
+
+| ID | Intitulé | Constat | Priorité | Statut |
+|---|---|---|---|---|
+| HZ-900 | Anomalie `/espace` | `switchSpace()` dans `src/components/Layout.tsx` navigue vers `/espace`, route déclarée nulle part dans `src/App.tsx`. Le sélecteur d'espace renvoie silencieusement l'utilisateur à l'accueil. Anomalie **préexistante**, relevée lors du WP 1.1, volontairement non corrigée (hors périmètre) | P2 | **À traiter** |
+| HZ-901 | Bibliothèque transitoire | La page `/bibliotheque` livrée au WP 1.1 est transitoire : recherche, filtres, tags et sélection multiple restent à implémenter | P1 | À traiter (Sprint 3) |
+| HZ-902 | Mon espace transitoire | La page `/mon-espace` livrée au WP 1.1 donne accès aux fonctions existantes sans les regrouper réellement | P2 | À traiter |
 
 ## Hors backlog
 

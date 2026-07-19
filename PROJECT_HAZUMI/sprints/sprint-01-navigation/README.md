@@ -1,7 +1,7 @@
 # Sprint 1 — Nouvelle navigation
 
 - **Nom :** Sprint 1 — Nouvelle navigation
-- **Statut :** `Draft`
+- **Statut :** `In Development` — WP 1.1 livré, en attente de recette
 
 ## Objectif
 
