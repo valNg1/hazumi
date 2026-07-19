@@ -81,3 +81,14 @@ Rien. Ce WP n'est pas correctif.
 | Build | **Vert** |
 | Lint | **0 erreur ajoutée** — la constante `MON_ESPACE_SECTIONS` a été extraite vers `lib/` pour éviter une nouvelle infraction `react-refresh` |
 | Migration base de données | **Aucune** — le modèle existant suffit |
+
+## Livraison
+
+| Élément | Valeur |
+|---|---|
+| Commit de développement | `1aa9f0de3da30245b8bc4d83dec59bce0d3f450f` |
+| Commit de merge | `13d78ade773ce6fe0f162ef753bfd7f9bfc6fcb7` |
+| Déploiement Vercel | https://hazumi-7d7614jbn-hazumi1.vercel.app |
+| Bundle servi | `/assets/index-C_0qxZEE.js` |
+| Date de mise en production | 2026-07-19 |
+| URL de production | https://hazumi.org |
