@@ -1,5 +1,9 @@
 # Parcours
 
+> **Livré (WP 1.2)** — la page présente deux familles : **Parcours Hazumi** (badge « Officiel »,
+> bordure pleine) et **Mes Playlists** (badge « Perso », bordure pointillée). Une playlist créée
+> depuis la Bibliothèque y apparaît automatiquement.
+
 ## Un seul objet fonctionnel visible : le parcours
 
 Hazumi n'expose **qu'un seul objet structurant** à l'utilisateur : le parcours. Il n'existe pas de

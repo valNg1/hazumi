@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
 import { toStr } from '../../lib/training'
 import { visibleItems, type Statut } from '../../lib/agendaVisibility'
+import MonEspaceNav from '../../components/MonEspaceNav'
 
 type EventType = 'competition' | 'grade' | 'arbitrage' | 'stage' | 'ag' | 'autre'
 
@@ -284,6 +285,7 @@ export default function MonAgenda() {
 
   return (
     <div className="max-w-2xl mx-auto">
+      <MonEspaceNav />
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Mes événements</h1>

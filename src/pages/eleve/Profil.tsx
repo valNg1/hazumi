@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { isBenDemoAccount } from '../../lib/demo'
 import type { Belt } from '../../types'
+import MonEspaceNav from '../../components/MonEspaceNav'
 
 const TRANCHES: [string, number, number, string][] = [
   ['poussins', 8, 9, '8–9 ans'], ['benjamins', 10, 11, '10–11 ans'], ['minimes', 12, 13, '12–13 ans'],
@@ -143,6 +144,7 @@ export default function Profil() {
 
   return (
     <div className="max-w-2xl mx-auto">
+      <MonEspaceNav />
       <div className="mb-6 flex items-center gap-4">
         <div className="relative">
           {data.photo_url ? (

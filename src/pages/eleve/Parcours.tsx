@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { universLabel } from '../../lib/bibliotheque'
 import { computeProgress, nextRessourceId, toggleCompleted, type ParcoursRessourceLink } from '../../lib/parcoursProgress'
 import PremierDanSections from '../../components/PremierDanSections'
 import { PREMIER_DAN_TITRE } from '../../lib/premierDanContent'
@@ -46,6 +47,8 @@ interface Ressource extends CatalogueRow {
 
 const TYPE_LABEL: Record<ContentType, string> = { video: 'Vidéo', article: 'Article', pdf: 'PDF' }
 
+interface PlaylistRow { id: string; nom: string; tags: string[] | null; parcours: 'kyu' | 'shiai' | 'judo-ka' }
+
 interface ParcoursProps {
   univers?: 'shiai' | 'kyu' | 'judo-ka'
   titre?: string
@@ -65,6 +68,7 @@ export default function Parcours({
   const [progressByParcours, setProgressByParcours] = useState<Record<string, number>>({})
   const [lessonCount, setLessonCount] = useState<Record<string, number>>({})
   const [lessonIds, setLessonIds] = useState<Set<string>>(new Set())
+  const [playlists, setPlaylists] = useState<PlaylistRow[]>([])
 
   const [selected, setSelected] = useState<ParcoursRow | null>(null)
   const [ressources, setRessources] = useState<Ressource[]>([])
@@ -83,6 +87,7 @@ export default function Parcours({
       if (!judoka) { setLoading(false); return }
       setJudokaId(judoka.id)
       await loadList(judoka.id)
+      await loadPlaylists(judoka.id)
       setLoading(false)
     }
     load()
@@ -112,6 +117,15 @@ export default function Parcours({
     if (inList) { await openParcours(inList); return }
     const { data } = await supabase.from('parcours').select('*').eq('id', pid).maybeSingle()
     if (data) await openParcours(data as ParcoursRow)
+  }
+
+  async function loadPlaylists(jId: string) {
+    const { data } = await supabase
+      .from('playlists_collections')
+      .select('id, nom, tags, parcours')
+      .eq('judoka_id', jId)
+      .order('created_at', { ascending: false })
+    setPlaylists((data as PlaylistRow[]) ?? [])
   }
 
   async function loadList(jId: string) {
@@ -430,8 +444,13 @@ export default function Parcours({
         </div>
       </div>
 
+      <div className="flex items-center gap-2 mb-3">
+        <h2 className="text-sm font-bold text-[#0A0A0A]">Parcours Hazumi</h2>
+        <span className="text-[9px] uppercase tracking-widest bg-[#C41230] text-white rounded-full px-2 py-0.5 font-bold">Officiel</span>
+      </div>
+
       {list.length === 0 ? (
-        <p className="text-sm text-[#999999] text-center py-16">Aucun parcours disponible pour le moment.</p>
+        <p className="text-sm text-[#999999] text-center py-10">Aucun parcours disponible pour le moment.</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {list.map((p) => {
@@ -472,6 +491,49 @@ export default function Parcours({
               </button>
             )
           })}
+        </div>
+      )}
+
+      {/* Mes Playlists — contenu personnel, visuellement distinct de l'officiel. */}
+      <div className="flex items-center gap-2 mt-10 mb-3">
+        <h2 className="text-sm font-bold text-[#0A0A0A]">Mes Playlists</h2>
+        <span className="text-[9px] uppercase tracking-widest border border-[#CCCCCC] text-[#666666] rounded-full px-2 py-0.5 font-bold">Perso</span>
+      </div>
+
+      {playlists.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-[#E5E5E5] bg-white/60 p-6 text-center">
+          <p className="text-sm text-[#666666] mb-2">Tu n’as pas encore de playlist.</p>
+          <Link to="/bibliotheque" className="text-xs uppercase tracking-widest text-[#C41230] hover:text-[#9B0E25] font-semibold">
+            Créer une playlist depuis la Bibliothèque
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {playlists.map((pl) => (
+            <Link
+              key={pl.id}
+              to={`/bibliotheque?playlist=${pl.id}`}
+              className="text-left bg-white rounded-xl border border-dashed border-[#CCCCCC] overflow-hidden hover:border-[#C41230] hover:shadow-sm transition-all flex flex-col"
+            >
+              <div className="aspect-[16/9] bg-[#FAFAFA] border-b border-[#F0F0F0] flex items-center justify-center">
+                <span className="text-3xl" aria-hidden="true">
+                  {pl.parcours === 'shiai' ? '🥊' : pl.parcours === 'judo-ka' ? '🎌' : '🥋'}
+                </span>
+              </div>
+              <div className="p-4 flex-1 flex flex-col">
+                <span className="text-[9px] uppercase tracking-widest text-[#999999] mb-1">
+                  Playlist · {universLabel(pl.parcours)}
+                </span>
+                <h3 className="font-bold text-[#0A0A0A] text-sm leading-snug mb-1">{pl.nom}</h3>
+                <p className="text-xs text-[#666666] mb-3 flex-1">
+                  {(pl.tags ?? []).length} tag{(pl.tags ?? []).length !== 1 ? 's' : ''}
+                </p>
+                <span className="mt-auto inline-flex items-center gap-1 text-xs font-semibold text-[#C41230] border border-[#C41230] rounded-lg px-3 py-1.5 w-fit">
+                  ▶ Ouvrir
+                </span>
+              </div>
+            </Link>
+          ))}
         </div>
       )}
     </div>

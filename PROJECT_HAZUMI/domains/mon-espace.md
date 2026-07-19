@@ -1,5 +1,9 @@
 # Mon espace
 
+> **Livré (WP 1.2)** — une **navigation interne** est présente sur les cinq rubriques : depuis
+> n'importe laquelle, les autres sont à un clic, sans retour arrière. « Ma progression » est
+> devenue un tableau de bord des parcours et playlists commencés.
+
 **Mon espace** regroupe ce qui appartient en propre au judoka : ses données, son activité, ses
 échanges et ses réglages. C'est le pendant personnel des Parcours et de la Bibliothèque, qui
 portent les contenus.

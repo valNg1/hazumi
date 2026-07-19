@@ -1,0 +1,83 @@
+# Changelog — WP 1.2 · Navigation & Expérience utilisateur
+
+- **Date :** 2026-07-19
+- **Statut :** Livré — en attente de recette du Product Owner
+
+## Ajouté
+
+### Bibliothèque — point d'entrée unique
+
+- Chargement de **tout** `catalogue_hazumi`, sans filtre d'univers préalable.
+- **Rayons horizontaux** façon plateforme de streaming, groupés par famille technique ; les
+  ressources sans famille sont regroupées par univers. Aucune ressource ne peut disparaître.
+- **Recherche** sur titre, famille, grade et tags, **tolérante aux accents**.
+- **Mode sélection** : composition d'une playlist au fil de la navigation dans les rails.
+- **Modale de création** : nom + choix de l'univers (Kyu / Shiai / Judo-Kâ). C'est le **seul**
+  moment où l'univers intervient.
+- Confirmation renvoyant vers Parcours après création.
+
+### Parcours — deux familles
+
+- Section **Parcours Hazumi**, badge rouge plein « Officiel ».
+- Section **Mes Playlists**, bordure pointillée et badge contour « Perso », avec l'univers rappelé
+  sur chaque carte.
+- État vide invitant à créer une playlist depuis la Bibliothèque.
+
+### Mon espace — navigation interne
+
+- `MonEspaceNav` : barre de rubriques présente sur **les cinq pages** (entraînements, agenda,
+  messages, profil, progression). Plus de retour arrière nécessaire.
+- Rubrique courante signalée ; barre défilante sur mobile.
+
+### Ma progression — tableau de bord
+
+- Section **« Reprendre où tu en étais »** en tête de page : parcours Hazumi et playlists
+  commencés, triés par activité la plus récente.
+- Pourcentage, barre de progression, compteur `done / total`, bouton **Reprendre** menant
+  directement au parcours ou à la playlist.
+- Section **Terminés** distincte.
+- État vide invitant à découvrir les parcours.
+
+### Modules purs (testés)
+
+`src/lib/bibliotheque.ts` (`buildRails`, `searchResources`, univers) ·
+`src/lib/progressionDashboard.ts` (`buildDashboard`, `playlistProgress`) ·
+`src/lib/monEspaceSections.ts`
+
+## Modifié
+
+- `src/pages/eleve/Bibliotheque.tsx` — page transitoire du WP 1.1 **remplacée**.
+- `src/pages/eleve/Parcours.tsx` — chargement des playlists et rendu des deux familles.
+- `src/pages/eleve/Progression.tsx` — tableau de bord ajouté en tête ; le curriculum par ceinture
+  est **conservé en dessous**.
+- Cinq pages de Mon espace — injection de `MonEspaceNav`.
+- `src/pages/eleve/__tests__/NouvellesPages.test.tsx` — les trois tests décrivaient la
+  Bibliothèque transitoire du WP 1.1, désormais remplacée. Réécrits.
+
+## Corrigé
+
+Rien. Ce WP n'est pas correctif.
+
+## Reporté
+
+- Réordonnancement manuel des ressources d'une playlist.
+- Suppression et renommage d'une playlist depuis Parcours (restent dans `PersonalLibrary`).
+- Vignettes illustrées pour les cartes de ressources.
+
+## Dette connue
+
+| Sujet | Constat |
+|---|---|
+| **Progression des playlists** | Calculée par intersection **tags ↔ ressources terminées**, conformément au modèle existant. Une playlist n'étant pas une liste figée, une ressource ajoutée au catalogue avec un tag correspondant y entre automatiquement. **À confirmer en recette** |
+| Pages transitoires | Mon espace reste un hub de liens : sa refonte n'était pas au périmètre |
+| Service worker PWA | Rafraîchissement forcé nécessaire pour voir la nouvelle version |
+| Vérification connectée | Non réalisée par le Lead Full Stack : l'application est derrière authentification et la saisie d'identifiants lui est interdite |
+
+## Vérifications
+
+| Contrôle | Résultat |
+|---|---|
+| Tests unitaires | **238 tests verts / 32 fichiers** (205 avant le WP, +33) |
+| Build | **Vert** |
+| Lint | **0 erreur ajoutée** — la constante `MON_ESPACE_SECTIONS` a été extraite vers `lib/` pour éviter une nouvelle infraction `react-refresh` |
+| Migration base de données | **Aucune** — le modèle existant suffit |

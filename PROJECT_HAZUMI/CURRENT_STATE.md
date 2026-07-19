@@ -28,8 +28,8 @@ production, qui n'est pas observable depuis le dépôt.
 | Espace club | Partiel | Un espace `club` existe dans la constante `NAV` (Effectifs, …) — périmètre exact **à confirmer** |
 | Espace admin | Disponible | Routes `/admin/dashboard`, `/admin/catalogue`, `/admin/messages`, `/admin/messagerie` |
 | Navigation par usage | Disponible | Livrée par le WP 1.1 ; routes `/`, `/parcours`, `/bibliotheque`, `/mon-espace` |
-| Page Bibliothèque | Partiel | **Page transitoire** — recherche, filtres et sélection multiple non implémentés |
-| Page Mon espace | Partiel | **Page transitoire** — donne accès aux fonctions existantes, sans regroupement réel |
+| Page Bibliothèque | Disponible | Point d'entrée unique : rayons par famille, recherche tolérante aux accents, sélection multiple, création de playlist (WP 1.2) |
+| Page Mon espace | Partiel | Hub de liens + **navigation interne** sur les 5 rubriques (WP 1.2) |
 | Univers dans le routage | Disponible | `/eleve/kyu`, `/eleve/shiai`, `/eleve/judoka-culture` restent fonctionnelles, hors navigation |
 | Route `/eleve/parcours` | Disponible | Redirige désormais vers `/parcours` |
 
@@ -81,7 +81,7 @@ production, qui n'est pas observable depuis le dépôt.
 |---|---|---|
 | Catalogue de ressources | Disponible | Table `catalogue_hazumi` (`tags` de type `TEXT[]`) |
 | Vidéos | Disponible | Tables `videos`, `video_views` (`videos.tags` = chaîne séparée par virgules) |
-| Bibliothèque personnelle | Partiel | `src/components/PersonalLibrary.tsx`, tables `playlists`, `playlist_items`, `playlists_collections` |
+| Playlists personnelles | Disponible | Créées depuis la Bibliothèque avec choix d'univers ; visibles dans Parcours (WP 1.2). Une playlist est un **filtre par tags** |
 | Administration du catalogue | Disponible | Page `/admin/catalogue` |
 | Recherche, filtres, sélection multiple | Prévu | Backlog Sprint 3 — périmètre exact **à confirmer** |
 | Articulation playlists ↔ parcours personnels | À confirmer | Deux mécanismes coexistent ; la cible unifiée est décrite dans [domains/bibliotheque.md](domains/bibliotheque.md) |
@@ -105,7 +105,7 @@ production, qui n'est pas observable depuis le dépôt.
 | Annulation et masquage | Disponible | `src/lib/agendaVisibility.ts` — les annulées sortent de la vue et des compteurs |
 | Agenda | Disponible | `src/pages/eleve/MonAgenda.tsx`, tables `evenements`, `competitions` |
 | Messagerie | Disponible | Tables `conversations`, `conversation_participants`, `messages` |
-| Statistiques | Partiel | `src/pages/eleve/Progression.tsx`, graphiques via `recharts` |
+| Ma progression | Disponible | **Tableau de bord** : parcours et playlists commencés, progression, reprise directe (WP 1.2). Curriculum par ceinture conservé en dessous |
 | Sensei Hazumi | À confirmer | Aucun module identifié sous ce nom dans `src/` |
 
 ## 9. Intégrations Supabase
