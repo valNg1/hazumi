@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import MonEspaceNav from '../../components/MonEspaceNav'
 
 interface Message {
   id: string
@@ -105,6 +106,7 @@ export default function Messages() {
 
   return (
     <div className="max-w-2xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
+      <MonEspaceNav />
       <div className="mb-4">
         <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Messagerie</h1>
         <p className="text-[#999999] text-sm mt-0.5">Echanges avec Hazumi.</p>

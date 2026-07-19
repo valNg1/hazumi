@@ -4,6 +4,7 @@ import TrainingModal from '../../components/TrainingModal'
 import { generateRecurrenceDates, toStr, getMonday } from '../../lib/training'
 import { visibleItems, computeSeanceStats } from '../../lib/agendaVisibility'
 import type { TrainingForm } from '../../lib/training'
+import MonEspaceNav from '../../components/MonEspaceNav'
 
 interface Seance {
   id: string
@@ -265,6 +266,7 @@ export default function Entrainements() {
 
   return (
     <div>
+      <MonEspaceNav />
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Mes entraînements</h1>

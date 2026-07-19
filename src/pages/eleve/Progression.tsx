@@ -5,6 +5,8 @@ import { CURRICULUM, getCategorieLabel, getBeltIndex } from '../../lib/curriculu
 import type { Belt } from '../../types'
 import type { TechniqueStatus } from '../../lib/curriculum'
 import MesPlaylists from './MesPlaylists'
+import MonEspaceNav from '../../components/MonEspaceNav'
+import ProgressionDashboard from '../../components/ProgressionDashboard'
 
 const BELT_COLORS: Record<Belt, string> = {
   blanche: '#FFFFFF', jaune: '#FFD700', orange: '#FF8C00',
@@ -114,9 +116,13 @@ export default function Progression() {
 
   return (
     <div>
+      <MonEspaceNav />
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight mb-4">Ma progression</h1>
+        <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Ma progression</h1>
+        <p className="text-[#999999] text-sm mt-0.5">Ce que tu étais en train d’apprendre, et où tu en es.</p>
       </div>
+
+      <ProgressionDashboard judokaId={judokaId} />
 
       {/* Parcours cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">

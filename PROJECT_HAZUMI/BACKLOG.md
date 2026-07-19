@@ -53,8 +53,9 @@ Référence : [ADR-001](decisions/ADR-001-navigation.md)
 | ID | Intitulé | Constat | Priorité | Statut |
 |---|---|---|---|---|
 | HZ-900 | Anomalie `/espace` | `switchSpace()` dans `src/components/Layout.tsx` navigue vers `/espace`, route déclarée nulle part dans `src/App.tsx`. Le sélecteur d'espace renvoie silencieusement l'utilisateur à l'accueil. Anomalie **préexistante**, relevée lors du WP 1.1, volontairement non corrigée (hors périmètre) | P2 | **À traiter** |
-| HZ-901 | Bibliothèque transitoire | La page `/bibliotheque` livrée au WP 1.1 est transitoire : recherche, filtres, tags et sélection multiple restent à implémenter | P1 | À traiter (Sprint 3) |
-| HZ-902 | Mon espace transitoire | La page `/mon-espace` livrée au WP 1.1 donne accès aux fonctions existantes sans les regrouper réellement | P2 | À traiter |
+| HZ-901 | Bibliothèque | **Livrée au WP 1.2** : rayons, recherche, sélection multiple, création de playlist | P1 | Ready for Review |
+| HZ-902 | Mon espace | Navigation interne livrée au WP 1.2. La refonte complète du hub reste à faire | P2 | À traiter |
+| HZ-903 | Progression des playlists | Calculée par intersection tags ↔ ressources terminées, faute de liste figée dans le modèle. À confirmer en recette | P2 | À confirmer |
 
 ## Hors backlog
 

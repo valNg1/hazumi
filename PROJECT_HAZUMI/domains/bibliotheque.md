@@ -1,5 +1,9 @@
 # Bibliothèque
 
+> **Livré (WP 1.2)** — la Bibliothèque est le **point d'entrée unique** vers les ressources
+> Hazumi. Présentation en rayons horizontaux façon plateforme de streaming, recherche tolérante
+> aux accents, sélection multiple. **L'univers n'intervient qu'à la création d'une playlist.**
+
 La Bibliothèque est le point d'accès direct aux ressources, indépendamment des parcours. Elle
 répond à une intention précise : **chercher quelque chose**.
 
