@@ -79,7 +79,7 @@ production, qui n'est pas observable depuis le dépôt.
 
 | Élément | Statut | Constat |
 |---|---|---|
-| Catalogue de ressources | Disponible | Table `catalogue_hazumi` (`tags` de type `TEXT[]`) |
+| Catalogue de ressources | Disponible | Table `catalogue_hazumi` (`tags` de type `TEXT[]`). **48 ressources, dont 14 visibles en Bibliothèque** : 34 du référentiel 1er Dan sont masquées via `visible_bibliotheque = false`, sans suppression |
 | Vidéos | Disponible | Tables `videos`, `video_views` (`videos.tags` = chaîne séparée par virgules) |
 | Playlists personnelles | Disponible | Créées depuis la Bibliothèque avec choix d'univers ; visibles dans Parcours (WP 1.2). Une playlist est un **filtre par tags** |
 | Administration du catalogue | Disponible | Page `/admin/catalogue` |
@@ -105,7 +105,7 @@ production, qui n'est pas observable depuis le dépôt.
 | Annulation et masquage | Disponible | `src/lib/agendaVisibility.ts` — les annulées sortent de la vue et des compteurs |
 | Agenda | Disponible | `src/pages/eleve/MonAgenda.tsx`, tables `evenements`, `competitions` |
 | Messagerie | Disponible | Tables `conversations`, `conversation_participants`, `messages` |
-| Ma progression | Disponible | **Tableau de bord** : parcours et playlists commencés, progression, reprise directe (WP 1.2). Curriculum par ceinture conservé en dessous |
+| Ma progression | Disponible | **Tableau de bord des parcours uniquement** : parcours et playlists commencés, progression, reprise directe. Le suivi par grade a été retiré (retour de recette WP 1.2) |
 | Sensei Hazumi | À confirmer | Aucun module identifié sous ce nom dans `src/` |
 
 ## 9. Intégrations Supabase

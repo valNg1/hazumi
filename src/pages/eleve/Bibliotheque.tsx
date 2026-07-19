@@ -61,7 +61,7 @@ export default function Bibliotheque() {
     if (judoka) setJudokaId(judoka.id)
 
     const [{ data: cat }, { data: vids }, { data: lessons }, { data: pls }] = await Promise.all([
-      supabase.from('catalogue_hazumi').select('id, titre, type, parcours, tags, grade, famille, url, contenu'),
+      supabase.from('catalogue_hazumi').select('id, titre, type, parcours, tags, grade, famille, url, contenu').eq('visible_bibliotheque', true),
       supabase.from('videos').select('id, title, video_url, tags, parcours').eq('uploaded_by', user.id),
       supabase.from('lesson').select('ressource_id').eq('published', true),
       judoka

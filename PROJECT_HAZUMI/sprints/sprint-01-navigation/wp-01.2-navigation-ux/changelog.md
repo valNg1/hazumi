@@ -63,6 +63,13 @@
 | 5 | **Régression Bibliothèque** : rayons horizontaux façon streaming, sans possibilité d'ajouter une ressource | Page **refaite** avec l'UI d'origine : liste en lignes, vignette, titre, mots-clés, et bouton **« + Ajouter une ressource »** |
 | 6 | Regroupement par famille technique non voulu | **Supprimé.** Seule distinction conservée : **Hazumi** (administration) ou **Perso** (judoka), matérialisée par un badge sur chaque ligne et un filtre Tout / Hazumi / Mes contenus |
 
+### Deuxième série de retours
+
+| # | Retour | Correctif |
+|---|---|---|
+| 6 | Les 35 ressources du référentiel 1er Dan ne sont pas exploitables en l'état | **Masquées, non supprimées.** Colonne `visible_bibliotheque` ajoutée à `catalogue_hazumi` (migration additive). 34 ressources masquées ; **Harai-goshi conservée** car elle porte une leçon publiée. Elles restent utilisables dans les parcours et les leçons. Réversible via `npx tsx scripts/masquer-referentiel-1er-dan.ts --restaurer` |
+| 11 | Ma progression : retirer le suivi par grade | Page réduite au **seul tableau de bord des parcours**. Le curriculum par ceinture est retiré de l'écran ; `lib/curriculum.ts` est conservé |
+
 **Analyse du retour 5.** J'avais interprété « inspiré des plateformes de streaming » comme des
 rayons horizontaux groupés par catégorie. L'intention était la mise en avant visuelle des
 ressources — vignettes, lecture immédiate — pas un regroupement. Le regroupement supprimait aussi
@@ -88,10 +95,10 @@ l'ajout de contenu personnel, d'où la régression. `buildRails` a été retiré
 
 | Contrôle | Résultat |
 |---|---|
-| Tests unitaires | **251 tests verts / 32 fichiers** (205 avant le WP, +46) |
+| Tests unitaires | **256 tests verts / 33 fichiers** (205 avant le WP, +51) |
 | Build | **Vert** |
 | Lint | **0 erreur ajoutée** — la constante `MON_ESPACE_SECTIONS` a été extraite vers `lib/` pour éviter une nouvelle infraction `react-refresh` |
-| Migration base de données | **Aucune** — le modèle existant suffit |
+| Migration base de données | Une seule, **additive et réversible** : `catalogue_hazumi.visible_bibliotheque` |
 
 ## Livraison
 

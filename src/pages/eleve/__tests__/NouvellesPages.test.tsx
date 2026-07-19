@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
+import { supabase } from '../../../lib/supabase'
 import Bibliotheque from '../Bibliotheque'
 import MonEspace from '../MonEspace'
 
@@ -17,7 +18,7 @@ const PLAYLISTS = [
   { id: 'pl1', nom: 'Mes hanches', tags: ['hanche'], parcours: 'kyu' },
 ]
 
-const h = vi.hoisted(() => ({ inserted: [] as { table: string; row: unknown }[] }))
+const h = vi.hoisted(() => ({ inserted: [] as { table: string; row: unknown }[], eqArgs: [] as unknown[][] }))
 
 vi.mock('../../../lib/supabase', () => ({
   supabase: {
@@ -25,7 +26,7 @@ vi.mock('../../../lib/supabase', () => ({
     from: vi.fn((table: string) => {
       const chain = {
         select: vi.fn(() => chain),
-        eq: vi.fn(() => chain),
+        eq: vi.fn((...a: unknown[]) => { h.eqArgs.push(a); return chain }),
         order: vi.fn(() => chain),
         single: vi.fn().mockResolvedValue({ data: { id: 'j1' } }),
         insert: vi.fn((row: unknown) => { h.inserted.push({ table, row }); return Promise.resolve({ error: null }) }),
@@ -47,7 +48,8 @@ function renderAt(ui: React.ReactElement, route = '/bibliotheque') {
   return render(<MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>)
 }
 
-beforeEach(() => { h.inserted = []; vi.clearAllMocks() })
+const eqArgs = h.eqArgs
+beforeEach(() => { h.inserted = []; h.eqArgs.length = 0; vi.clearAllMocks() })
 
 describe('Bibliothèque — liste des ressources', () => {
   it('affiche le nom de la section et une phrase explicative', async () => {
@@ -92,6 +94,14 @@ describe('Bibliothèque — liste des ressources', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Mes contenus' }))
     await waitFor(() => expect(screen.queryByText('Harai-goshi')).toBeNull())
     expect(screen.getByText('Mon randori')).toBeInTheDocument()
+  })
+
+  it('ne charge que les ressources visibles en bibliotheque', async () => {
+    renderAt(<Bibliotheque />)
+    await waitFor(() => expect(screen.getByText('Harai-goshi')).toBeInTheDocument())
+    const appels = (supabase.from as unknown as { mock: { calls: string[][] } }).mock.calls
+    expect(appels.some((c) => c[0] === 'catalogue_hazumi')).toBe(true)
+    expect(eqArgs).toContainEqual(['visible_bibliotheque', true])
   })
 
   it('permet de rechercher', async () => {
