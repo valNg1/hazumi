@@ -1,6 +1,6 @@
 # Prompt Claude Code — <Titre>
 
-- **Product Specification de référence :** `product/sprints/<sprint>/product-specification.md`
+- **Product Specification de référence :** `PROJECT_HAZUMI/sprints/<sprint>/product-specification.md`
 - **Version de la spécification :** X.Y
 - **Statut de la spécification :** doit être *Validated* avant exécution
 
@@ -19,12 +19,12 @@ Ce que Claude Code doit réaliser, strictement dans le périmètre validé.
 
 ## Fichiers documentaires à mettre à jour
 
-- `product/product/navigation.md` — si la navigation change
-- `product/product/parcours.md` — si les parcours changent
-- `product/product/bibliotheque.md` — si la Bibliothèque change
-- `product/product/mon-espace.md` — si Mon espace change
-- `product/decisions/ADR-XXX-*.md` — si une décision structurante est prise
-- `product/sprints/<sprint>/changelog.md` — systématiquement
+- `PROJECT_HAZUMI/domains/navigation.md` — si la navigation change
+- `PROJECT_HAZUMI/domains/parcours.md` — si les parcours changent
+- `PROJECT_HAZUMI/domains/bibliotheque.md` — si la Bibliothèque change
+- `PROJECT_HAZUMI/domains/mon-espace.md` — si Mon espace change
+- `PROJECT_HAZUMI/decisions/ADR-XXX-*.md` — si une décision structurante est prise
+- `PROJECT_HAZUMI/sprints/<sprint>/changelog.md` — systématiquement
 
 ## Stratégie de tests
 
@@ -35,7 +35,7 @@ Ce que Claude Code doit réaliser, strictement dans le périmètre validé.
 
 ## Definition of Done
 
-Voir `product/GOVERNANCE.md`, section *Definition of Done*.
+Voir `PROJECT_HAZUMI/GOVERNANCE.md`, section *Definition of Done*.
 
 ## Livrables attendus
 

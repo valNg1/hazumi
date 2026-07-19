@@ -13,7 +13,7 @@ exception.
 6. Claude Code développe selon la spécification validée.
 7. Claude Code écrit et exécute les tests.
 8. Claude Code vérifie le build et la non-régression.
-9. Claude Code met à jour le référentiel `/product`.
+9. Claude Code met à jour le référentiel `PROJECT_HAZUMI`.
 10. Claude Code livre la version testable avec les preuves attendues.
 11. Le Product Owner réalise la recette.
 12. En cas d'échec, Claude Code corrige les écarts.

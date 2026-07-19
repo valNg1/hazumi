@@ -6,7 +6,7 @@ Cette roadmap est un document vivant. L'ordre et le contenu des sprints relèven
 
 **Statut : en cours**
 
-Mise en place du référentiel produit permanent dans `/product` : gouvernance, workflow, vision,
+Mise en place du référentiel produit permanent dans `PROJECT_HAZUMI` : gouvernance, workflow, vision,
 documents produit, ADR initial et templates réutilisables.
 
 Sprint strictement documentaire — aucun code applicatif modifié.

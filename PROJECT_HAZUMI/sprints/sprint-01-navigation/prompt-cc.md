@@ -20,10 +20,10 @@
 
 Pressentis au vu de l'ADR-001, à confirmer par la Product Specification :
 
-- `product/product/navigation.md`
-- `product/product/parcours.md`
-- `product/product/bibliotheque.md`
-- `product/product/mon-espace.md`
+- `PROJECT_HAZUMI/domains/navigation.md`
+- `PROJECT_HAZUMI/domains/parcours.md`
+- `PROJECT_HAZUMI/domains/bibliotheque.md`
+- `PROJECT_HAZUMI/domains/mon-espace.md`
 
 ## Stratégie de tests
 

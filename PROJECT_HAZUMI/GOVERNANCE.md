@@ -14,7 +14,7 @@ considéré comme terminé.
 | Analyse technique | Lead Full Stack — Claude Code | Analyse le dépôt et identifie les impacts techniques sans modifier la décision produit |
 | Développement | Lead Full Stack — Claude Code | Implémente la Product Specification validée |
 | Tests automatisés et non-régression | Lead Full Stack — Claude Code | Écrit et exécute les tests ; garantit un build vert |
-| Documentation | Lead Full Stack — Claude Code | Met à jour /product conformément au développement réellement livré |
+| Documentation | Lead Full Stack — Claude Code | Met à jour /PROJECT_HAZUMI conformément au développement réellement livré |
 | Livraison pour recette | Lead Full Stack — Claude Code | Fournit la version testable, les preuves techniques et le cahier de recette |
 | Recette fonctionnelle | Product Owner — Sensei Hazumi | Exécute ou contrôle la recette et accepte ou refuse la livraison |
 | Corrections après recette | Lead Full Stack — Claude Code | Corrige uniquement les écarts constatés par rapport à la spécification |
@@ -63,7 +63,7 @@ considéré comme terminé.
 
 À chaque sprint, Claude Code doit :
 
-- créer ou compléter le dossier correspondant dans `product/sprints/` ;
+- créer ou compléter le dossier correspondant dans `PROJECT_HAZUMI/sprints/` ;
 - conserver la Product Specification validée ;
 - conserver le prompt d'exécution reçu ;
 - mettre à jour le cahier de recette ;
@@ -77,13 +77,82 @@ considéré comme terminé.
 
 | Nature de la modification | Document à mettre à jour |
 |---|---|
-| Navigation | `product/product/navigation.md` |
-| Parcours | `product/product/parcours.md` |
-| Bibliothèque | `product/product/bibliotheque.md` |
-| Mon espace | `product/product/mon-espace.md` |
-| Décision structurante | `product/decisions/ADR-XXX-titre.md` (nouveau fichier) |
+| Navigation | `PROJECT_HAZUMI/domains/navigation.md` |
+| Parcours | `PROJECT_HAZUMI/domains/parcours.md` |
+| Bibliothèque | `PROJECT_HAZUMI/domains/bibliotheque.md` |
+| Mon espace | `PROJECT_HAZUMI/domains/mon-espace.md` |
+| Décision structurante | `PROJECT_HAZUMI/decisions/ADR-XXX-titre.md` (nouveau fichier) |
 
-## 4. Definition of Done
+## 4. Règles de fonctionnement
+
+### A. Intangibilité de la Product Specification validée
+
+**Claude Code ne modifie jamais le fond d'une Product Specification validée.**
+
+Il **peut** :
+
+- signaler une impossibilité ;
+- identifier une contradiction ;
+- proposer une alternative technique.
+
+Il **ne peut pas** :
+
+- modifier le besoin ;
+- réduire le périmètre ;
+- ajouter une fonctionnalité ;
+- changer une règle métier ;
+- arbitrer une décision UX ou pédagogique.
+
+Toute modification de la Product Specification repasse par ChatGPT puis par validation explicite
+du Product Owner.
+
+### B. Structure du cahier de recette
+
+Le cahier de recette comporte **deux parties distinctes** :
+
+**1. Plan de recette** — préparé par ChatGPT **avant** le développement, à partir des critères
+d'acceptation.
+
+**2. Résultats de recette** — complétés **après** livraison par le Product Owner ou sous son
+contrôle.
+
+Claude Code peut préremplir **uniquement** :
+
+- l'environnement ;
+- l'URL ;
+- la version ;
+- les prérequis techniques ;
+- les preuves de tests automatisés.
+
+> **Claude Code ne peut pas déclarer lui-même la recette fonctionnelle validée.**
+
+### C. Documentation réelle
+
+Le changelog et les documents permanents doivent refléter **ce qui a réellement été livré**, et
+non seulement ce qui était prévu. Un écart apparaît explicitement en *Reporté* ou en *Dette
+connue*.
+
+### D. Traçabilité
+
+Chaque sprint doit référencer :
+
+- la Product Specification ;
+- le commit de développement ;
+- les résultats des tests ;
+- la décision de recette ;
+- le commit de merge ;
+- la date et l'URL de production.
+
+### E. Secrets
+
+**Aucun secret, token, mot de passe, clé API ou donnée personnelle ne doit être ajouté au
+référentiel.**
+
+Les variables d'environnement sont citées **par leur nom uniquement**, jamais par leur valeur.
+Cette règle vaut pour l'ensemble de `PROJECT_HAZUMI/`, y compris la documentation technique et
+les cahiers de recette.
+
+## 5. Definition of Done
 
 Un sprint n'est terminé que si :
 

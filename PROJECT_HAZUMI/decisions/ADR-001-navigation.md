@@ -77,7 +77,7 @@ Bibliothèque. Ils cessent d'être des rubriques de navigation.
 
 **Documents impactés**
 
-- [product/navigation.md](../product/navigation.md)
-- [product/parcours.md](../product/parcours.md)
-- [product/bibliotheque.md](../product/bibliotheque.md)
-- [product/mon-espace.md](../product/mon-espace.md)
+- [domains/navigation.md](../domains/navigation.md)
+- [domains/parcours.md](../domains/parcours.md)
+- [domains/bibliotheque.md](../domains/bibliotheque.md)
+- [domains/mon-espace.md](../domains/mon-espace.md)
