@@ -79,7 +79,7 @@ production, qui n'est pas observable depuis le dépôt.
 
 | Élément | Statut | Constat |
 |---|---|---|
-| Catalogue de ressources | Disponible | Table `catalogue_hazumi` (`tags` de type `TEXT[]`). **48 ressources, dont 14 visibles en Bibliothèque** : 34 du référentiel 1er Dan sont masquées via `visible_bibliotheque = false`, sans suppression |
+| Catalogue de ressources | Disponible | Table `catalogue_hazumi` (`tags` de type `TEXT[]`). **3 ressources** sur décision du Product Owner : Uchi Mata (Aaron Wolf), O Ouchi Gari (Aaron Wolf), Nage-no-kata. Les 45 autres ont été **supprimées** le 2026-07-19 (sauvegarde JSON conservée hors dépôt) |
 | Vidéos | Disponible | Tables `videos`, `video_views` (`videos.tags` = chaîne séparée par virgules) |
 | Playlists personnelles | Disponible | Créées depuis la Bibliothèque avec choix d'univers ; visibles dans Parcours (WP 1.2). Une playlist est un **filtre par tags** |
 | Administration du catalogue | Disponible | Page `/admin/catalogue` |

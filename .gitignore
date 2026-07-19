@@ -26,3 +26,6 @@ Thumbs.db
 playwright-report/
 test-results/
 .playwright/
+
+# Sauvegardes de donnees : ne doivent pas etre versionnees
+backup-catalogue-*.json

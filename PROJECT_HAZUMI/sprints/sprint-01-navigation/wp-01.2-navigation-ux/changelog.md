@@ -68,6 +68,7 @@
 | # | Retour | Correctif |
 |---|---|---|
 | 6 | Les 35 ressources du référentiel 1er Dan ne sont pas exploitables en l'état | **Masquées, non supprimées.** Colonne `visible_bibliotheque` ajoutée à `catalogue_hazumi` (migration additive). 34 ressources masquées ; **Harai-goshi conservée** car elle porte une leçon publiée. Elles restent utilisables dans les parcours et les leçons. Réversible via `npx tsx scripts/masquer-referentiel-1er-dan.ts --restaurer` |
+| 6 bis | Ne garder dans la Bibliothèque que Uchi Mata, O Ouchi Gari et Nage-no-kata | **45 ressources supprimées définitivement** après confirmation du PO, garde-fou vérifiant que le parcours Nage-no-kata ne perd rien. Sauvegarde JSON écrite avant suppression. La leçon Harai-goshi a été détruite avec sa ressource ; celle de Nage-no-kata est intacte (12 chapitres, 15 questions) |
 | 11 | Ma progression : retirer le suivi par grade | Page réduite au **seul tableau de bord des parcours**. Le curriculum par ceinture est retiré de l'écran ; `lib/curriculum.ts` est conservé |
 
 **Analyse du retour 5.** J'avais interprété « inspiré des plateformes de streaming » comme des

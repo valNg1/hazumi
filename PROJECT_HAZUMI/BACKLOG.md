@@ -55,7 +55,8 @@ Référence : [ADR-001](decisions/ADR-001-navigation.md)
 | HZ-900 | Anomalie `/espace` | `switchSpace()` dans `src/components/Layout.tsx` navigue vers `/espace`, route déclarée nulle part dans `src/App.tsx`. Le sélecteur d'espace renvoie silencieusement l'utilisateur à l'accueil. Anomalie **préexistante**, relevée lors du WP 1.1, volontairement non corrigée (hors périmètre) | P2 | **À traiter** |
 | HZ-901 | Bibliothèque | **Livrée au WP 1.2** : rayons, recherche, sélection multiple, création de playlist | P1 | Ready for Review |
 | HZ-902 | Mon espace | Navigation interne livrée au WP 1.2. La refonte complète du hub reste à faire | P2 | À traiter |
-| HZ-904 | Référentiel 1er Dan non exploitable | Les 34 ressources importées le 2026-07-10 sont masquées de la Bibliothèque (`visible_bibliotheque = false`), non supprimées. Elles restent utilisables dans les parcours. À reprendre éditorialement avant réaffichage | P2 | **À traiter** |
+| HZ-904 | Catalogue réduit à 3 ressources | Sur décision du PO, 45 des 48 ressources ont été **supprimées** le 2026-07-19 (dont le référentiel 1er Dan et la leçon Harai-goshi). Conséquence : **22 parcours sur 23 sont vides**. Seul « Préparer le 1er Dan » conserve du contenu (Nage-no-kata) | P1 | **À traiter** |
+| HZ-905 | Parcours vides à masquer ou supprimer | 22 parcours n'ont plus aucune ressource et s'affichent vides côté judoka | P1 | **À traiter** |
 | HZ-903 | Progression des playlists | Calculée par intersection tags ↔ ressources terminées, faute de liste figée dans le modèle. À confirmer en recette | P2 | À confirmer |
 
 ## Hors backlog
