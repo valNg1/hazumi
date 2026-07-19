@@ -54,9 +54,20 @@
 - `src/pages/eleve/__tests__/NouvellesPages.test.tsx` — les trois tests décrivaient la
   Bibliothèque transitoire du WP 1.1, désormais remplacée. Réécrits.
 
-## Corrigé
+## Corrigé — retours de recette du Product Owner
 
-Rien. Ce WP n'est pas correctif.
+| # | Retour | Correctif |
+|---|---|---|
+| 2 | La vignette d'une playlist pointait vers la Bibliothèque générale, pas vers son contenu | `/bibliotheque?playlist=<id>` ouvre désormais une **vue playlist** : seules ses ressources sont listées, avec son nom, son univers et un retour « Toute la bibliothèque » |
+| 3 | Navigation interne de Mon espace « rien vu » | Elle était bien déployée sur les cinq rubriques, mais **absente de la page d'accueil `/mon-espace`** — celle qu'on ouvre depuis le menu. Ajoutée |
+| 5 | **Régression Bibliothèque** : rayons horizontaux façon streaming, sans possibilité d'ajouter une ressource | Page **refaite** avec l'UI d'origine : liste en lignes, vignette, titre, mots-clés, et bouton **« + Ajouter une ressource »** |
+| 6 | Regroupement par famille technique non voulu | **Supprimé.** Seule distinction conservée : **Hazumi** (administration) ou **Perso** (judoka), matérialisée par un badge sur chaque ligne et un filtre Tout / Hazumi / Mes contenus |
+
+**Analyse du retour 5.** J'avais interprété « inspiré des plateformes de streaming » comme des
+rayons horizontaux groupés par catégorie. L'intention était la mise en avant visuelle des
+ressources — vignettes, lecture immédiate — pas un regroupement. Le regroupement supprimait aussi
+l'ajout de contenu personnel, d'où la régression. `buildRails` a été retiré au profit de
+`filterBySource` et `playlistResources`.
 
 ## Reporté
 
@@ -77,7 +88,7 @@ Rien. Ce WP n'est pas correctif.
 
 | Contrôle | Résultat |
 |---|---|
-| Tests unitaires | **238 tests verts / 32 fichiers** (205 avant le WP, +33) |
+| Tests unitaires | **251 tests verts / 32 fichiers** (205 avant le WP, +46) |
 | Build | **Vert** |
 | Lint | **0 erreur ajoutée** — la constante `MON_ESPACE_SECTIONS` a été extraite vers `lib/` pour éviter une nouvelle infraction `react-refresh` |
 | Migration base de données | **Aucune** — le modèle existant suffit |

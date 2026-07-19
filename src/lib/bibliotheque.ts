@@ -1,5 +1,6 @@
 export type Univers = 'kyu' | 'shiai' | 'judo-ka'
 export type ContentType = 'video' | 'article' | 'pdf'
+export type Source = 'hazumi' | 'perso'
 
 export interface Ressource {
   id: string
@@ -10,12 +11,9 @@ export interface Ressource {
   grade: string | null
   famille: string | null
   url: string | null
-}
-
-export interface Rail {
-  cle: string
-  titre: string
-  items: Ressource[]
+  /** hazumi = ajoute par l'administration ; perso = ajoute par le judoka. */
+  source: Source
+  contenu?: string | null
 }
 
 export const UNIVERS_OPTIONS: { value: Univers; label: string; icone: string }[] = [
@@ -29,52 +27,41 @@ export function universLabel(u: Univers): string {
 }
 
 /** Insensible a la casse et aux accents : le vocabulaire japonais est souvent mal orthographie. */
-function normaliser(texte: string): string {
+export function normaliserTexte(texte: string): string {
   return texte.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 }
 
-/**
- * Rayons de la Bibliotheque, a la maniere d'une plateforme de streaming.
- * Regroupement par famille technique ; a defaut, par univers. Aucune ressource
- * ne doit disparaitre : c'est la garantie testee.
- */
-export function buildRails(items: Ressource[]): Rail[] {
-  const parFamille = new Map<string, Ressource[]>()
-  const parUnivers = new Map<Univers, Ressource[]>()
-
-  items.forEach((item) => {
-    const famille = item.famille?.trim()
-    if (famille) {
-      if (!parFamille.has(famille)) parFamille.set(famille, [])
-      parFamille.get(famille)!.push(item)
-    } else {
-      if (!parUnivers.has(item.parcours)) parUnivers.set(item.parcours, [])
-      parUnivers.get(item.parcours)!.push(item)
-    }
-  })
-
-  const rails: Rail[] = []
-  Array.from(parFamille.keys())
-    .sort((a, b) => a.localeCompare(b, 'fr'))
-    .forEach((famille) => {
-      rails.push({ cle: `famille:${famille}`, titre: famille, items: parFamille.get(famille)! })
-    })
-
-  UNIVERS_OPTIONS.forEach((o) => {
-    const restants = parUnivers.get(o.value)
-    if (restants?.length) {
-      rails.push({ cle: `univers:${o.value}`, titre: o.label, items: restants })
-    }
-  })
-
-  return rails
-}
-
 export function searchResources(items: Ressource[], recherche: string): Ressource[] {
-  const q = normaliser(recherche.trim())
+  const q = normaliserTexte(recherche.trim())
   if (!q) return items
   return items.filter((item) => {
     const champs = [item.titre, item.famille ?? '', item.grade ?? '', ...item.tags]
-    return champs.some((c) => normaliser(c).includes(q))
+    return champs.some((c) => normaliserTexte(c).includes(q))
   })
+}
+
+/** Filtre par provenance : contenu Hazumi (administration) ou contenu du judoka. */
+export function filterBySource(items: Ressource[], source: Source | 'tous'): Ressource[] {
+  return source === 'tous' ? items : items.filter((i) => i.source === source)
+}
+
+/** Les ressources d'une playlist : une playlist est un filtre par tags. */
+export function playlistResources(items: Ressource[], tags: string[]): Ressource[] {
+  if (tags.length === 0) return []
+  const cibles = tags.map(normaliserTexte)
+  return items.filter((i) => i.tags.some((t) => cibles.includes(normaliserTexte(t))))
+}
+
+/** Tous les tags presents, dedoublonnes sans tenir compte de la casse. */
+export function collectTags(items: Ressource[]): string[] {
+  const parNormalise = new Map<string, string>()
+  items.forEach((i) =>
+    i.tags.forEach((t) => {
+      const propre = t.trim()
+      if (!propre) return
+      const cle = normaliserTexte(propre)
+      if (!parNormalise.has(cle)) parNormalise.set(cle, propre)
+    })
+  )
+  return Array.from(parNormalise.values()).sort((a, b) => a.localeCompare(b, 'fr'))
 }

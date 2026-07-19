@@ -1,8 +1,11 @@
 # Bibliothèque
 
-> **Livré (WP 1.2)** — la Bibliothèque est le **point d'entrée unique** vers les ressources
-> Hazumi. Présentation en rayons horizontaux façon plateforme de streaming, recherche tolérante
-> aux accents, sélection multiple. **L'univers n'intervient qu'à la création d'une playlist.**
+> **Livré (WP 1.2)** — la Bibliothèque est le **point d'entrée unique** vers les ressources.
+> Liste en lignes : vignette, titre, mots-clés. **Aucun regroupement** : la seule distinction est
+> l'origine du contenu — **Hazumi** (administration) ou **Perso** (judoka). Recherche tolérante
+> aux accents, filtre par origine, ajout de ressource personnelle, sélection multiple.
+> **L'univers n'intervient qu'à la création d'une playlist.** Ouvrir une playlist affiche ses
+> ressources (`?playlist=<id>`).
 
 La Bibliothèque est le point d'accès direct aux ressources, indépendamment des parcours. Elle
 répond à une intention précise : **chercher quelque chose**.
