@@ -47,10 +47,10 @@ Anomalie `/espace` : **non corrigée**, inscrite en dette connue (HZ-900, « À 
 | Élément | Valeur |
 |---|---|
 | Branche | `feature/wp-01-1-navigation` |
-| Commit Impact Report | voir `git log` |
-| Commit de développement | — |
-| Résultats des tests | — |
+| Commit Impact Report | `a1a8f49` |
+| Commit de développement | `6829f5f` |
+| Résultats des tests | 205 tests verts / 29 fichiers ; build vert |
 | Décision de recette | — |
-| Commit de merge | — |
-| Date de mise en production | — |
-| URL de production | — |
+| Commit de merge | `bee857e` |
+| Date de mise en production | 2026-07-19 |
+| URL de production | https://hazumi.org |

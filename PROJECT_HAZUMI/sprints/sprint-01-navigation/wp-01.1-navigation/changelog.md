@@ -81,7 +81,8 @@ Rien. Ce WP n'est pas correctif.
 |---|---|
 | Branche | `feature/wp-01-1-navigation` |
 | Commit Impact Report | `a1a8f49` |
-| Commit de développement | voir `git log` |
-| Commit de merge | voir `git log` |
+| Commit de développement | `6829f5fb7afe7417c3788dda37cc5f6590f0aa57` |
+| Commit de merge | `bee857e594a185bbc44409e1548f870ea6358b38` |
 | Date de déploiement | 2026-07-19 |
+| Déploiement Vercel | https://hazumi-ic3bcia0m-hazumi1.vercel.app |
 | URL de production | https://hazumi.org |
