@@ -11,7 +11,8 @@ considéré comme terminé.
 | Arbitrage et décision produit | Product Owner — Sensei Hazumi | Priorise, accepte, refuse ou modifie l'orientation |
 | Cadrage fonctionnel, UX et pédagogique | Directeur Produit & Technique — ChatGPT | Challenge le besoin et crée la Product Specification |
 | Validation de la Product Specification | Product Owner — Sensei Hazumi | Valide explicitement le périmètre avant développement |
-| Analyse technique | Lead Full Stack — Claude Code | Analyse le dépôt et identifie les impacts techniques sans modifier la décision produit |
+| Analyse technique — **Impact Report** | Lead Full Stack — Claude Code | Analyse le dépôt et produit l'Impact Report : impacts, risques, points de décision, recommandation GO / NO GO, sans modifier la décision produit |
+| GO après Impact Report | Product Owner — Sensei Hazumi | Donne le GO explicite, ou autorise l'enchaînement direct jusqu'à la mise en production |
 | Développement | Lead Full Stack — Claude Code | Implémente la Product Specification validée |
 | Tests automatisés et non-régression | Lead Full Stack — Claude Code | Écrit et exécute les tests ; garantit un build vert |
 | Documentation | Lead Full Stack — Claude Code | Met à jour /PROJECT_HAZUMI conformément au développement réellement livré |
@@ -151,6 +152,26 @@ référentiel.**
 Les variables d'environnement sont citées **par leur nom uniquement**, jamais par leur valeur.
 Cette règle vaut pour l'ensemble de `PROJECT_HAZUMI/`, y compris la documentation technique et
 les cahiers de recette.
+
+### F. Impact Report obligatoire
+
+**Tout WP donne lieu à un Impact Report produit par Claude Code avant développement**, conservé
+dans le dossier du WP concerné.
+
+Contenu minimal : compréhension du besoin, état actuel, fichiers impactés, stratégie de migration,
+stratégie de tests, impact documentaire, risques, plan d'exécution, points de décision,
+recommandation GO / GO sous condition / NO GO.
+
+L'Impact Report **ne tranche aucune décision fonctionnelle, UX ou pédagogique**. Ces sujets sont
+remontés en points de décision et arbitrés par le Product Owner ou le Directeur Produit &
+Technique.
+
+Il est obligatoire et documenté, mais **ne constitue plus un point d'arrêt** après validation de
+la Product Specification : lorsque le Product Owner l'autorise explicitement, Claude Code peut
+analyser, développer, tester, documenter, merger et déployer dans une même séquence. Sans
+autorisation explicite, le GO du Product Owner reste requis.
+
+Voir [ADR-002](decisions/ADR-002-development-workflow.md).
 
 ## 5. Definition of Done
 

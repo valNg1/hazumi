@@ -1,7 +1,7 @@
 # WP 1.1 — Architecture de navigation
 
 - **Sprint :** Sprint 1 — Nouvelle navigation
-- **Statut :** `Impact Report` — en attente de GO du Product Owner
+- **Statut :** `Ready for Review` — livré, en attente de recette du Product Owner
 - **Décision de référence :** [ADR-001](../../../decisions/ADR-001-navigation.md)
 
 ## Objectif
@@ -26,24 +26,21 @@ existantes — pas sur le contenu des pages de destination.
 
 | Document | Statut | Responsable |
 |---|---|---|
-| `product-specification.md` | **Non transmise** | Directeur Produit & Technique — ChatGPT |
+| [product-specification.md](product-specification.md) | Validée | Directeur Produit & Technique — ChatGPT |
 | [prompt-cc.md](prompt-cc.md) | Conservé | Directeur Produit & Technique — ChatGPT |
 | [impact-report.md](impact-report.md) | Produit | Lead Full Stack — Claude Code |
-| `recette.md` | À rédiger | ChatGPT (plan), PO (résultats) |
-| `changelog.md` | Non démarré | Lead Full Stack — Claude Code |
+| [recette.md](recette.md) | Plan prêt | ChatGPT (plan), PO (résultats) |
+| [changelog.md](changelog.md) | Renseigné | Lead Full Stack — Claude Code |
 
-## Recommandation de l'Impact Report
+## Décisions du Product Owner
 
-**GO SOUS CONDITION** — l'arbitrage du point de décision D1 (convention d'URL des quatre
-destinations) est requis avant développement.
-
-## Points de décision ouverts
-
-| # | Sujet | Décideur |
+| # | Sujet | Décision |
 |---|---|---|
-| D1 | Convention d'URL : `/eleve/*` ou URL courtes ; sort de `/` et de `SmartRedirect` | Product Owner |
-| D2 | « Mon espace » : page transitoire ou regroupement réel des fonctions | Product Owner |
-| D3 | Création d'ADR-002 et inscription de l'Impact Report dans la gouvernance | Product Owner |
+| D1 | Convention d'URL | **Option b** — `/` réservé à `SmartRedirect` ; routes `/parcours`, `/bibliotheque`, `/mon-espace` ; `/eleve/*` conservées |
+| D2 | « Mon espace » | **Page transitoire minimale** uniquement |
+| D3 | Gouvernance | **Créer** ADR-002 et mettre à jour GOVERNANCE.md et WORKFLOW.md dans ce WP |
+
+Anomalie `/espace` : **non corrigée**, inscrite en dette connue (HZ-900, « À traiter »).
 
 ## Traçabilité
 

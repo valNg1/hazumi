@@ -1,6 +1,6 @@
 # Navigation
 
-## Navigation cible
+## Navigation (livrée — WP 1.1)
 
 La navigation principale de Hazumi comporte **quatre entrées**, et uniquement quatre :
 
@@ -14,6 +14,26 @@ La navigation principale de Hazumi comporte **quatre entrées**, et uniquement q
 Cette navigation est organisée **par usage**, et non par catégorie de contenu. Chaque entrée
 répond à une intention de l'utilisateur : *reprendre*, *progresser*, *chercher*, *gérer*.
 
+### Routes
+
+| Entrée | Route | État |
+|---|---|---|
+| Accueil | `/` | Redirige vers `/eleve/accueil` via `SmartRedirect` (routage par rôle préservé) |
+| Parcours | `/parcours` | Page Parcours, sans filtre d'univers |
+| Bibliothèque | `/bibliotheque` | **Page transitoire** — recherche et filtres à venir |
+| Mon espace | `/mon-espace` | **Page transitoire** — accès aux fonctions personnelles existantes |
+
+Convention retenue (décision D1, option b) : `/` reste réservé à `SmartRedirect` afin de ne pas
+modifier le comportement d'arrivée des administrateurs. Les URL `/eleve/*` historiques restent
+actives ; `/eleve/parcours`, `/eleve/bibliotheque` et `/eleve/mon-espace` redirigent vers les
+nouvelles routes.
+
+### État actif
+
+Une entrée est active sur sa route, ses sous-routes et ses routes héritées. Accueil reste donc
+allumé après la redirection de `/` vers `/eleve/accueil` ; Mon espace l'est sur les pages
+entraînements, agenda, messages, profil et progression.
+
 ## Sort des univers KYU, SHIAI et JUDO-KÂ
 
 **KYU, SHIAI et JUDO-KÂ disparaissent de la navigation visible mais restent des métadonnées
@@ -23,7 +43,12 @@ Ils continuent d'exister comme dimensions pédagogiques : ils servent à classer
 filtrer dans la Bibliothèque et à orienter la conception des parcours. Ils ne constituent plus
 des rubriques que l'utilisateur doit comprendre et choisir pour naviguer.
 
+Les routes `/eleve/kyu`, `/eleve/shiai` et `/eleve/judoka-culture` **restent fonctionnelles** :
+seules les entrées de menu ont disparu. Les contenus correspondants sont atteignables depuis
+Parcours (tous les parcours, sans filtre) et depuis la Bibliothèque.
+
 Justification et conséquences : [ADR-001](../decisions/ADR-001-navigation.md).
+Livré par le [WP 1.1](../sprints/sprint-01-navigation/wp-01.1-navigation/).
 
 ## Règles
 

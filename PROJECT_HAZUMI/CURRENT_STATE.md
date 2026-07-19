@@ -3,7 +3,7 @@
 Photographie factuelle de l'existant, établie par analyse du dépôt sur la branche
 `chore/product-repository`.
 
-**Date du relevé :** 2026-07-19
+**Date du relevé :** 2026-07-19 (mis à jour après livraison du WP 1.1)
 **Commit analysé :** `0f8684f` (branche `chore/product-repository`, identique à `main` côté code
 applicatif)
 
@@ -24,11 +24,14 @@ production, qui n'est pas observable depuis le dépôt.
 
 | Élément | Statut | Constat |
 |---|---|---|
-| Navigation judoka | Disponible | 8 entrées définies dans `src/components/Layout.tsx` : Accueil, Mon profil, Shiai, Judo-Ka, Kyu, Mes entraînements, Mon agenda, Messages |
+| Navigation judoka | Disponible | **4 entrées** définies dans `src/components/Layout.tsx` : Accueil, Parcours, Bibliothèque, Mon espace (WP 1.1) |
 | Espace club | Partiel | Un espace `club` existe dans la constante `NAV` (Effectifs, …) — périmètre exact **à confirmer** |
 | Espace admin | Disponible | Routes `/admin/dashboard`, `/admin/catalogue`, `/admin/messages`, `/admin/messagerie` |
-| Navigation cible (Accueil / Parcours / Bibliothèque / Mon espace) | Prévu | Décidée en [ADR-001](decisions/ADR-001-navigation.md), non implémentée |
-| Route `/eleve/parcours` | Disponible | Redirige vers `/eleve/accueil` — l'entrée « Parcours » a été retirée de la navigation |
+| Navigation par usage | Disponible | Livrée par le WP 1.1 ; routes `/`, `/parcours`, `/bibliotheque`, `/mon-espace` |
+| Page Bibliothèque | Partiel | **Page transitoire** — recherche, filtres et sélection multiple non implémentés |
+| Page Mon espace | Partiel | **Page transitoire** — donne accès aux fonctions existantes, sans regroupement réel |
+| Univers dans le routage | Disponible | `/eleve/kyu`, `/eleve/shiai`, `/eleve/judoka-culture` restent fonctionnelles, hors navigation |
+| Route `/eleve/parcours` | Disponible | Redirige désormais vers `/parcours` |
 
 ## 2. Parcours
 
@@ -40,6 +43,7 @@ production, qui n'est pas observable depuis le dépôt.
 | Suivi de progression | Disponible | `src/lib/parcoursProgress.ts` + table `user_parcours` |
 | Rattachement aux univers | Disponible | Table `parcours_univers` (kyu / shiai / judoka) |
 | Parcours personnels créés par le judoka | Prévu | Backlog Sprint 3 — non implémenté |
+| Parcours sans filtre d'univers | Disponible | `/parcours` expose l'ensemble des parcours |
 | Nombre et contenu des parcours publiés | À confirmer | Donnée de production, non observable dans le dépôt |
 
 ## 3. Leçons et lecteur
@@ -141,7 +145,7 @@ Constats issus du dépôt, sans jugement de priorité.
 | Couverture E2E | Un seul scénario Playwright ; les parcours critiques ne sont pas couverts de bout en bout |
 | Contenu premium | Le mécanisme premium est indexé sur un identifiant de ressource en dur — extensible mais non généralisé |
 | Deux modèles de regroupement | `playlists` et `parcours` coexistent ; la cible produit ne retient que le parcours |
-| Univers dans la navigation | Shiai, Judo-Ka et Kyu sont encore des entrées de menu, contrairement à l'ADR-001 |
+| Anomalie `/espace` | `switchSpace()` (`src/components/Layout.tsx`) navigue vers `/espace`, route non déclarée : le sélecteur d'espace renvoie silencieusement à l'accueil. **Statut : À traiter** — hors périmètre du WP 1.1 |
 | Stripe | `@stripe/stripe-js` est une dépendance et `VITE_STRIPE_PUBLISHABLE_KEY` figure dans `.env.example`, mais **aucun usage n'est trouvé dans `src/`** — statut **à confirmer** |
 | Formats de tags hétérogènes | `catalogue_hazumi.tags` est un tableau, `videos.tags` une chaîne à virgules |
 | Absence de CI | Rien ne garantit automatiquement que les tests sont verts avant un déploiement |

@@ -1,21 +1,24 @@
-import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate, useLocation, Link } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { signOut } from '../lib/auth'
 import { clearSpace, getSpace } from '../lib/space'
 import { supabase } from '../lib/supabase'
 import Footer from './Footer'
 import NavbarNotificationBadge from './NavbarNotificationBadge'
+import { isNavActive, type NavItem } from '../lib/navigation'
 
-export const NAV: Record<'eleve' | 'club', { to: string; label: string }[]> = {
+export const NAV: Record<'eleve' | 'club', NavItem[]> = {
   eleve: [
-    { to: '/eleve/accueil', label: 'Accueil' },
-    { to: '/eleve/profil', label: 'Mon profil' },
-    { to: '/eleve/shiai', label: 'Shiai' },
-    { to: '/eleve/judoka-culture', label: 'Judo-Ka' },
-    { to: '/eleve/kyu', label: 'Kyu' },
-    { to: '/eleve/entrainements', label: 'Mes entraînements' },
-    { to: '/eleve/agenda', label: 'Mon agenda' },
-    { to: '/eleve/messages', label: 'Messages' },
+    // "/" reste SmartRedirect (routage par role) : l'entree Accueil doit donc
+    // aussi s'allumer sur /eleve/accueil, ou l'utilisateur atterrit ensuite.
+    { to: '/', label: 'Accueil', match: ['/eleve/accueil'] },
+    { to: '/parcours', label: 'Parcours', match: ['/eleve/parcours'] },
+    { to: '/bibliotheque', label: 'Bibliothèque' },
+    {
+      to: '/mon-espace',
+      label: 'Mon espace',
+      match: ['/eleve/entrainements', '/eleve/agenda', '/eleve/messages', '/eleve/profil', '/eleve/progression'],
+    },
   ],
   club: [
     { to: '/club/effectifs', label: 'Effectifs' },
@@ -32,6 +35,7 @@ const SPACE_LABEL = { eleve: 'Espace Élève', club: 'Espace Club' }
 
 export default function Layout() {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const space = getSpace() ?? 'eleve'
   const [menuOpen, setMenuOpen] = useState(false)
   const [unread, setUnread] = useState(0)
@@ -121,19 +125,19 @@ export default function Layout() {
             <NavLink
               key={item.to}
               to={item.to}
-              className={({ isActive }) =>
+              className={
                 `flex items-center gap-1.5 px-3 xl:px-4 text-xs uppercase tracking-widest border-b-2 transition-colors whitespace-nowrap ${
-                  isActive ? '!text-white !border-[#C41230]' : 'text-[#666666] border-transparent hover:text-[#CCCCCC]'
+                  isNavActive(item, pathname) ? '!text-white !border-[#C41230]' : 'text-[#666666] border-transparent hover:text-[#CCCCCC]'
                 }`
               }
             >
               {item.label}
-              {item.to === '/eleve/messages' && unread > 0 && (
+              {(item.match ?? []).includes('/eleve/messages') && unread > 0 && (
                 <span className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-[#C41230] text-white text-[10px] font-bold leading-none">
                   {unread}
                 </span>
               )}
-              {item.to === '/eleve/messages' && <NavbarNotificationBadge />}
+              {(item.match ?? []).includes('/eleve/messages') && <NavbarNotificationBadge />}
             </NavLink>
           ))}
         </nav>
@@ -169,14 +173,14 @@ export default function Layout() {
                 key={item.to}
                 to={item.to}
                 onClick={() => setMenuOpen(false)}
-                className={({ isActive }) =>
+                className={
                   `flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                    isActive ? 'bg-[#1A1A1A] text-white' : 'text-[#999999] hover:text-white'
+                    isNavActive(item, pathname) ? 'bg-[#1A1A1A] text-white' : 'text-[#999999] hover:text-white'
                   }`
                 }
               >
                 {item.label}
-                {item.to === '/eleve/messages' && unread > 0 && (
+                {(item.match ?? []).includes('/eleve/messages') && unread > 0 && (
                   <span className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-[#C41230] text-white text-[10px] font-bold leading-none">
                     {unread}
                   </span>
