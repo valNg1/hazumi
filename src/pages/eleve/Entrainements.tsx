@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
 import TrainingModal from '../../components/TrainingModal'
 import { generateRecurrenceDates, toStr, getMonday } from '../../lib/training'
+import { visibleItems, computeSeanceStats } from '../../lib/agendaVisibility'
 import type { TrainingForm } from '../../lib/training'
 
 interface Seance {
@@ -65,6 +66,7 @@ export default function Entrainements() {
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<ViewMode>('semaine')
   const [cursor, setCursor] = useState(new Date())
+  const [afficherAnnulees, setAfficherAnnulees] = useState(false)
   const [showTrainingModal, setShowTrainingModal] = useState(false)
   const [creatingTraining, setCreatingTraining] = useState(false)
 
@@ -190,7 +192,7 @@ export default function Entrainements() {
   const realised_upcoming = useMemo(() => seances.filter(s => s.date >= today && s.statut === 'fait'), [seances])
 
   const totalMinPast = past.reduce((sum, s) => sum + s.duree_minutes, 0)
-  const pctRealised = (realised.length + realised_upcoming.length) > 0 && (realised.length + realised_upcoming.length) <= (seances.length) ? Math.round(((realised.length + realised_upcoming.length) / (seances.length)) * 100) : 0
+  const stats = useMemo(() => computeSeanceStats(seances), [seances])
 
   function navigate(dir: 1 | -1) {
     const d = new Date(cursor)
@@ -235,6 +237,11 @@ export default function Entrainements() {
     return seances.filter(s => s.date.startsWith(String(cursor.getFullYear())))
   }, [seances, view, cursor])
 
+  const seancesAffichees = useMemo(
+    () => visibleItems(visibleSeances, afficherAnnulees),
+    [visibleSeances, afficherAnnulees]
+  )
+
   const visibleCompets = useMemo(() => {
     if (view === 'semaine') {
       const mon = getMonday(cursor)
@@ -276,7 +283,7 @@ export default function Entrainements() {
         <RecapCard label="Séances réalisées" value={String(realised.length)} sub={fmtDuration(totalMinPast)} accent />
         <RecapCard label="Séances à venir" value={String(upcoming.length)} sub={`${upcoming.length} séance${upcoming.length !== 1 ? 's' : ''} planifiée${upcoming.length !== 1 ? 's' : ''}`} />
         <RecapCard label="Total réalisé" value={String(realised.length + realised_upcoming.length)} sub={`${realised.length + realised_upcoming.length} séance${(realised.length + realised_upcoming.length) !== 1 ? 's' : ''}`} accent />
-        <RecapCard label="Taux de réalisation" value={`${pctRealised}%`} sub={`sur ${seances.length} total`} accent />
+        <RecapCard label="Taux de réalisation" value={`${stats.tauxRealisation}%`} sub={`sur ${stats.total} planifiée${stats.total !== 1 ? 's' : ''}`} accent />
       </div>
 
       {/* View tabs + navigation */}
@@ -292,6 +299,15 @@ export default function Entrainements() {
             </button>
           ))}
         </div>
+        <label className="flex items-center gap-2 text-xs text-[#666666] cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={afficherAnnulees}
+            onChange={(e) => setAfficherAnnulees(e.target.checked)}
+            className="accent-[#C41230]"
+          />
+          Afficher les annulées{stats.annulees > 0 ? ` (${stats.annulees})` : ''}
+        </label>
         <div className="flex items-center gap-2">
           <button onClick={() => navigate(-1)} className="w-7 h-7 flex items-center justify-center rounded-lg border border-[#E5E5E5] text-[#666666] hover:border-[#CCCCCC] transition-colors">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
@@ -306,11 +322,11 @@ export default function Entrainements() {
 
       {/* Agenda */}
       {view === 'semaine' ? (
-        <WeekView seances={visibleSeances} competEvents={visibleCompets} cursor={cursor} today={today} onStatusChange={updateStatut} />
+        <WeekView seances={seancesAffichees} competEvents={visibleCompets} cursor={cursor} today={today} onStatusChange={updateStatut} />
       ) : view === 'mois' ? (
-        <MonthView seances={visibleSeances} competEvents={visibleCompets} cursor={cursor} today={today} />
+        <MonthView seances={seancesAffichees} competEvents={visibleCompets} cursor={cursor} today={today} />
       ) : (
-        <ListView seances={visibleSeances} competEvents={visibleCompets} today={today} groupBy={view === 'annee' || view === 'trimestre' ? 'month' : 'week'} />
+        <ListView seances={seancesAffichees} competEvents={visibleCompets} today={today} groupBy={view === 'annee' || view === 'trimestre' ? 'month' : 'week'} />
       )}
 
       <TrainingModal isOpen={showTrainingModal} onClose={() => setShowTrainingModal(false)} onSave={handleSaveTraining} onSuccess={loadData} isLoading={creatingTraining} />

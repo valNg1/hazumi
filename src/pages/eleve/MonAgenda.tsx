@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
 import { toStr } from '../../lib/training'
+import { visibleItems, type Statut } from '../../lib/agendaVisibility'
 
 type EventType = 'competition' | 'grade' | 'arbitrage' | 'stage' | 'ag' | 'autre'
 
@@ -15,6 +16,7 @@ interface AgendaItem {
   description?: string
   niveau?: string
   tranche_age?: string[]
+  statut?: Statut
 }
 
 const TYPE_CONFIG: Record<EventType, { icon: string; label: string; bg: string; border: string; text: string; badge: string }> = {
@@ -124,6 +126,7 @@ function dotColor(type: EventType): string {
 export default function MonAgenda() {
   const [items, setItems] = useState<AgendaItem[]>([])
   const [participationIds, setParticipationIds] = useState<Set<string>>(new Set())
+  const [afficherAnnules, setAfficherAnnules] = useState(false)
   const [judokaId, setJudokaId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<EventType | 'tous'>('tous')
@@ -148,7 +151,7 @@ export default function MonAgenda() {
 
       const [{ data: comps }, { data: evts }] = await Promise.all([
         supabase.from('competitions').select('id, nom, date, lieu, niveau, tranche_age, notes').gte('date', today).order('date'),
-        supabase.from('evenements').select('id, type, titre, date_debut, date_fin, lieu, notes').gte('date_debut', today).order('date_debut'),
+        supabase.from('evenements').select('id, type, titre, date_debut, date_fin, lieu, notes, statut').gte('date_debut', today).order('date_debut'),
       ])
       const compParts: any[] = []
       const evtParts: any[] = []
@@ -168,7 +171,7 @@ export default function MonAgenda() {
             niveau: c.niveau,
             tranche_age: c.tranche_age,
           })),
-        ...(evts ?? []).map((e: { id: string; type: string; titre: string; date_debut: string; date_fin?: string; lieu?: string; notes?: string }) => ({
+        ...(evts ?? []).map((e: { id: string; type: string; titre: string; date_debut: string; date_fin?: string; lieu?: string; notes?: string; statut?: Statut }) => ({
           key: `evt:${e.id}`,
           sourceId: e.id,
           sourceType: 'evenement' as const,
@@ -177,6 +180,7 @@ export default function MonAgenda() {
           date: e.date_debut.split('T')[0],
           lieu: e.lieu,
           description: e.notes,
+          statut: e.statut ?? 'planifie',
         })),
       ].sort((a, b) => a.date.localeCompare(b.date))
 
@@ -190,6 +194,17 @@ export default function MonAgenda() {
     }
     load()
   }, [])
+
+  const itemsAffiches = useMemo(() => visibleItems(items, afficherAnnules), [items, afficherAnnules])
+  const nbAnnules = useMemo(() => items.filter((i) => i.statut === 'annule').length, [items])
+
+  async function toggleAnnulation(item: AgendaItem) {
+    if (item.sourceType !== 'evenement') return // une competition du club ne s'annule pas ici
+    const next: Statut = item.statut === 'annule' ? 'planifie' : 'annule'
+    const { error } = await supabase.from('evenements').update({ statut: next }).eq('id', item.sourceId)
+    if (error) return
+    setItems((prev) => prev.map((i) => (i.key === item.key ? { ...i, statut: next } : i)))
+  }
 
   async function createEvent(e: React.FormEvent) {
     e.preventDefault()
@@ -227,7 +242,7 @@ export default function MonAgenda() {
       setCreateModalOpen(false)
       setCreateFormData({ titre: '', date: '', heure_debut: '', heure_fin: '', type: 'autre', lieu: '', description: '' })
       console.log('[Agenda] rechargement événements...')
-      const { data: evts } = await supabase.from('evenements').select('id, type, titre, date_debut, date_fin, lieu, notes').gte('date_debut', toStr(new Date())).order('date_debut')
+      const { data: evts } = await supabase.from('evenements').select('id, type, titre, date_debut, date_fin, lieu, notes, statut').gte('date_debut', toStr(new Date())).order('date_debut')
       console.log('[Agenda] événements rechargés:', evts)
       const agenda: AgendaItem[] = items.filter(i => i.sourceType !== 'evenement').concat((evts ?? []).map(e => ({
         key: `evt:${e.id}`,
@@ -249,8 +264,8 @@ export default function MonAgenda() {
     // Tables participation supprimées lors du pivot B2C - fonction conservée pour compatibilité
   }
 
-  const typesPresents = TYPE_ORDER.filter(t => items.some(i => i.type === t))
-  const filtered = filter === 'tous' ? items : items.filter(i => i.type === filter)
+  const typesPresents = TYPE_ORDER.filter(t => itemsAffiches.some(i => i.type === t))
+  const filtered = filter === 'tous' ? itemsAffiches : itemsAffiches.filter(i => i.type === filter)
 
   const itemsByDate = useMemo(() => {
     const map = new Map<string, AgendaItem[]>()
@@ -272,7 +287,7 @@ export default function MonAgenda() {
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">Mes événements</h1>
-          <p className="text-[#999999] text-sm mt-1">{items.length} événement{items.length !== 1 ? 's' : ''} à venir · {participationIds.size} confirmé{participationIds.size !== 1 ? 's' : ''}</p>
+          <p className="text-[#999999] text-sm mt-1">{itemsAffiches.length} événement{itemsAffiches.length !== 1 ? 's' : ''} à venir · {participationIds.size} confirmé{participationIds.size !== 1 ? 's' : ''}</p>
         </div>
         <button
           onClick={() => setCreateModalOpen(true)}
@@ -285,6 +300,18 @@ export default function MonAgenda() {
         </button>
       </div>
 
+      {nbAnnules > 0 && (
+        <label className="flex items-center gap-2 text-xs text-[#666666] cursor-pointer select-none mb-4">
+          <input
+            type="checkbox"
+            checked={afficherAnnules}
+            onChange={(e) => setAfficherAnnules(e.target.checked)}
+            className="accent-[#C41230]"
+          />
+          Afficher les événements annulés ({nbAnnules})
+        </label>
+      )}
+
       {/* Filtres par type */}
       {typesPresents.length > 1 && (
         <div className="flex gap-2 mb-6 flex-wrap">
@@ -292,11 +319,11 @@ export default function MonAgenda() {
             onClick={() => setFilter('tous')}
             className={`text-xs px-3 py-1.5 rounded-full border transition-all ${filter === 'tous' ? 'bg-[#0A0A0A] text-white border-[#0A0A0A]' : 'border-[#E5E5E5] text-[#666666] hover:border-[#CCCCCC]'}`}
           >
-            Tous ({items.length})
+            Tous ({itemsAffiches.length})
           </button>
           {typesPresents.map(t => {
             const cfg = TYPE_CONFIG[t]
-            const count = items.filter(i => i.type === t).length
+            const count = itemsAffiches.filter(i => i.type === t).length
             return (
               <button
                 key={t}
@@ -311,7 +338,7 @@ export default function MonAgenda() {
       )}
 
       {/* Planning calendaire */}
-      {items.length > 0 && (
+      {itemsAffiches.length > 0 && (
         <div className="mt-8 bg-white rounded-xl border border-[#E5E5E5] p-5">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs uppercase tracking-widest text-[#999999]">Planning</span>
@@ -522,7 +549,7 @@ export default function MonAgenda() {
 
       {/* Modal détail */}
       {selectedItem && (
-        <EventDetail item={selectedItem} participating={participationIds.has(selectedItem.key)}
+        <EventDetail item={selectedItem} participating={participationIds.has(selectedItem.key)} onCancel={toggleAnnulation}
           onParticipate={v => setParticipation(selectedItem, v)}
           onClose={() => setSelectedItem(null)} />
       )}
@@ -613,10 +640,11 @@ export default function MonAgenda() {
   )
 }
 
-function EventDetail({ item, participating, onParticipate, onClose }: {
+function EventDetail({ item, participating, onParticipate, onCancel, onClose }: {
   item: AgendaItem
   participating: boolean
   onParticipate: (v: boolean) => void
+  onCancel: (item: AgendaItem) => void
   onClose: () => void
 }) {
   const cfg = TYPE_CONFIG[item.type]
@@ -688,6 +716,15 @@ function EventDetail({ item, participating, onParticipate, onClose }: {
             Je ne viens pas
           </button>
         </div>
+
+        {item.sourceType === 'evenement' && (
+          <button
+            onClick={() => { onCancel(item); onClose() }}
+            className="w-full mt-3 py-2.5 rounded-xl text-xs font-semibold bg-white border border-[#E5E5E5] text-[#999999] hover:border-[#C41230] hover:text-[#C41230] transition-all"
+          >
+            {item.statut === 'annule' ? 'Rétablir cet événement' : 'Annuler et retirer de l’agenda'}
+          </button>
+        )}
       </div>
     </div>
   )
