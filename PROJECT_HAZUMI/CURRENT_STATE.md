@@ -83,6 +83,8 @@ production, qui n'est pas observable depuis le dépôt.
 | Vidéos | Disponible | Tables `videos`, `video_views` (`videos.tags` = chaîne séparée par virgules) |
 | Playlists personnelles | Disponible | Créées depuis la Bibliothèque avec choix d'univers ; visibles dans Parcours (WP 1.2). Une playlist est un **filtre par tags** |
 | Administration du catalogue | Disponible | Page `/admin/catalogue` |
+| Vignettes des ressources | Disponible | `src/lib/thumbnails.ts` — chaîne de secours à 4 niveaux (`thumbnail_url` explicite → URL ressource → vidéo de la leçon → vignette générée). **Ne renvoie jamais `null`** : aucune ressource ne peut rester sans image |
+| Couvertures de playlists | Disponible | `src/components/PlaylistCover.tsx` — générées depuis le contenu (1 / 2 / mosaïque de 4), noir et blanc + voile sombre (WP 1.3) |
 | Recherche, filtres, sélection multiple | Prévu | Backlog Sprint 3 — périmètre exact **à confirmer** |
 | Articulation playlists ↔ parcours personnels | À confirmer | Deux mécanismes coexistent ; la cible unifiée est décrite dans [domains/bibliotheque.md](domains/bibliotheque.md) |
 

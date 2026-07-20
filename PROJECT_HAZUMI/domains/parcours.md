@@ -34,6 +34,15 @@ sélection personnelle, préparation d'une échéance.
 - ils **apparaissent dans le menu Parcours**, aux côtés des parcours Hazumi ;
 - ils appartiennent au judoka qui les a créés.
 
+## Couvertures des playlists
+
+La couverture d'une playlist est **générée automatiquement** à partir de son contenu réel :
+une ressource affiche sa vignette, deux les affichent côte à côte, trois ou plus produisent une
+mosaïque de quatre cases. Rendu noir et blanc avec voile sombre.
+
+**L'utilisateur ne choisit jamais de couverture.** Une playlist sans ressource affiche un état
+« Playlist vide » explicite, jamais une icône générique.
+
 ## Règles
 
 - Un parcours a un objectif pédagogique explicite.

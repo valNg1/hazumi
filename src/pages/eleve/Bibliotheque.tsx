@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { detectVideoType, getVideoLabel, getThumbnailUrl } from '../../lib/video'
+import { detectVideoType, getVideoLabel } from '../../lib/video'
+import { resolveThumbnail } from '../../lib/thumbnails'
 import { renderMarkdown } from '../../lib/markdown'
 import {
   searchResources,
@@ -18,6 +19,8 @@ const TYPE_ICONE: Record<string, string> = { video: '▶', article: '📄', pdf:
 
 interface PlaylistRow { id: string; nom: string; tags: string[] | null; parcours: Univers }
 
+type RessourceAffichee = Ressource & { thumbnailUrl?: string | null; lessonVideoUrl?: string | null }
+
 function splitTags(t: string | null): string[] {
   return (t ?? '').split(',').map((x) => x.trim()).filter(Boolean)
 }
@@ -27,7 +30,7 @@ export default function Bibliotheque() {
   const [searchParams, setSearchParams] = useSearchParams()
   const playlistId = searchParams.get('playlist')
 
-  const [ressources, setRessources] = useState<Ressource[]>([])
+  const [ressources, setRessources] = useState<RessourceAffichee[]>([])
   const [playlists, setPlaylists] = useState<PlaylistRow[]>([])
   const [lessonIds, setLessonIds] = useState<Set<string>>(new Set())
   const [judokaId, setJudokaId] = useState<string | null>(null)
@@ -61,24 +64,27 @@ export default function Bibliotheque() {
     if (judoka) setJudokaId(judoka.id)
 
     const [{ data: cat }, { data: vids }, { data: lessons }, { data: pls }] = await Promise.all([
-      supabase.from('catalogue_hazumi').select('id, titre, type, parcours, tags, grade, famille, url, contenu').eq('visible_bibliotheque', true),
+      supabase.from('catalogue_hazumi').select('id, titre, type, parcours, tags, grade, famille, url, contenu, thumbnail_url').eq('visible_bibliotheque', true),
       supabase.from('videos').select('id, title, video_url, tags, parcours').eq('uploaded_by', user.id),
-      supabase.from('lesson').select('ressource_id').eq('published', true),
+      supabase.from('lesson').select('ressource_id, youtube_url').eq('published', true),
       judoka
         ? supabase.from('playlists_collections').select('id, nom, tags, parcours').eq('judoka_id', judoka.id)
         : Promise.resolve({ data: [] as PlaylistRow[] }),
     ])
 
-    const hazumi: Ressource[] = ((cat as (Ressource & { contenu: string | null })[]) ?? []).map((c) => ({
+    const lecons = ((lessons as { ressource_id: string; youtube_url: string | null }[]) ?? [])
+    const videoLecon = new Map(lecons.map((l) => [l.ressource_id, l.youtube_url]))
+    const hazumi: RessourceAffichee[] = ((cat as (Ressource & { contenu: string | null; thumbnail_url: string | null })[]) ?? []).map((c) => ({
       ...c, tags: c.tags ?? [], source: 'hazumi' as const,
+      thumbnailUrl: c.thumbnail_url, lessonVideoUrl: videoLecon.get(c.id) ?? null,
     }))
-    const perso: Ressource[] = (((vids as { id: string; title: string; video_url: string; tags: string | null; parcours: Univers }[]) ?? [])).map((v) => ({
+    const perso: RessourceAffichee[] = (((vids as { id: string; title: string; video_url: string; tags: string | null; parcours: Univers }[]) ?? [])).map((v) => ({
       id: v.id, titre: v.title, type: 'video' as const, parcours: v.parcours, tags: splitTags(v.tags),
       grade: null, famille: null, url: v.video_url, source: 'perso' as const,
     }))
 
     setRessources([...hazumi, ...perso])
-    setLessonIds(new Set(((lessons as { ressource_id: string }[]) ?? []).map((l) => l.ressource_id)))
+    setLessonIds(new Set(lecons.map((l) => l.ressource_id)))
     setPlaylists((pls as PlaylistRow[]) ?? [])
     setLoading(false)
   }
@@ -245,7 +251,7 @@ export default function Bibliotheque() {
       ) : (
         <div className="space-y-2" data-testid="liste-ressources">
           {affichees.map((item) => {
-            const vignette = item.type === 'video' && item.url ? getThumbnailUrl(item.url) : null
+            const vignette = resolveThumbnail(item)
             const choisi = selection.has(item.id)
             return (
               <div
@@ -267,11 +273,14 @@ export default function Bibliotheque() {
                 )}
 
                 <div className="flex-shrink-0 w-20 h-14 rounded bg-[#FAFAFA] border border-[#E5E5E5] overflow-hidden flex items-center justify-center">
-                  {vignette ? (
-                    <img src={vignette} alt="" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
-                  ) : (
-                    <span className="text-lg" aria-hidden="true">{TYPE_ICONE[item.type] ?? '📄'}</span>
-                  )}
+                  <img
+                    src={vignette}
+                    alt=""
+                    aria-hidden="true"
+                    loading="lazy"
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.currentTarget.replaceWith(Object.assign(document.createElement('span'), { className: 'text-lg', textContent: TYPE_ICONE[item.type] ?? '📄' })) }}
+                  />
                 </div>
 
                 <div className="flex-1 min-w-0">

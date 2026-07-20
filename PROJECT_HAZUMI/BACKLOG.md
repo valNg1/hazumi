@@ -56,6 +56,7 @@ Référence : [ADR-001](decisions/ADR-001-navigation.md)
 | HZ-901 | Bibliothèque | **Livrée au WP 1.2** : rayons, recherche, sélection multiple, création de playlist | P1 | Ready for Review |
 | HZ-902 | Mon espace | Navigation interne livrée au WP 1.2. La refonte complète du hub reste à faire | P2 | À traiter |
 | HZ-904 | Catalogue réduit à 3 ressources | Sur décision du PO, 45 des 48 ressources ont été **supprimées** le 2026-07-19 (dont le référentiel 1er Dan et la leçon Harai-goshi). Conséquence : **22 parcours sur 23 sont vides**. Seul « Préparer le 1er Dan » conserve du contenu (Nage-no-kata) | P1 | **À traiter** |
+| HZ-906 | Vidéo Facebook sans vignette | `facebook.com/share/r/…` : Facebook n'expose pas de vignette sans API authentifiée. Vignette générée affichée. Correction possible en renseignant `thumbnail_url` | P3 | **À traiter** |
 | HZ-905 | Parcours vides à masquer ou supprimer | 22 parcours n'ont plus aucune ressource et s'affichent vides côté judoka | P1 | **À traiter** |
 | HZ-903 | Progression des playlists | Calculée par intersection tags ↔ ressources terminées, faute de liste figée dans le modèle. À confirmer en recette | P2 | À confirmer |
 

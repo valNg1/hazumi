@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { universLabel } from '../../lib/bibliotheque'
+import { universLabel, normaliserTexte } from '../../lib/bibliotheque'
+import { resolveThumbnail } from '../../lib/thumbnails'
+import PlaylistCover from '../../components/PlaylistCover'
 import { computeProgress, nextRessourceId, toggleCompleted, type ParcoursRessourceLink } from '../../lib/parcoursProgress'
 import PremierDanSections from '../../components/PremierDanSections'
 import { PREMIER_DAN_TITRE } from '../../lib/premierDanContent'
@@ -69,6 +71,7 @@ export default function Parcours({
   const [lessonCount, setLessonCount] = useState<Record<string, number>>({})
   const [lessonIds, setLessonIds] = useState<Set<string>>(new Set())
   const [playlists, setPlaylists] = useState<PlaylistRow[]>([])
+  const [vignettesParPlaylist, setVignettesParPlaylist] = useState<Record<string, string[]>>({})
 
   const [selected, setSelected] = useState<ParcoursRow | null>(null)
   const [ressources, setRessources] = useState<Ressource[]>([])
@@ -125,7 +128,40 @@ export default function Parcours({
       .select('id, nom, tags, parcours')
       .eq('judoka_id', jId)
       .order('created_at', { ascending: false })
-    setPlaylists((data as PlaylistRow[]) ?? [])
+    const rows = (data as PlaylistRow[]) ?? []
+    setPlaylists(rows)
+    if (rows.length) await loadCouvertures(rows)
+  }
+
+  // La couverture d'une playlist est generee a partir de son contenu reel.
+  async function loadCouvertures(rows: PlaylistRow[]) {
+    const [{ data: cat }, { data: vids }, { data: les }] = await Promise.all([
+      supabase.from('catalogue_hazumi').select('id, titre, url, tags, thumbnail_url'),
+      supabase.from('videos').select('id, title, video_url, tags'),
+      supabase.from('lesson').select('ressource_id, youtube_url'),
+    ])
+    const videoLecon = new Map(
+      (((les as { ressource_id: string; youtube_url: string | null }[]) ?? [])).map((l) => [l.ressource_id, l.youtube_url])
+    )
+    type Item = { titre: string; url: string | null; tags: string[]; thumbnailUrl?: string | null; lessonVideoUrl?: string | null }
+    const items: Item[] = [
+      ...(((cat as { id: string; titre: string; url: string | null; tags: string[] | null; thumbnail_url: string | null }[]) ?? [])).map((c) => ({
+        titre: c.titre, url: c.url, tags: c.tags ?? [], thumbnailUrl: c.thumbnail_url, lessonVideoUrl: videoLecon.get(c.id) ?? null,
+      })),
+      ...(((vids as { title: string; video_url: string; tags: string | null }[]) ?? [])).map((v) => ({
+        titre: v.title, url: v.video_url, tags: (v.tags ?? '').split(',').map((t) => t.trim()).filter(Boolean),
+      })),
+    ]
+
+    const parPlaylist: Record<string, string[]> = {}
+    rows.forEach((pl) => {
+      const cibles = (pl.tags ?? []).map(normaliserTexte)
+      parPlaylist[pl.id] = items
+        .filter((i) => i.tags.some((t) => cibles.includes(normaliserTexte(t))))
+        .slice(0, 4)
+        .map((i) => resolveThumbnail(i))
+    })
+    setVignettesParPlaylist(parPlaylist)
   }
 
   async function loadList(jId: string) {
@@ -515,11 +551,11 @@ export default function Parcours({
               to={`/bibliotheque?playlist=${pl.id}`}
               className="text-left bg-white rounded-xl border border-dashed border-[#CCCCCC] overflow-hidden hover:border-[#C41230] hover:shadow-sm transition-all flex flex-col"
             >
-              <div className="aspect-[16/9] bg-[#FAFAFA] border-b border-[#F0F0F0] flex items-center justify-center">
-                <span className="text-3xl" aria-hidden="true">
-                  {pl.parcours === 'shiai' ? '🥊' : pl.parcours === 'judo-ka' ? '🎌' : '🥋'}
-                </span>
-              </div>
+              <PlaylistCover
+                vignettes={vignettesParPlaylist[pl.id] ?? []}
+                nom={pl.nom}
+                className="aspect-[16/9] border-b border-[#F0F0F0]"
+              />
               <div className="p-4 flex-1 flex flex-col">
                 <span className="text-[9px] uppercase tracking-widest text-[#999999] mb-1">
                   Playlist · {universLabel(pl.parcours)}

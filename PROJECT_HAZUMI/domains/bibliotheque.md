@@ -10,6 +10,13 @@
 La Bibliothèque est le point d'accès direct aux ressources, indépendamment des parcours. Elle
 répond à une intention précise : **chercher quelque chose**.
 
+## Vignettes
+
+Toute ressource affichée porte une vignette. Elle est résolue par
+`src/lib/thumbnails.ts` selon quatre niveaux : vignette explicite (`thumbnail_url`), URL de la
+ressource, vidéo de la leçon rattachée, puis vignette générée à partir du titre. Le résolveur ne
+renvoie jamais `null` — c'est ce qui garantit l'absence d'icône générique.
+
 ## Fonctions
 
 ### Accès aux ressources
