@@ -1,6 +1,6 @@
 # WP 1.4 — Micro-learning : bibliothèque de clips
 
-- **Statut :** `Draft` — architecture V2 proposée, en attente de décision du Product Owner
+- **Statut :** `Draft` — plan d'implémentation soumis, en attente de validation et des horodatages
 - **Implémentation :** **aucune**
 
 ## Objectif
