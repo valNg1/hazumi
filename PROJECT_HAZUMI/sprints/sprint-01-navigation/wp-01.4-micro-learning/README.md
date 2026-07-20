@@ -1,6 +1,6 @@
 # WP 1.4 — Micro-learning : bibliothèque de clips
 
-- **Statut :** `Draft` — proposition d'architecture, en attente de GO du Product Owner
+- **Statut :** `Draft` — architecture V2 proposée, en attente de décision du Product Owner
 - **Implémentation :** **aucune**
 
 ## Objectif
@@ -12,7 +12,8 @@ leçons et parcours. La vidéo intégrale reste disponible comme « Démonstrati
 
 | Document | Statut |
 |---|---|
-| [impact-report.md](impact-report.md) | Produit — architecture proposée |
+| [impact-report.md](impact-report.md) | V1 — architecture de segmentation (validée par le PO) |
+| [architecture-v2.md](architecture-v2.md) | **V2 — Learning Assets, échelle, miniatures, découpage assisté** |
 | `recette.md` | À rédiger après GO |
 | `changelog.md` | À rédiger après implémentation |
 
