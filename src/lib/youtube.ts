@@ -3,13 +3,22 @@ export function getYoutubeId(url: string): string | null {
   return m?.[1] ?? null
 }
 
-export function youtubeEmbedUrl(url: string, startSeconds?: number): string {
+/**
+ * URL d'integration. Avec `endSeconds`, le lecteur s'arrete a la fin du segment.
+ * Attention : YouTube stoppe la lecture, mais ne verrouille pas la barre de
+ * progression — une relance manuelle peut depasser la borne.
+ */
+export function youtubeEmbedUrl(url: string, startSeconds?: number, endSeconds?: number): string {
   const id = getYoutubeId(url)
   if (!id) return url
   const params = new URLSearchParams({ rel: '0', modestbranding: '1' })
-  if (startSeconds && startSeconds > 0) {
-    params.set('start', String(Math.floor(startSeconds)))
+  const debut = startSeconds && startSeconds > 0 ? Math.floor(startSeconds) : null
+  if (debut !== null) {
+    params.set('start', String(debut))
     params.set('autoplay', '1')
+  }
+  if (endSeconds && endSeconds > 0 && (debut === null || endSeconds > debut)) {
+    params.set('end', String(Math.floor(endSeconds)))
   }
   return `https://www.youtube.com/embed/${id}?${params.toString()}`
 }

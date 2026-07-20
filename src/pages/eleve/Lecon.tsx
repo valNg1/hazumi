@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { youtubeEmbedUrl, formatTimestamp } from '../../lib/youtube'
+import { hasSegment, segmentLabel } from '../../lib/segments'
 import { renderMarkdown } from '../../lib/markdown'
 import { gradeQuiz, type QuizQuestion } from '../../lib/lessonQuiz'
 import { getPremiumContent, QUIZ_NIVEAUX, type Technique } from '../../lib/lessonPremium'
@@ -19,7 +20,7 @@ interface Lesson {
   fiche_hazumi: string | null
   published: boolean
 }
-interface Ressource { id: string; titre: string; famille: string | null; grade: string | null; type: string }
+interface Ressource { id: string; titre: string; famille: string | null; grade: string | null; type: string; source_id: string | null; segment_start_s: number | null; segment_end_s: number | null }
 interface Chapter { id: string; ordre: number; titre: string; timestamp_seconds: number; description: string | null }
 interface QuizRow extends QuizQuestion { ordre: number; question: string; explication: string | null }
 
@@ -64,7 +65,7 @@ export default function Lecon() {
       setLesson(les as Lesson)
 
       const [{ data: res }, { data: chaps }, { data: qz }] = await Promise.all([
-        supabase.from('catalogue_hazumi').select('id, titre, famille, grade, type').eq('id', ressourceId).single(),
+        supabase.from('catalogue_hazumi').select('id, titre, famille, grade, type, source_id, segment_start_s, segment_end_s').eq('id', ressourceId).single(),
         supabase.from('lesson_chapters').select('*').eq('lesson_id', les.id).order('ordre', { ascending: true }),
         supabase.from('lesson_quiz').select('*').eq('lesson_id', les.id).order('ordre', { ascending: true }),
       ])
@@ -161,7 +162,13 @@ export default function Lecon() {
   }
 
   const graded = submitted ? gradeQuiz(quiz, answers) : null
-  const embedUrl = lesson.youtube_url ? youtubeEmbedUrl(lesson.youtube_url, startSeconds) : null
+  // Une ressource segmentee est lue comme une sequence courte : le lecteur
+  // demarre et s'arrete sur ses bornes, sans recherche manuelle.
+  const segment = { start: ressource.segment_start_s, end: ressource.segment_end_s }
+  const estSequence = hasSegment(segment)
+  const debut = estSequence && startSeconds === undefined ? segment.start! : startSeconds
+  const fin = estSequence && startSeconds === undefined ? segment.end! : undefined
+  const embedUrl = lesson.youtube_url ? youtubeEmbedUrl(lesson.youtube_url, debut, fin) : null
   const premium = getPremiumContent(ressource.id)
 
   return (
@@ -192,11 +199,26 @@ export default function Lecon() {
       </div>
 
       {/* 2. VIDEO + CHAPITRES */}
+      {estSequence && (
+        <div className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-[#E5E5E5] bg-white px-4 py-2.5">
+          <p className="text-xs text-[#666666]">
+            <span className="text-[10px] uppercase tracking-widest text-[#C41230] font-semibold mr-2">Séquence</span>
+            {segmentLabel(segment)}
+          </p>
+          <button
+            onClick={() => setStartSeconds(undefined)}
+            className="text-xs font-semibold text-[#C41230] hover:text-[#9B0E25] transition-colors"
+          >
+            ↻ Revoir la séquence
+          </button>
+        </div>
+      )}
+
       {embedUrl && (
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
           <div className="aspect-video rounded-lg overflow-hidden bg-black mb-4">
             <iframe
-              key={startSeconds ?? 'start'}
+              key={`${debut ?? 'start'}-${fin ?? 'fin'}`}
               title="Lecteur vidéo"
               src={embedUrl}
               className="w-full h-full"

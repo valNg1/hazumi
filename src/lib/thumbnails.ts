@@ -1,7 +1,10 @@
 import { detectVideoType } from './video'
+import { techniqueCard } from './techniqueCards'
 
 export interface ThumbnailInput {
   titre: string
+  /** Segment video : une sequence recoit une carte typographique dediee. */
+  segment?: { famille: string; ordre?: number; total?: number; parent?: string } | null
   /** Vignette explicite, saisie ou calculee en amont. Priorite absolue. */
   thumbnailUrl?: string | null
   /** URL portee par la ressource elle-meme. */
@@ -102,6 +105,18 @@ function depuisUrl(url: string): string | null {
  */
 export function resolveThumbnail(input: ThumbnailInput): string {
   if (input.thumbnailUrl?.trim()) return input.thumbnailUrl.trim()
+
+  // Une sequence video est identifiee par sa carte, pas par la vignette de la
+  // video source : sinon les neuf clips seraient indiscernables.
+  if (input.segment) {
+    return techniqueCard({
+      nom: input.titre,
+      famille: input.segment.famille,
+      ordre: input.segment.ordre,
+      total: input.segment.total,
+      parent: input.segment.parent,
+    })
+  }
 
   const depuisRessource = input.url ? depuisUrl(input.url) : null
   if (depuisRessource) return depuisRessource
