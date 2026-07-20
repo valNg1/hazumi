@@ -82,8 +82,13 @@ create index if not exists asset_sections_asset_idx on public.asset_sections (as
 
 **Trois types seulement**, contraints en base. Pas de JSONB, pas de moteur de rendu générique.
 
-**Extensibilité sans refonte :** ajouter demain « variante de compétition » ou « échauffement »
-demande une ligne de plus dans le `check`, pas une migration de structure.
+**Correction apportée après relecture du Product Owner :** ma formulation initiale — « ajouter un
+type ne demande pas de migration » — était **inexacte**. Avec une contrainte `CHECK`, ajouter un
+type **exige une migration** modifiant la contrainte.
+
+C'est un compromis assumé pour ce socle minimal : la contrainte garantit l'intégrité des données
+en base, au prix d'une migration par nouveau type. L'alternative JSONB a été écartée par le
+Product Owner pour ce WP.
 
 **Ce qui n'est pas dupliqué :** le quiz reste dans `lesson_quiz`, les ressources associées dans
 `parcours_ressources`. Les deux existent et fonctionnent.

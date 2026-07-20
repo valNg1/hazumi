@@ -244,7 +244,9 @@ create index on asset_blocks (asset_id, ordre);
 ## Pourquoi la composition plutôt que des colonnes
 
 Ajouter demain un bloc « échauffement recommandé » ou « variante de compétition » ne coûte
-**aucune migration** : un nouveau `type`. Une leçon devient la **composition** de blocs, pas une
+**aucune refonte de structure** : un nouveau `type`. Avec la contrainte `CHECK` retenue au WP 1.4,
+cela demande néanmoins **une migration** pour élargir la contrainte — compromis assumé, corrigé
+ici après relecture du Product Owner. Une leçon devient la **composition** de blocs, pas une
 ligne figée.
 
 C'est ce qui garantit l'exigence posée : construire les futurs parcours **sans remettre en cause

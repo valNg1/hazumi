@@ -11,6 +11,8 @@ export interface Ressource {
   grade: string | null
   famille: string | null
   url: string | null
+  /** Variantes orthographiques : la recherche les accepte, l'affichage non. */
+  aliases?: string[] | null
   /** hazumi = ajoute par l'administration ; perso = ajoute par le judoka. */
   source: Source
   contenu?: string | null
@@ -35,7 +37,7 @@ export function searchResources(items: Ressource[], recherche: string): Ressourc
   const q = normaliserTexte(recherche.trim())
   if (!q) return items
   return items.filter((item) => {
-    const champs = [item.titre, item.famille ?? '', item.grade ?? '', ...item.tags]
+    const champs = [item.titre, item.famille ?? '', item.grade ?? '', ...item.tags, ...(item.aliases ?? [])]
     return champs.some((c) => normaliserTexte(c).includes(q))
   })
 }

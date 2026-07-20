@@ -112,3 +112,32 @@ describe('buildPlaylistCover — couverture automatique', () => {
     expect(c.vignettes).toEqual(['https://img/1.jpg'])
   })
 })
+
+// WP 1.4 — chaque sequence video doit etre identifiable, sans extraire de frame.
+describe('resolveThumbnail — sequences video', () => {
+  it('donne une carte typographique a une sequence', () => {
+    const t = resolveThumbnail({
+      titre: 'Uki-otoshi',
+      url: null,
+      segment: { famille: 'Te-waza', ordre: 1, total: 3 },
+    })
+    expect(t).toMatch(/^data:image\/svg\+xml,/)
+    expect(decodeURIComponent(t)).toContain('Te-waza')
+    expect(decodeURIComponent(t)).toContain('1/3')
+  })
+
+  it('deux sequences de la meme video ont des cartes differentes', () => {
+    const a = resolveThumbnail({ titre: 'Uki-otoshi', url: null, segment: { famille: 'Te-waza', ordre: 1, total: 3 } })
+    const b = resolveThumbnail({ titre: 'Seoi-nage', url: null, segment: { famille: 'Te-waza', ordre: 2, total: 3 } })
+    expect(a).not.toBe(b)
+  })
+
+  it('une vignette explicite reste prioritaire sur la carte', () => {
+    const t = resolveThumbnail({
+      titre: 'Uki-otoshi',
+      thumbnailUrl: 'https://exemple/img.jpg',
+      segment: { famille: 'Te-waza' },
+    })
+    expect(t).toBe('https://exemple/img.jpg')
+  })
+})

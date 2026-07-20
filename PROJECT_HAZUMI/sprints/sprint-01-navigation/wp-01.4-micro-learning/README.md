@@ -1,6 +1,6 @@
 # WP 1.4 — Micro-learning : bibliothèque de clips
 
-- **Statut :** `Draft` — plan d'implémentation soumis, en attente de validation et des horodatages
+- **Statut :** `In Development` — phase 1 (socle) livrée ; les 9 clips attendent les horodatages
 - **Implémentation :** **aucune**
 
 ## Objectif
