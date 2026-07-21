@@ -84,7 +84,7 @@ production, qui n'est pas observable depuis le dépôt.
 | Playlists personnelles | Disponible | Créées depuis la Bibliothèque avec choix d'univers ; visibles dans Parcours (WP 1.2). Une playlist est un **filtre par tags** |
 | Administration du catalogue | Disponible | Page `/admin/catalogue` |
 | Vignettes des ressources | Disponible | `src/lib/thumbnails.ts` — chaîne de secours à 4 niveaux (`thumbnail_url` explicite → URL ressource → vidéo de la leçon → vignette générée). **Ne renvoie jamais `null`** : aucune ressource ne peut rester sans image |
-| Segments vidéo | Partiel | `media_sources` + `catalogue_hazumi.segment_*` + `src/lib/segments.ts` (WP 1.4). **Socle livré, aucun clip créé** — en attente des horodatages |
+| Médias par ressource | Partiel | Modèle **Learning Asset → N médias** : table `asset_media` (rôle, segment, média principal). `src/lib/{segments,assetMedia,nageNoKata,nageNoKataSeed}.ts`. **Socle complet, aucun clip créé** — en attente des horodatages (WP 1.4 ph.2) |
 | Sections pédagogiques | Prévu | Table `asset_sections` créée (`fiche`, `points_attention`, `erreurs`), **non alimentée** |
 | Couvertures de playlists | Disponible | `src/components/PlaylistCover.tsx` — générées depuis le contenu (1 / 2 / mosaïque de 4), noir et blanc + voile sombre (WP 1.3) |
 | Recherche, filtres, sélection multiple | Prévu | Backlog Sprint 3 — périmètre exact **à confirmer** |
