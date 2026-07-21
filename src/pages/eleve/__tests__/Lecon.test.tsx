@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import Lecon from '../Lecon'
 
 const h = vi.hoisted(() => ({
@@ -16,6 +16,7 @@ const h = vi.hoisted(() => ({
     lesson_progress: [] as any[],
     lesson_quiz_results: [] as any[],
     asset_media: [] as any[],
+    asset_sections: [] as any[],
   },
 }))
 
@@ -93,6 +94,8 @@ function seed() {
   h.store.lesson_notes = []
   h.store.lesson_progress = []
   h.store.lesson_quiz_results = []
+  h.store.asset_media = []
+  h.store.asset_sections = []
 }
 
 beforeEach(() => seed())
@@ -349,5 +352,69 @@ describe('Lecon — plusieurs medias par ressource (WP 1.4 phase 2)', () => {
     expect(src).not.toContain('start=')
     // Pas de selecteur pour un media unique.
     expect(screen.queryByRole('button', { name: 'Ralenti' })).toBeNull()
+  })
+})
+
+function LocPath() {
+  const loc = useLocation()
+  return <div data-testid="loc">{loc.pathname}</div>
+}
+
+describe('Lecon — integration parcours -> clip (WP 1.4 finalisation)', () => {
+  const NAGE = '04375145-35c7-4569-9409-6df8358caa13'
+  beforeEach(() => {
+    h.store.catalogue_hazumi = [
+      { id: NAGE, titre: 'Nage-no-kata', famille: 'Kata', grade: '1er dan', type: 'video' },
+      { id: 'clip-uki', titre: 'Uki-otoshi', famille: 'Te-waza', grade: '1er dan', type: 'video' },
+    ]
+    h.store.lesson = [
+      { id: 'L1', ressource_id: NAGE, youtube_url: 'https://youtu.be/bkhBZzE2HpM', duree_estimee: null, objectif: null, fiche_hazumi: null, published: true },
+      { id: 'L2', ressource_id: 'clip-uki', youtube_url: null, duree_estimee: null, objectif: 'Uki-otoshi', fiche_hazumi: null, published: true },
+    ]
+    h.store.lesson_chapters = []
+    h.store.lesson_quiz = []
+    h.store.lesson_notes = []; h.store.lesson_progress = []; h.store.lesson_quiz_results = []
+    h.store.asset_media = []
+  })
+
+  it('« Comprendre cette technique » ouvre le clip quand il existe', async () => {
+    render(
+      <MemoryRouter initialEntries={[`/eleve/lecon/${NAGE}`]}>
+        <LocPath />
+        <Routes><Route path="/eleve/lecon/:ressourceId" element={<Lecon />} /></Routes>
+      </MemoryRouter>
+    )
+    await waitFor(() => screen.getByText('Nage-no-kata'))
+    const btns = screen.getAllByRole('button', { name: /Comprendre cette technique/ })
+    // Uki-otoshi est la 1re technique de la 1re serie.
+    await userEvent.click(btns[0])
+    await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('/eleve/lecon/clip-uki'))
+  })
+
+  it('la page d’un clip affiche fiche, points d’attention, erreurs et un retour', async () => {
+    h.store.asset_media = [
+      { id: 'm', asset_id: 'clip-uki', role: 'demonstration', segment_start_s: 80, segment_end_s: 113, est_principal: true, ordre: 0, titre: null, media_sources: { url: 'https://youtu.be/bkhBZzE2HpM' } },
+    ]
+    h.store.asset_sections = [
+      { id: 's1', asset_id: 'clip-uki', type: 'fiche', ordre: 0, titre: 'La technique', contenu: 'Le mouvement complet.' },
+      { id: 's2', asset_id: 'clip-uki', type: 'points_attention', ordre: 0, titre: 'Rôle de Uke', contenu: 'Uke accompagne la chute.' },
+      { id: 's3', asset_id: 'clip-uki', type: 'erreurs', ordre: 0, titre: 'Erreur fréquente', contenu: 'Tirer avec les bras.' },
+    ]
+    render(
+      <MemoryRouter initialEntries={['/eleve/lecon/clip-uki']}>
+        <Routes><Route path="/eleve/lecon/:ressourceId" element={<Lecon />} /></Routes>
+      </MemoryRouter>
+    )
+    await waitFor(() => screen.getByText('Le mouvement complet.'))
+    // lecture immediate de la sequence
+    const src = screen.getByTitle('Lecteur vidéo').getAttribute('src') ?? ''
+    expect(src).toContain('start=80')
+    expect(src).toContain('end=113')
+    // fiche + points + erreurs
+    expect(screen.getByText('Le mouvement complet.')).toBeInTheDocument()
+    expect(screen.getByText('Uke accompagne la chute.')).toBeInTheDocument()
+    expect(screen.getByText('Tirer avec les bras.')).toBeInTheDocument()
+    // retour simple
+    expect(screen.getByRole('button', { name: /Retour aux techniques/ })).toBeInTheDocument()
   })
 })
