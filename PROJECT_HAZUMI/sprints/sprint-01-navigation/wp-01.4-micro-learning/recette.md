@@ -91,6 +91,22 @@ documentation produit devra décrire le comportement réel, pas le comportement 
 
 **Légende :** ⬜ non exécuté · ✅ conforme · ❌ non conforme · ⚠️ réserve
 
+
+## SC-06 — Modèle multi-médias (phase 2, recettable dès maintenant)
+
+Sans clip en production, ces contrôles portent sur le **socle** : la
+non-régression du lecteur sur la ressource Nage-no-kata (vidéo complète, un seul
+média implicite) et la solidité de la structure.
+
+| # | Étape | Attendu | Obtenu | Statut |
+|---|---|---|---|---|
+| 1 | Ouvrir la leçon Nage-no-kata | Vidéo complète, **aucun sélecteur de média** (un seul média) | | ⬜ |
+| 2 | Chapitres, quiz, notes | Inchangés | | ⬜ |
+| 3 | Console navigateur | Aucune erreur | | ⬜ |
+
+> Les scénarios de sélection de média (démonstration / ralenti / vue arrière)
+> deviennent recettables **après le seed**, en même temps que SC-04 et SC-05.
+
 ## Prérequis
 
 `Ctrl + Shift + R` — le service worker peut servir l'ancienne version.

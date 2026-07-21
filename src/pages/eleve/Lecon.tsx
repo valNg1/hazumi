@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { youtubeEmbedUrl, formatTimestamp } from '../../lib/youtube'
 import { hasSegment, segmentLabel } from '../../lib/segments'
+import { pickPrincipal, sortMedias, mediaSegment, roleLabel, hasMultipleMedias, type AssetMedia, type MediaRole } from '../../lib/assetMedia'
 import { renderMarkdown } from '../../lib/markdown'
 import { gradeQuiz, type QuizQuestion } from '../../lib/lessonQuiz'
 import { getPremiumContent, QUIZ_NIVEAUX, type Technique } from '../../lib/lessonPremium'
@@ -20,9 +21,10 @@ interface Lesson {
   fiche_hazumi: string | null
   published: boolean
 }
-interface Ressource { id: string; titre: string; famille: string | null; grade: string | null; type: string; source_id: string | null; segment_start_s: number | null; segment_end_s: number | null }
+interface Ressource { id: string; titre: string; famille: string | null; grade: string | null; type: string }
 interface Chapter { id: string; ordre: number; titre: string; timestamp_seconds: number; description: string | null }
 interface QuizRow extends QuizQuestion { ordre: number; question: string; explication: string | null }
+interface MediaRow { id: string; role: string; segment_start_s: number | null; segment_end_s: number | null; est_principal: boolean; ordre: number; titre: string | null; media_sources: { url: string } | null }
 
 export default function Lecon() {
   const { ressourceId } = useParams<{ ressourceId: string }>()
@@ -40,6 +42,8 @@ export default function Lecon() {
   const [statut, setStatut] = useState<'en_cours' | 'etudiee'>('en_cours')
   const [previousScore, setPreviousScore] = useState<{ score: number; total: number } | null>(null)
   const [techniqueOpen, setTechniqueOpen] = useState<Technique | null>(null)
+  const [medias, setMedias] = useState<AssetMedia[]>([])
+  const [mediaSelId, setMediaSelId] = useState<string | null>(null)
 
   const notesTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const notesLoaded = useRef(false)
@@ -64,15 +68,25 @@ export default function Lecon() {
       if (!active) return
       setLesson(les as Lesson)
 
-      const [{ data: res }, { data: chaps }, { data: qz }] = await Promise.all([
-        supabase.from('catalogue_hazumi').select('id, titre, famille, grade, type, source_id, segment_start_s, segment_end_s').eq('id', ressourceId).single(),
+      const [{ data: res }, { data: chaps }, { data: qz }, { data: med }] = await Promise.all([
+        supabase.from('catalogue_hazumi').select('id, titre, famille, grade, type').eq('id', ressourceId).single(),
         supabase.from('lesson_chapters').select('*').eq('lesson_id', les.id).order('ordre', { ascending: true }),
         supabase.from('lesson_quiz').select('*').eq('lesson_id', les.id).order('ordre', { ascending: true }),
+        supabase.from('asset_media').select('id, role, segment_start_s, segment_end_s, est_principal, ordre, titre, media_sources(url)').eq('asset_id', ressourceId),
       ])
       if (!active) return
       setRessource(res as Ressource)
       setChapters((chaps as Chapter[]) ?? [])
       setQuiz((qz as QuizRow[]) ?? [])
+      // Le lecteur recoit une collection de medias, plus un media unique.
+      const collection: AssetMedia[] = (((med as unknown as MediaRow[]) ?? [])).map((m) => ({
+        id: m.id, role: m.role as MediaRole,
+        sourceUrl: m.media_sources?.url ?? '',
+        segmentStart: m.segment_start_s, segmentEnd: m.segment_end_s,
+        estPrincipal: m.est_principal, ordre: m.ordre, titre: m.titre,
+      })).filter((m) => m.sourceUrl)
+      setMedias(collection)
+      setMediaSelId(pickPrincipal(collection)?.id ?? null)
 
 
       // Etat utilisateur (reprise).
@@ -162,13 +176,16 @@ export default function Lecon() {
   }
 
   const graded = submitted ? gradeQuiz(quiz, answers) : null
-  // Une ressource segmentee est lue comme une sequence courte : le lecteur
-  // demarre et s'arrete sur ses bornes, sans recherche manuelle.
-  const segment = { start: ressource.segment_start_s, end: ressource.segment_end_s }
+
+  // Le lecteur ouvre le media selectionne (principal par defaut). A defaut de
+  // media associe, il retombe sur la video de la lecon — comportement historique.
+  const mediaActif = medias.find((m) => m.id === mediaSelId) ?? null
+  const videoUrl = mediaActif?.sourceUrl ?? lesson.youtube_url
+  const segment = mediaActif ? mediaSegment(mediaActif) : { start: null, end: null }
   const estSequence = hasSegment(segment)
   const debut = estSequence && startSeconds === undefined ? segment.start! : startSeconds
   const fin = estSequence && startSeconds === undefined ? segment.end! : undefined
-  const embedUrl = lesson.youtube_url ? youtubeEmbedUrl(lesson.youtube_url, debut, fin) : null
+  const embedUrl = videoUrl ? youtubeEmbedUrl(videoUrl, debut, fin) : null
   const premium = getPremiumContent(ressource.id)
 
   return (
@@ -199,11 +216,29 @@ export default function Lecon() {
       </div>
 
       {/* 2. VIDEO + CHAPITRES */}
+      {hasMultipleMedias(medias) && (
+        <div className="flex gap-1.5 flex-wrap">
+          {sortMedias(medias).map((m) => (
+            <button
+              key={m.id}
+              onClick={() => { setMediaSelId(m.id); setStartSeconds(undefined) }}
+              className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                m.id === mediaSelId
+                  ? 'bg-[#0A0A0A] text-white border-[#0A0A0A] font-semibold'
+                  : 'bg-white text-[#666666] border-[#E5E5E5] hover:border-[#C41230] hover:text-[#C41230]'
+              }`}
+            >
+              {m.titre ?? roleLabel(m.role)}
+            </button>
+          ))}
+        </div>
+      )}
+
       {estSequence && (
         <div className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-[#E5E5E5] bg-white px-4 py-2.5">
           <p className="text-xs text-[#666666]">
             <span className="text-[10px] uppercase tracking-widest text-[#C41230] font-semibold mr-2">Séquence</span>
-            {segmentLabel(segment)}
+            {mediaActif ? `${roleLabel(mediaActif.role)} · ` : ''}{segmentLabel(segment)}
           </p>
           <button
             onClick={() => setStartSeconds(undefined)}

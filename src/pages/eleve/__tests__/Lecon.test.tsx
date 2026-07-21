@@ -15,6 +15,7 @@ const h = vi.hoisted(() => ({
     lesson_notes: [] as any[],
     lesson_progress: [] as any[],
     lesson_quiz_results: [] as any[],
+    asset_media: [] as any[],
   },
 }))
 
@@ -306,5 +307,47 @@ describe('Lecon premium (Nage-no-kata)', () => {
     expect(screen.getByText(/Niveau 1 · Comprendre/)).toBeInTheDocument()
     expect(screen.getByText(/Niveau 2 · Observer/)).toBeInTheDocument()
     expect(screen.getByText(/Niveau 3 · Analyser/)).toBeInTheDocument()
+  })
+})
+
+describe('Lecon — plusieurs medias par ressource (WP 1.4 phase 2)', () => {
+  it('lit le media principal par defaut et propose les autres', async () => {
+    h.store.asset_media = [
+      { id: 'm1', asset_id: 'r1', role: 'demonstration', segment_start_s: 80, segment_end_s: 113, est_principal: true, ordre: 0, titre: null, media_sources: { url: 'https://youtu.be/dQw4w9WgXcQ' } },
+      { id: 'm2', asset_id: 'r1', role: 'ralenti', segment_start_s: 200, segment_end_s: 230, est_principal: false, ordre: 1, titre: null, media_sources: { url: 'https://youtu.be/dQw4w9WgXcQ' } },
+    ]
+    renderLecon()
+    await waitFor(() => screen.getByText('Harai-goshi'))
+    // Le principal (demonstration) est charge : ses bornes sont dans l'URL.
+    const src = screen.getByTitle('Lecteur vidéo').getAttribute('src') ?? ''
+    expect(src).toContain('start=80')
+    expect(src).toContain('end=113')
+    // Selecteur : les deux roles sont proposes.
+    expect(screen.getByRole('button', { name: 'Démonstration' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ralenti' })).toBeInTheDocument()
+  })
+
+  it('changer de media recharge le lecteur sur ses bornes', async () => {
+    h.store.asset_media = [
+      { id: 'm1', asset_id: 'r1', role: 'demonstration', segment_start_s: 80, segment_end_s: 113, est_principal: true, ordre: 0, titre: null, media_sources: { url: 'https://youtu.be/dQw4w9WgXcQ' } },
+      { id: 'm2', asset_id: 'r1', role: 'ralenti', segment_start_s: 200, segment_end_s: 230, est_principal: false, ordre: 1, titre: null, media_sources: { url: 'https://youtu.be/dQw4w9WgXcQ' } },
+    ]
+    renderLecon()
+    await waitFor(() => screen.getByText('Harai-goshi'))
+    await userEvent.click(screen.getByRole('button', { name: 'Ralenti' }))
+    const src = screen.getByTitle('Lecteur vidéo').getAttribute('src') ?? ''
+    expect(src).toContain('start=200')
+    expect(src).toContain('end=230')
+  })
+
+  it('sans media associe, retombe sur la video de la lecon (retrocompatible)', async () => {
+    h.store.asset_media = []
+    renderLecon()
+    await waitFor(() => screen.getByText('Harai-goshi'))
+    const src = screen.getByTitle('Lecteur vidéo').getAttribute('src') ?? ''
+    expect(src).toContain('/embed/dQw4w9WgXcQ')
+    expect(src).not.toContain('start=')
+    // Pas de selecteur pour un media unique.
+    expect(screen.queryByRole('button', { name: 'Ralenti' })).toBeNull()
   })
 })
