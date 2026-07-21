@@ -4,6 +4,8 @@ import { supabase } from '../../lib/supabase'
 import { youtubeEmbedUrl, formatTimestamp } from '../../lib/youtube'
 import { hasSegment, segmentLabel } from '../../lib/segments'
 import { pickPrincipal, sortMedias, mediaSegment, roleLabel, hasMultipleMedias, type AssetMedia, type MediaRole } from '../../lib/assetMedia'
+import { clipForTechnique, type ClipRef } from '../../lib/techniqueClips'
+import { useNavigate } from 'react-router-dom'
 import { renderMarkdown } from '../../lib/markdown'
 import { gradeQuiz, type QuizQuestion } from '../../lib/lessonQuiz'
 import { getPremiumContent, QUIZ_NIVEAUX, type Technique } from '../../lib/lessonPremium'
@@ -25,9 +27,11 @@ interface Ressource { id: string; titre: string; famille: string | null; grade: 
 interface Chapter { id: string; ordre: number; titre: string; timestamp_seconds: number; description: string | null }
 interface QuizRow extends QuizQuestion { ordre: number; question: string; explication: string | null }
 interface MediaRow { id: string; role: string; segment_start_s: number | null; segment_end_s: number | null; est_principal: boolean; ordre: number; titre: string | null; media_sources: { url: string } | null }
+interface SectionRow { id: string; type: string; ordre: number; titre: string | null; contenu: string }
 
 export default function Lecon() {
   const { ressourceId } = useParams<{ ressourceId: string }>()
+  const navigate = useNavigate()
   const [judokaId, setJudokaId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [lesson, setLesson] = useState<Lesson | null>(null)
@@ -44,6 +48,8 @@ export default function Lecon() {
   const [techniqueOpen, setTechniqueOpen] = useState<Technique | null>(null)
   const [medias, setMedias] = useState<AssetMedia[]>([])
   const [mediaSelId, setMediaSelId] = useState<string | null>(null)
+  const [clips, setClips] = useState<ClipRef[]>([])
+  const [sections, setSections] = useState<SectionRow[]>([])
 
   const notesTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const notesLoaded = useRef(false)
@@ -68,16 +74,18 @@ export default function Lecon() {
       if (!active) return
       setLesson(les as Lesson)
 
-      const [{ data: res }, { data: chaps }, { data: qz }, { data: med }] = await Promise.all([
+      const [{ data: res }, { data: chaps }, { data: qz }, { data: med }, { data: sec }] = await Promise.all([
         supabase.from('catalogue_hazumi').select('id, titre, famille, grade, type').eq('id', ressourceId).single(),
         supabase.from('lesson_chapters').select('*').eq('lesson_id', les.id).order('ordre', { ascending: true }),
         supabase.from('lesson_quiz').select('*').eq('lesson_id', les.id).order('ordre', { ascending: true }),
         supabase.from('asset_media').select('id, role, segment_start_s, segment_end_s, est_principal, ordre, titre, media_sources(url)').eq('asset_id', ressourceId),
+        supabase.from('asset_sections').select('id, type, ordre, titre, contenu').eq('asset_id', ressourceId).order('ordre', { ascending: true }),
       ])
       if (!active) return
       setRessource(res as Ressource)
       setChapters((chaps as Chapter[]) ?? [])
       setQuiz((qz as QuizRow[]) ?? [])
+      setSections((sec as SectionRow[]) ?? [])
       // Le lecteur recoit une collection de medias, plus un media unique.
       const collection: AssetMedia[] = (((med as unknown as MediaRow[]) ?? [])).map((m) => ({
         id: m.id, role: m.role as MediaRole,
@@ -87,6 +95,18 @@ export default function Lecon() {
       })).filter((m) => m.sourceUrl)
       setMedias(collection)
       setMediaSelId(pickPrincipal(collection)?.id ?? null)
+
+      // Page premium (Nage-no-kata) : on cherche les clips publies des techniques
+      // pour que « Comprendre cette technique » ouvre directement la sequence.
+      const premiumIci = getPremiumContent(ressourceId)
+      if (premiumIci) {
+        const noms = premiumIci.series.flatMap((serie) => serie.techniques.map((t) => t.nom))
+        const { data: cat } = await supabase.from('catalogue_hazumi').select('id, titre').in('titre', noms)
+        const { data: pub } = await supabase.from('lesson').select('ressource_id').eq('published', true)
+        const publies = new Set(((pub as { ressource_id: string }[]) ?? []).map((l) => l.ressource_id))
+        const dispo = (((cat as ClipRef[]) ?? [])).filter((c) => publies.has(c.id))
+        if (active) setClips(dispo)
+      }
 
 
       // Etat utilisateur (reprise).
@@ -188,8 +208,15 @@ export default function Lecon() {
   const embedUrl = videoUrl ? youtubeEmbedUrl(videoUrl, debut, fin) : null
   const premium = getPremiumContent(ressource.id)
 
+  const estClip = sections.length > 0
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      {estClip && (
+        <button onClick={() => navigate(-1)} className="text-xs uppercase tracking-widest text-[#C41230] hover:text-[#9B0E25] font-semibold">
+          ← Retour aux techniques
+        </button>
+      )}
       {/* 1. HEADER */}
       <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
         <div className="flex items-start justify-between gap-4">
@@ -296,9 +323,37 @@ export default function Lecon() {
         </div>
       )}
 
+      {/* Sections pedagogiques du clip : fiche, points d'attention, erreurs. */}
+      {estClip && (
+        <div className="space-y-4">
+          {sections.filter((x) => x.type === 'fiche').map((x) => (
+            <div key={x.id} className="bg-white rounded-xl border border-[#E5E5E5] p-5">
+              <h2 className="text-lg font-bold text-[#0A0A0A] mb-2">{x.titre ?? 'La technique'}</h2>
+              <div className="text-sm text-[#333333] leading-relaxed">{renderMarkdown(x.contenu)}</div>
+            </div>
+          ))}
+          {sections.filter((x) => x.type === 'points_attention').map((x) => (
+            <div key={x.id} className="bg-white rounded-xl border border-[#E5E5E5] p-5">
+              <h2 className="text-sm font-bold text-[#0A0A0A] mb-2 flex items-center gap-2"><span aria-hidden="true">🎯</span>{x.titre ?? 'Points d’attention'}</h2>
+              <p className="text-sm text-[#333333] leading-relaxed">{x.contenu}</p>
+            </div>
+          ))}
+          {sections.filter((x) => x.type === 'erreurs').map((x) => (
+            <div key={x.id} className="rounded-xl border border-amber-200 bg-amber-50/50 p-5">
+              <h2 className="text-sm font-bold text-amber-800 mb-2 flex items-center gap-2"><span aria-hidden="true">⚠</span>{x.titre ?? 'Erreur fréquente'}</h2>
+              <p className="text-sm text-[#333333] leading-relaxed">{x.contenu}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* 3. FICHE HAZUMI — premium (structuree) ou markdown generique */}
       {premium ? (
-        <PremiumLessonContentView content={premium} onOpenTechnique={setTechniqueOpen} />
+        <PremiumLessonContentView content={premium} onOpenTechnique={(t) => {
+          const clipId = clipForTechnique(t.nom, clips)
+          if (clipId) navigate(`/eleve/lecon/${clipId}`)
+          else setTechniqueOpen(t)
+        }} />
       ) : lesson.fiche_hazumi ? (
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
           <h2 className="text-lg font-bold text-[#0A0A0A] mb-2">Fiche Hazumi</h2>
