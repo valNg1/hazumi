@@ -15,13 +15,13 @@ export interface BorneTechnique {
 }
 
 export const HORODATAGES: BorneTechnique[] = [
-  { nom: 'Uki-otoshi', debut: null, fin: null },
-  { nom: 'Seoi-nage', debut: null, fin: null },
-  { nom: 'Kata-guruma', debut: null, fin: null },
-  { nom: 'Uki-goshi', debut: null, fin: null },
-  { nom: 'Harai-goshi', debut: null, fin: null },
-  { nom: 'Tsurikomi-goshi', debut: null, fin: null },
-  { nom: 'Okuri-ashi-harai', debut: null, fin: null },
-  { nom: 'Sasae-tsurikomi-ashi', debut: null, fin: null },
-  { nom: 'Uchi-mata', debut: null, fin: null },
+  { nom: 'Uki-otoshi', debut: '1:56', fin: '2:21' },
+  { nom: 'Seoi-nage', debut: '2:21', fin: '2:43' },
+  { nom: 'Kata-guruma', debut: '2:43', fin: '3:16' },
+  { nom: 'Uki-goshi', debut: '3:16', fin: '3:34' },
+  { nom: 'Harai-goshi', debut: '3:34', fin: '3:56' },
+  { nom: 'Tsurikomi-goshi', debut: '3:56', fin: '4:27' },
+  { nom: 'Okuri-ashi-harai', debut: '4:27', fin: '4:48' },
+  { nom: 'Sasae-tsurikomi-ashi', debut: '4:48', fin: '5:11' },
+  { nom: 'Uchi-mata', debut: '5:11', fin: '6:56' },
 ]

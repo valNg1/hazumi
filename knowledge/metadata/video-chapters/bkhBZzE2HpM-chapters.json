@@ -1,0 +1,73 @@
+{
+  "videoId": "bkhBZzE2HpM",
+  "sourceUrl": "https://www.youtube.com/watch?v=bkhBZzE2HpM",
+  "title": "Nage-no-Kata (English ver.)",
+  "durationSeconds": 1765,
+  "source": "transcript",
+  "chapters": [
+    {
+      "ordre": 1,
+      "titre": "Uki-otoshi",
+      "timestamp_seconds": 116,
+      "source": "transcript-keyword",
+      "note": "Première occurrence détectée dans la transcription automatique"
+    },
+    {
+      "ordre": 2,
+      "titre": "Seoi-nage",
+      "timestamp_seconds": 141,
+      "source": "transcript-keyword",
+      "note": "Première occurrence détectée dans la transcription automatique"
+    },
+    {
+      "ordre": 3,
+      "titre": "Kata-guruma",
+      "timestamp_seconds": 163,
+      "source": "transcript-keyword",
+      "note": "Première occurrence détectée dans la transcription automatique"
+    },
+    {
+      "ordre": 4,
+      "titre": "Uki-goshi",
+      "timestamp_seconds": 196,
+      "source": "transcript-keyword",
+      "note": "Première occurrence détectée dans la transcription automatique"
+    },
+    {
+      "ordre": 5,
+      "titre": "Harai-goshi",
+      "timestamp_seconds": 214,
+      "source": "transcript-keyword",
+      "note": "Première occurrence détectée dans la transcription automatique"
+    },
+    {
+      "ordre": 6,
+      "titre": "Tsurikomi-goshi",
+      "timestamp_seconds": 236,
+      "source": "transcript-keyword",
+      "note": "Première occurrence détectée dans la transcription automatique"
+    },
+    {
+      "ordre": 7,
+      "titre": "Okuri-ashi-harai",
+      "timestamp_seconds": 267,
+      "source": "transcript-keyword",
+      "note": "Première occurrence détectée dans la transcription automatique"
+    },
+    {
+      "ordre": 8,
+      "titre": "Sasae-tsurikomi-ashi",
+      "timestamp_seconds": 288,
+      "source": "transcript-keyword",
+      "note": "Première occurrence détectée dans la transcription automatique"
+    },
+    {
+      "ordre": 9,
+      "titre": "Uchi-mata",
+      "timestamp_seconds": 311,
+      "source": "transcript-keyword",
+      "note": "Première occurrence détectée dans la transcription automatique"
+    }
+  ],
+  "needsValidation": true
+}
