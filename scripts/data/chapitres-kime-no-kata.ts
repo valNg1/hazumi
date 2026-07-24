@@ -1,17 +1,17 @@
 /**
- * Chapitres initiaux du Kime-no-kata (UV1 — 3e Dan).
+ * Chapitrage du Kime-no-kata (UV1 — 3e Dan), source `Hsvx-zNDEUo`.
  *
- * Issus du pipeline d'extraction (`scripts/extract-video-chapters.ts`) sur la
- * vidéo Kodokan `Hsvx-zNDEUo`. La vidéo ne porte NI chapitrage YouTube NI
- * timestamps en description : la seule source exploitable est la transcription
- * automatique anglaise.
+ * DEUX NIVEAUX :
  *
- * ⚠️ Source vidéo remplacée sur décision du Product Owner : toutes les bornes
- * détaillées ont été REMISES À ZÉRO et sont à revalider sur la nouvelle vidéo.
- * La structure du kata est conservée : 8 techniques Idori + 12 Tachi-ai.
- * Aucune n'est présentée comme validée. Les 20 techniques individuelles ne sont
- * pas bornées : l'ASR anglaise ne restitue pas les noms japonais
- * (« Kime-no-kata » est transcrit « Kimino cutter », « Ryote-dori » absent).
+ * 1. Bornes MACRO (7) — fournies par le Directeur Technique. Fixes, validées.
+ * 2. Bornes DÉTAILLÉES (26 techniques) — **non déterminables** sur cette source :
+ *    la vidéo ne porte NI chapitrage YouTube, NI timestamps en description,
+ *    NI piste de sous-titres (`has no automatic captions / no subtitles`).
+ *    Aucune n'est inventée : toutes sont marquées « À valider » et ancrées sur
+ *    le début de leur série, pour rester cliquables sans prétendre être exactes.
+ *
+ * L'ordre des techniques est le référentiel officiel fourni par le Directeur
+ * Technique. Il n'a pas été recherché ni vérifié.
  */
 export interface ChapitreCandidat {
   ordre: number
@@ -23,29 +23,57 @@ export interface ChapitreCandidat {
   note: string
 }
 
-export const KIME_NO_KATA_CHAPITRES: ChapitreCandidat[] = [
+export interface SerieKata {
+  titre: string
+  timestamp: number
+  techniques: string[]
+}
+
+/** Bornes macro validées + ordre officiel des techniques. Structure fixe. */
+export const KIME_NO_KATA_SERIES: SerieKata[] = [
+  { titre: 'Opening', timestamp: 0, techniques: [] },
   {
-    ordre: 1,
-    titre: 'Introduction et salut',
-    timestamp: 0,
-    valide: true,
-    note: 'Début de vidéo — borne certaine.',
+    titre: 'Series 1 — Idori (Unarmed)',
+    timestamp: 64,
+    techniques: ['Ryote-dori', 'Sode-tori', 'Tsukkake', 'Tsuki-age', 'Suri-age', 'Yoko-uchi', 'Ke-age', 'Ushiro-dori'],
   },
   {
-    ordre: 2,
-    titre: 'Idori — les 8 techniques à genoux',
-    timestamp: 0,
-    valide: false,
-    note: 'À VALIDER : borne réinitialisée suite au changement de source vidéo. À relever sur la nouvelle vidéo.',
+    titre: 'Series 2 — Idori (Knife)',
+    timestamp: 200,
+    techniques: ['Tsukkake', 'Choku-zuki', 'Naname-zuki', 'Kiri-komi'],
   },
   {
-    ordre: 3,
-    titre: 'Tachi-ai — les 12 techniques debout',
-    timestamp: 0,
-    valide: false,
-    note: 'À VALIDER : borne réinitialisée suite au changement de source vidéo. À relever sur la nouvelle vidéo.',
+    titre: 'Series 3 — Tachi-ai (Unarmed)',
+    timestamp: 363,
+    techniques: ['Ryote-dori', 'Sode-tori', 'Tsukkake', 'Tsuki-age', 'Suri-age', 'Yoko-uchi', 'Ushiro-dori'],
   },
+  {
+    titre: 'Series 4 — Tachi-ai (Knife)',
+    timestamp: 507,
+    techniques: ['Tsukkake', 'Choku-zuki', 'Naname-zuki', 'Nuki-gake'],
+  },
+  {
+    titre: 'Series 5 — Tachi-ai (Sword)',
+    timestamp: 590,
+    techniques: ['Kiri-oroshi', 'Morote-zuki', 'Nukiuchi'],
+  },
+  { titre: 'Closing', timestamp: 673, techniques: [] },
 ]
+
+const VALIDE = 'Borne macro validée par le Directeur Technique.'
+const A_VALIDER =
+  'À VALIDER : borne fine non déterminable — cette source n’a ni chapitrage, ni description horodatée, ni sous-titres. Ancrée sur le début de sa série.'
+
+/** 7 bornes macro validées + 26 techniques marquées « À valider ». */
+export const KIME_NO_KATA_CHAPITRES: ChapitreCandidat[] = KIME_NO_KATA_SERIES.flatMap((s) => [
+  { titre: s.titre, timestamp: s.timestamp, valide: true, note: VALIDE },
+  ...s.techniques.map((t) => ({
+    titre: `${s.titre} · ${t}`,
+    timestamp: s.timestamp,
+    valide: false,
+    note: A_VALIDER,
+  })),
+]).map((c, i) => ({ ordre: i + 1, ...c }))
 
 export const KIME_NO_KATA_SOURCE = {
   url: 'https://www.youtube.com/watch?v=Hsvx-zNDEUo',
