@@ -29,3 +29,9 @@ test-results/
 
 # Sauvegardes de donnees : ne doivent pas etre versionnees
 backup-catalogue-*.json
+
+# Outils et medias locaux du pipeline d'extraction (jamais versionnes)
+videos/
+tools/
+ffmpeg.zip
+*.tmp.json
