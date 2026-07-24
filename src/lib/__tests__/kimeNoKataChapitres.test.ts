@@ -8,9 +8,9 @@ import {
 // sont des candidats : ce test garantit qu'aucune n'est presentee comme validee
 // sans l'etre, et que la structure reste exploitable par le seed.
 describe('Chapitres candidats — Kime-no-kata', () => {
-  it('source : video Kodokan 1-YAOozPQNU', () => {
-    expect(KIME_NO_KATA_SOURCE.url).toContain('1-YAOozPQNU')
-    expect(KIME_NO_KATA_SOURCE.dureeSeconds).toBe(2566)
+  it('source : video Kodokan Hsvx-zNDEUo', () => {
+    expect(KIME_NO_KATA_SOURCE.url).toContain('Hsvx-zNDEUo')
+    expect(KIME_NO_KATA_SOURCE.dureeSeconds).toBe(757)
   })
 
   it('couvre les deux sections du kata plus l’introduction', () => {

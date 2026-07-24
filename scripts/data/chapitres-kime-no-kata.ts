@@ -2,11 +2,13 @@
  * Chapitres initiaux du Kime-no-kata (UV1 — 3e Dan).
  *
  * Issus du pipeline d'extraction (`scripts/extract-video-chapters.ts`) sur la
- * vidéo Kodokan `1-YAOozPQNU`. La vidéo ne porte NI chapitrage YouTube NI
+ * vidéo Kodokan `Hsvx-zNDEUo`. La vidéo ne porte NI chapitrage YouTube NI
  * timestamps en description : la seule source exploitable est la transcription
  * automatique anglaise.
  *
- * ⚠️ Toutes ces bornes sont des CANDIDATS à valider par le Product Owner.
+ * ⚠️ Source vidéo remplacée sur décision du Product Owner : toutes les bornes
+ * détaillées ont été REMISES À ZÉRO et sont à revalider sur la nouvelle vidéo.
+ * La structure du kata est conservée : 8 techniques Idori + 12 Tachi-ai.
  * Aucune n'est présentée comme validée. Les 20 techniques individuelles ne sont
  * pas bornées : l'ASR anglaise ne restitue pas les noms japonais
  * (« Kime-no-kata » est transcrit « Kimino cutter », « Ryote-dori » absent).
@@ -34,20 +36,20 @@ export const KIME_NO_KATA_CHAPITRES: ChapitreCandidat[] = [
     titre: 'Idori — les 8 techniques à genoux',
     timestamp: 0,
     valide: false,
-    note: 'À VALIDER : début exact inconnu. La section commence après le cérémonial d’ouverture ; la transcription ne marque pas ce passage.',
+    note: 'À VALIDER : borne réinitialisée suite au changement de source vidéo. À relever sur la nouvelle vidéo.',
   },
   {
     ordre: 3,
     titre: 'Tachi-ai — les 12 techniques debout',
-    timestamp: 1636,
+    timestamp: 0,
     valide: false,
-    note: 'À VALIDER : dérivé de la transcription (27:16 « Now tachi, the uke and tori stand together »), après la repose du poignard qui clôt Idori.',
+    note: 'À VALIDER : borne réinitialisée suite au changement de source vidéo. À relever sur la nouvelle vidéo.',
   },
 ]
 
 export const KIME_NO_KATA_SOURCE = {
-  url: 'https://www.youtube.com/watch?v=1-YAOozPQNU',
+  url: 'https://www.youtube.com/watch?v=Hsvx-zNDEUo',
   titre: 'Kime-no-kata — Démonstration Kodokan',
   fournisseur: 'youtube',
-  dureeSeconds: 2566,
+  dureeSeconds: 757,
 }
