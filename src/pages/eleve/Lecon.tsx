@@ -295,7 +295,13 @@ export default function Lecon() {
             ) : (
               <div className="space-y-1">
                 {chapters.map((c) => {
-                  const active = startSeconds === c.timestamp_seconds
+                  // Une technique enfant porte le prefixe de sa serie (« Serie · Technique »)
+                  // et n'a pas de borne propre : on n'affiche pas le timestamp macro,
+                  // qui laisserait croire que toutes demarrent au meme instant.
+                  const estEnfant = c.titre.includes(' · ')
+                  const aValider = (c.description ?? '').trimStart().startsWith('⚠')
+                  const sansBornePropre = estEnfant && aValider
+                  const active = !sansBornePropre && startSeconds === c.timestamp_seconds
                   return (
                     <button
                       key={c.id}
@@ -305,11 +311,17 @@ export default function Lecon() {
                         active ? 'bg-[#C41230]/5 ring-1 ring-[#C41230]/20' : 'hover:bg-[#FAFAFA]'
                       }`}
                     >
-                      <span className={`flex-shrink-0 text-xs font-semibold rounded px-2 py-0.5 tabular-nums ${
-                        active ? 'bg-[#C41230] text-white' : 'text-[#C41230] bg-[#C41230]/5'
-                      }`}>
-                        {formatTimestamp(c.timestamp_seconds)}
-                      </span>
+                      {sansBornePropre ? (
+                        <span className="flex-shrink-0 text-[10px] font-semibold uppercase tracking-wide rounded px-2 py-0.5 text-amber-700 bg-amber-50 border border-amber-200">
+                          À valider
+                        </span>
+                      ) : (
+                        <span className={`flex-shrink-0 text-xs font-semibold rounded px-2 py-0.5 tabular-nums ${
+                          active ? 'bg-[#C41230] text-white' : 'text-[#C41230] bg-[#C41230]/5'
+                        }`}>
+                          {formatTimestamp(c.timestamp_seconds)}
+                        </span>
+                      )}
                       <span className="min-w-0">
                         <span className={`block text-sm font-medium ${active ? 'text-[#C41230]' : 'text-[#0A0A0A]'}`}>{c.titre}</span>
                         {c.description && <span className="block text-xs text-[#999999]">{c.description}</span>}
