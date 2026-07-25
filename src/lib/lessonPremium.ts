@@ -1,6 +1,14 @@
 // Contenu structure des lecons "premium" Hazumi (modele de reference editorial).
 // Pilote par ressource_id -> extensible aux futures lecons sans changer l'archi.
 
+import {
+  KIME_NO_KATA_TECHNIQUES,
+  KIME_NO_KATA_META,
+  KIME_NO_KATA_RESSOURCE_ID,
+  type TechniqueKime as KimeTechnique,
+  type Groupe as KimeGroupe,
+} from './kimeNoKata'
+
 export interface PremiumMeta {
   tempsLecture: string
   objectif: string
@@ -13,12 +21,15 @@ export interface PrincipeIllustre { titre: string; technique: string; texte: str
 export interface JuryCritere { critere: string; exemple: string; tori: string; uke: string }
 export interface RepereGroupe { titre: string; icone: string; items: string[] }
 export interface TechniqueDetail {
-  miseEnAction: string
-  kuzushi: string
-  tsukuri: string
-  kake: string
-  uke: string
-  erreur: string
+  // Décomposition Nage-no-kata (projections)
+  miseEnAction?: string
+  kuzushi?: string
+  tsukuri?: string
+  kake?: string
+  uke?: string
+  erreur?: string
+  // Fiche générique (kata de défense : Kime-no-kata) — libellés libres
+  fiche?: { label: string; texte: string }[]
 }
 // ressource = titre catalogue si different ; detail = decomposition redigee par Hazumi
 export interface Technique { nom: string; ressource?: string; detail?: TechniqueDetail }
@@ -32,6 +43,7 @@ export interface PremiumLessonContent {
   jury: JuryCritere[]
   reperes: RepereGroupe[]
   series: SerieCard[]
+  seriesTitre?: string // Titre de la section 4 (défaut : « Les trois séries du premier dan »)
   regardExaminateur: string[]
   conseilExpert: string[]
   aRetenir: string[]
@@ -252,8 +264,101 @@ const NAGE_NO_KATA: PremiumLessonContent = {
   ],
 }
 
+// ── Kime-no-kata (UV1, 3e Dan) ───────────────────────────────────────────────
+// Même structure que Nage-no-kata. Les 20 techniques officielles (src/lib/kimeNoKata.ts)
+// alimentent les 5 séries ; chaque « Comprendre cette technique » ouvre la fiche.
+
+const GROUPE_ORDRE: { groupe: KimeGroupe; nom: string; objectif: string; apprend: string }[] = [
+  { groupe: 'idori-mains-nues', nom: 'Idori — mains nues (5)', objectif: 'À genoux (Seiza), répondre à une saisie ou un atemi par un déséquilibre, un atemi puis une clé ou une immobilisation.', apprend: 'Le principe de base du kata : rompre l’équilibre et ouvrir par l’atemi avant de contrôler, sans opposer la force à la force.' },
+  { groupe: 'idori-poignard', nom: 'Idori — poignard (3)', objectif: 'À genoux, neutraliser une attaque au poignard : sortir de la ligne de l’arme, contrôler le bras armé, verrouiller le coude.', apprend: 'On ne saisit jamais la lame : c’est le bras armé que Tori contrôle et dirige loin des deux partenaires.' },
+  { groupe: 'tachiai-mains-nues', nom: 'Tachiai — mains nues (8)', objectif: 'Debout, répondre par le Tai-sabaki à une saisie, un coup de poing, un coup de pied ou une prise par derrière.', apprend: 'Le déplacement (Tai-sabaki) précède toujours la technique : esquiver, puis contrôler ou projeter.' },
+  { groupe: 'tachiai-poignard', nom: 'Tachiai — poignard (2)', objectif: 'Debout, esquiver une attaque de poignard puis contrôler le bras armé par une clé de coude.', apprend: 'Les mêmes principes qu’à genoux, transposés debout : distance, esquive, contrôle du bras armé.' },
+  { groupe: 'tachiai-sabre', nom: 'Tachiai — sabre (2)', objectif: 'Debout, gérer la distance (Ma-ai) face au sabre : bloquer le dégainage, puis esquiver et contrôler la coupe descendante.', apprend: 'La maîtrise de la distance face à l’arme la plus dangereuse ; les techniques de clôture du kata.' },
+]
+
+function ficheTechnique(t: KimeTechnique): TechniqueDetail {
+  return {
+    fiche: [
+      { label: 'Objectif', texte: t.objectif },
+      { label: 'Situation', texte: t.situation },
+      { label: 'Attaque de Uke', texte: t.attaque },
+      { label: 'Principe de défense', texte: t.defense },
+      { label: 'Points clés', texte: t.pointsCles.map((p) => `• ${p}`).join('\n') },
+      { label: 'Erreurs fréquentes', texte: t.erreurs.map((e) => `• ${e}`).join('\n') },
+      { label: 'Sécurité', texte: t.securite.map((s) => `• ${s}`).join('\n') },
+      { label: 'En résumé', texte: t.resume },
+    ],
+  }
+}
+
+const KIME_NO_KATA: PremiumLessonContent = {
+  meta: {
+    tempsLecture: KIME_NO_KATA_META.tempsLecture,
+    objectif: 'Comprendre la logique du Kime-no-kata — le kata de la décision — avant d’en apprendre les 20 techniques.',
+    niveau: 'Préparation 3e Dan',
+    difficulte: KIME_NO_KATA_META.difficulte,
+  },
+  objectifIntro:
+    'Le Kime-no-kata, « kata de la décision », est un kata de combat de Jigoro Kano : 20 techniques de défense contre une saisie, un atemi, un poignard ou un sabre, la moitié à genoux (Idori), la moitié debout (Tachiai).',
+  objectifs: KIME_NO_KATA_META.objectifsApprentissage,
+  pourquoi: {
+    timeline: [
+      { annee: '1888', label: 'Jigoro Kano codifie le Shobu-no-kata, kata de combat réel.' },
+      { annee: '1906', label: 'Le Kodokan fixe la forme officielle sous le nom de Kime-no-kata.' },
+      { annee: "Aujourd'hui", label: 'Kata exigé à partir du 3e Dan : self-défense, armes et atemi.' },
+    ],
+    blocs: [
+      { titre: 'Un kata de combat, pas de démonstration', texte: 'Là où le Nage-no-kata montre les projections, le Kime-no-kata montre la réponse à une agression réelle : saisies, coups, poignard et sabre. L’intention (Kime) est celle d’une défense décidée et efficace.' },
+      { titre: 'Idori et Tachiai', texte: 'Les 8 premières techniques (Idori) se font à genoux en Seiza ; les 12 suivantes (Tachiai) se font debout. La même logique de défense se transpose des deux positions.' },
+    ],
+    principes: [
+      { titre: 'Tai-sabaki', technique: 'Toutes les techniques', texte: 'Le déplacement précède la technique : on esquive pour sortir de la ligne d’attaque avant de contrôler. Jamais la force contre la force.' },
+      { titre: 'Atemi', technique: 'Suigetsu · Uto', texte: 'L’atemi (au plexus, entre les sourcils…) crée l’ouverture qui rend le contrôle possible. Il est toujours maîtrisé, sans contact réel.' },
+      { titre: 'Contrôle du bras armé', technique: 'Poignard · sabre', texte: 'Face à une arme, Tori contrôle le bras armé — jamais la lame — et le dirige loin des deux partenaires.' },
+      { titre: 'Kime', technique: 'L’intention', texte: 'Chaque réponse est décidée et menée jusqu’au contrôle complet : c’est la décision (Kime) qui donne son nom au kata.' },
+    ],
+  },
+  jury: [
+    { critere: 'Le Tai-sabaki précède la technique', exemple: 'Esquive nette avant tout contrôle, sur chaque technique.', tori: 'Sort de la ligne d’attaque avant d’agir.', uke: 'Attaque franchement, avec Kiai et intention.' },
+    { critere: 'Atemi juste et maîtrisé', exemple: 'Atemi au Suigetsu ou à l’Uto, contrôlé, sans impact.', tori: 'Marque l’atemi comme ouverture, sans frapper réellement.', uke: 'Marque la vulnérabilité sans exagérer.' },
+    { critere: 'Contrôle du bras armé', exemple: 'Sur poignard et sabre, la lame est toujours dirigée à l’écart.', tori: 'Contrôle le poignet et le bras, jamais la lame.', uke: 'Tient l’arme fermement, attaque dans l’axe annoncé.' },
+    { critere: 'Distance et rythme (Ma-ai)', exemple: 'Distances Seiza, debout, Toma respectées ; rythme régulier.', tori: 'Gère la distance face à main nue, poignard et sabre.', uke: 'Respecte les Ma-ai d’attaque de chaque technique.' },
+    { critere: 'Fin de technique décidée (Kime)', exemple: 'Clé ou immobilisation menée jusqu’au contrôle, Mairi respecté.', tori: 'Contrôle jusqu’au signal, relâche aussitôt.', uke: 'Signale Mairi en tapant deux fois.' },
+  ],
+  reperes: [
+    { titre: 'Les positions', icone: '🧍', items: ['Idori : à genoux en Seiza, distance Hizazume-no-maai (≈ 2 poings).', 'Tachiai : debout, distance d’un pas (≈ 40 cm).', 'Sabre : distances Toma (≈ 1,2 m) et Ma-ai élargie.'] },
+    { titre: 'Les cibles d’atemi', icone: '🎯', items: ['Suigetsu — plexus / abdomen.', 'Uto — entre les sourcils.', 'Kasumi — la tempe.'] },
+    { titre: 'Les contrôles', icone: '🔒', items: ['Udehishigi-waki / hara / hiza-gatame — clés de coude.', 'Kata-gatame — immobilisation d’épaule.', 'Seoi-nage — projection sur Ushiro-dori.'] },
+    { titre: 'La sécurité', icone: '🤝', items: ['Mairi : Uke tape deux fois, Tori relâche aussitôt.', 'Armes d’entraînement, bras armé dirigé à l’écart.', 'Atemi maîtrisés, sans contact réel.'] },
+  ],
+  series: GROUPE_ORDRE.map((g) => ({
+    nom: g.nom,
+    objectif: g.objectif,
+    apprend: g.apprend,
+    techniques: KIME_NO_KATA_TECHNIQUES.filter((t) => t.groupe === g.groupe).map((t) => ({
+      nom: `${t.nom} — ${t.titreFr}`,
+      detail: ficheTechnique(t),
+    })),
+  })),
+  seriesTitre: 'Les séries du kata',
+  regardExaminateur: [
+    'L’examinateur observe d’abord l’intention : chaque défense doit être décidée, menée jusqu’au contrôle complet.',
+    'Il vérifie que le déplacement (Tai-sabaki) précède la technique et que Tori ne s’oppose jamais en force.',
+    'Sur les armes, il attend un contrôle constant du bras armé et une distance rigoureuse.',
+  ],
+  conseilExpert: [],
+  aRetenir: [
+    '20 techniques : 8 Idori (à genoux) + 12 Tachiai (debout).',
+    'Trois familles d’attaque : mains nues, poignard, sabre.',
+    'Le Tai-sabaki précède toujours la technique.',
+    'L’atemi crée l’ouverture ; le bras armé se contrôle, jamais la lame.',
+    'Kime = la décision : contrôler jusqu’au bout, relâcher au Mairi.',
+  ],
+}
+
 export const PREMIUM_LESSONS: Record<string, PremiumLessonContent> = {
   [NAGE_NO_KATA_RESSOURCE_ID]: NAGE_NO_KATA,
+  [KIME_NO_KATA_RESSOURCE_ID]: KIME_NO_KATA,
 }
 
 export function getPremiumContent(ressourceId: string | undefined): PremiumLessonContent | undefined {

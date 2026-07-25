@@ -12,13 +12,11 @@
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'fs'
 import {
-  KIME_NO_KATA_TECHNIQUES,
   KIME_MACRO_CHAPITRES,
-  GROUPE_TIMESTAMP,
   KIME_NO_KATA_META,
   KIME_NO_KATA_SOURCE,
   KIME_NO_KATA_QUIZ,
-} from './data/kime-no-kata'
+} from '../src/lib/kimeNoKata'
 
 const UNIVERS = 'kyu'
 const NIVEAU = '3e dan'
@@ -88,46 +86,29 @@ if (!lessonId) {
   await sb.from('lesson').update({ youtube_url: KIME_NO_KATA_SOURCE.url, published: true, objectif, duree_estimee: KIME_NO_KATA_META.tempsLecture }).eq('id', lessonId)
 }
 
-// ── 6. Chapitres : cérémonies + 20 techniques ancrées sur leur groupe ───────
+// ── 6. Chapitres : 7 bornes macro validées uniquement (pas de doublon) ──────
+// Les 20 fiches techniques sont portées par le contenu premium
+// (src/lib/lessonPremium.ts), section « Les séries du kata ». Les chapitres
+// vidéo se limitent donc aux 7 repères horodatés validés.
 await sb.from('lesson_chapters').delete().eq('lesson_id', lessonId)
-const groupeTitre: Record<string, string> = {
-  'idori-mains-nues': 'Idori — mains nues', 'idori-poignard': 'Idori — poignard',
-  'tachiai-mains-nues': 'Tachiai — mains nues', 'tachiai-poignard': 'Tachiai — poignard',
-  'tachiai-sabre': 'Tachiai — sabre',
-}
-const chapitres = [
-  { lesson_id: lessonId, ordre: 1, titre: KIME_MACRO_CHAPITRES[0].titre, timestamp_seconds: 0, description: 'Salut debout, mise en place des armes, salut à genoux.' },
-  ...KIME_NO_KATA_TECHNIQUES.map((t, i) => ({
-    lesson_id: lessonId, ordre: i + 2,
-    titre: `${groupeTitre[t.groupe]} · ${t.nom}`,
-    timestamp_seconds: GROUPE_TIMESTAMP[t.groupe],
-    description: t.resume,
-  })),
-  { lesson_id: lessonId, ordre: KIME_NO_KATA_TECHNIQUES.length + 2, titre: KIME_MACRO_CHAPITRES[6].titre, timestamp_seconds: 673, description: 'Saluts de clôture, remise des armes.' },
+const MACRO_DESC = [
+  'Salut debout, mise en place des armes, salut à genoux.',
+  'Idori (1–5) : Ryote-dori, Tsukkake, Suri-age, Yoko-uchi, Ushiro-dori.',
+  'Idori au poignard (6–8) : Tsukkomi, Kiri-komi, Yoko-tsuki.',
+  'Tachiai (9–16) : Ryote-dori, Sode-tori, Tsukkake, Tsuki-age, Suri-age, Yoko-uchi, Ke-age, Ushiro-dori.',
+  'Tachiai au poignard (17–18) : Tsukkomi, Kiri-komi.',
+  'Tachiai au sabre (19–20) : Nuki-gake, Kiri-oroshi.',
+  'Saluts de clôture, remise des armes.',
 ]
+const chapitres = KIME_MACRO_CHAPITRES.map((c, i) => ({
+  lesson_id: lessonId, ordre: i + 1, titre: c.titre, timestamp_seconds: c.timestamp, description: MACRO_DESC[i],
+}))
 const { error: eC } = await sb.from('lesson_chapters').insert(chapitres)
 if (eC) { console.error('lesson_chapters:', eC.message); process.exit(1) }
 
-// ── 7. Sections pédagogiques : une fiche + sécurité + erreurs par technique ──
+// ── 7. Sections pédagogiques : portées par le contenu premium, pas la DB ─────
+// On nettoie d'éventuelles sections héritées pour éviter le mode « clip ».
 await sb.from('asset_sections').delete().eq('asset_id', rid)
-const sections = KIME_NO_KATA_TECHNIQUES.flatMap((t) => {
-  const fiche = [
-    `**${t.nom}** — ${t.titreFr}`,
-    `**Objectif.** ${t.objectif}`,
-    `**Situation.** ${t.situation}`,
-    `**Attaque.** ${t.attaque}`,
-    `**Principe de défense.** ${t.defense}`,
-    `**Points clés.**\n${t.pointsCles.map((p) => `- ${p}`).join('\n')}`,
-    `**En résumé.** ${t.resume}`,
-  ].join('\n\n')
-  return [
-    { asset_id: rid, type: 'fiche', ordre: t.ordre, titre: `${t.ordre}. ${t.nom} — ${t.titreFr}`, contenu: fiche },
-    { asset_id: rid, type: 'points_attention', ordre: t.ordre, titre: `${t.nom} — Sécurité`, contenu: t.securite.map((s) => `• ${s}`).join('\n') },
-    { asset_id: rid, type: 'erreurs', ordre: t.ordre, titre: `${t.nom} — Erreurs fréquentes`, contenu: t.erreurs.map((e) => `• ${e}`).join('\n') },
-  ]
-})
-const { error: eS } = await sb.from('asset_sections').insert(sections)
-if (eS) { console.error('asset_sections:', eS.message); process.exit(1) }
 
 // ── 8. Quiz ─────────────────────────────────────────────────────────────────
 await sb.from('lesson_quiz').delete().eq('lesson_id', lessonId)
@@ -144,4 +125,4 @@ await sb.from('parcours_ressources').upsert(
   { onConflict: 'parcours_id,ressource_id', ignoreDuplicates: true }
 )
 
-console.log(`Seed 3e Dan OK — ${KIME_NO_KATA_TECHNIQUES.length} techniques, ${chapitres.length} chapitres, ${sections.length} sections, ${quiz.length} questions.`)
+console.log(`Seed 3e Dan OK — ${chapitres.length} chapitres macro, 0 section (contenu premium), ${quiz.length} questions.`)

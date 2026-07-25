@@ -6,7 +6,7 @@ import {
   KIME_NO_KATA_QUIZ,
   KIME_NO_KATA_META,
   KIME_NO_KATA_SOURCE,
-} from '../../../scripts/data/kime-no-kata'
+} from '../kimeNoKata'
 
 // UV1 Kime-no-kata — sequence officielle Kodokan (20 techniques : 8 Idori + 12 Tachiai).
 describe('Kime-no-kata — contenu officiel', () => {

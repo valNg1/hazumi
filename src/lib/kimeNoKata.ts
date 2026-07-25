@@ -308,6 +308,9 @@ export const KIME_NO_KATA_META = {
   motsCles: ['kime no kata', 'kata de la décision', 'combat', 'défense', 'kodokan', 'shobu no kata'],
 }
 
+/** Ressource catalogue_hazumi « Kime-no-kata » (clé du contenu premium). */
+export const KIME_NO_KATA_RESSOURCE_ID = '185e7142-bf95-4cf4-b954-97b86edc0cf5'
+
 export const KIME_NO_KATA_SOURCE = {
   url: 'https://www.youtube.com/watch?v=Hsvx-zNDEUo',
   titre: 'Kime-no-kata — Démonstration Kodokan',

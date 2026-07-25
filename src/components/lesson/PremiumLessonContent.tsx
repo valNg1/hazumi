@@ -94,7 +94,7 @@ export default function PremiumLessonContentView({ content, onOpenTechnique }: P
 
       {/* 4. Les trois séries du premier dan */}
       <Card>
-        <SectionTitle n={4}>Les trois séries du premier dan</SectionTitle>
+        <SectionTitle n={4}>{content.seriesTitre ?? 'Les trois séries du premier dan'}</SectionTitle>
         <div className="grid grid-cols-1 gap-3">
           {content.series.map((s, i) => (
             <SeriesCard key={s.nom} serie={s} index={i} onOpenTechnique={onOpenTechnique} />

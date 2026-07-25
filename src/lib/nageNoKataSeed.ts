@@ -56,8 +56,8 @@ function sectionsDepuisDetail(nomCanonique: string): SectionPlan[] {
   const fiche = [d.miseEnAction, d.kuzushi, d.tsukuri, d.kake].filter(Boolean).join('\n\n')
   return [
     { type: 'fiche', ordre: 0, titre: 'La technique', contenu: fiche },
-    { type: 'points_attention', ordre: 0, titre: 'Rôle de Uke', contenu: d.uke },
-    { type: 'erreurs', ordre: 0, titre: 'Erreur fréquente', contenu: d.erreur },
+    { type: 'points_attention', ordre: 0, titre: 'Rôle de Uke', contenu: d.uke ?? '' },
+    { type: 'erreurs', ordre: 0, titre: 'Erreur fréquente', contenu: d.erreur ?? '' },
   ]
 }
 
