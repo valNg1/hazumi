@@ -264,7 +264,7 @@ const NAGE_NO_KATA: PremiumLessonContent = {
   ],
 }
 
-// ── Kime-no-kata (UV1, 3e Dan) ───────────────────────────────────────────────
+// ── Kime-no-kata (UV1, 4e Dan) ───────────────────────────────────────────────
 // Même structure que Nage-no-kata. Les 20 techniques officielles (src/lib/kimeNoKata.ts)
 // alimentent les 5 séries ; chaque « Comprendre cette technique » ouvre la fiche.
 
@@ -295,7 +295,7 @@ const KIME_NO_KATA: PremiumLessonContent = {
   meta: {
     tempsLecture: KIME_NO_KATA_META.tempsLecture,
     objectif: 'Comprendre la logique du Kime-no-kata — le kata de la décision — avant d’en apprendre les 20 techniques.',
-    niveau: 'Préparation 3e Dan',
+    niveau: 'Préparation du 4e Dan',
     difficulte: KIME_NO_KATA_META.difficulte,
   },
   objectifIntro:
@@ -305,7 +305,7 @@ const KIME_NO_KATA: PremiumLessonContent = {
     timeline: [
       { annee: '1888', label: 'Jigoro Kano codifie le Shobu-no-kata, kata de combat réel.' },
       { annee: '1906', label: 'Le Kodokan fixe la forme officielle sous le nom de Kime-no-kata.' },
-      { annee: "Aujourd'hui", label: 'Kata exigé à partir du 3e Dan : self-défense, armes et atemi.' },
+      { annee: "Aujourd'hui", label: 'Kata imposé de l’UV1 du 4e Dan : self-défense, armes et atemi.' },
     ],
     blocs: [
       { titre: 'Un kata de combat, pas de démonstration', texte: 'Là où le Nage-no-kata montre les projections, le Kime-no-kata montre la réponse à une agression réelle : saisies, coups, poignard et sabre. L’intention (Kime) est celle d’une défense décidée et efficace.' },

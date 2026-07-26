@@ -1,5 +1,5 @@
 /**
- * Kime-no-kata — contenu pédagogique complet (UV1, 3e Dan).
+ * Kime-no-kata — contenu pédagogique complet (UV1, 4e Dan).
  *
  * SOURCE DE VÉRITÉ : le manuel officiel Kodokan Kime-no-Kata (traduction FIJ),
  * `KodokanKimeNoKata.pdf`. La séquence officielle compte 20 techniques :
@@ -292,7 +292,7 @@ export const KIME_NO_KATA_TECHNIQUES: TechniqueKime[] = [
 export const KIME_NO_KATA_META = {
   titre: 'Kime-no-kata',
   sousTitre: 'Le kata de la décision',
-  grade: '3e dan',
+  grade: '4e dan',
   famille: 'Kata',
   tempsLecture: '20 minutes',
   difficulte: 4,
@@ -304,7 +304,7 @@ export const KIME_NO_KATA_META = {
     'Reconnaître les réponses à mains nues, au poignard et au sabre',
     'Comprendre le rôle du Tai-sabaki et des atemi dans le contrôle de l’adversaire',
   ],
-  tags: ['kata', 'kime-no-kata', '3e dan', 'idori', 'tachiai', 'self-défense', 'atemi', 'tai-sabaki', 'poignard', 'sabre'],
+  tags: ['kata', 'kime-no-kata', '4e dan', 'idori', 'tachiai', 'self-défense', 'atemi', 'tai-sabaki', 'poignard', 'sabre'],
   motsCles: ['kime no kata', 'kata de la décision', 'combat', 'défense', 'kodokan', 'shobu no kata'],
 }
 

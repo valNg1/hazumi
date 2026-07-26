@@ -2,9 +2,9 @@
 // (UV Kime-no-Kata). Rédaction Hazumi affichée à l'utilisateur ; le titre est
 // piloté par le code (le parcours reste identifié en base par son titre existant).
 
-// Titre du parcours tel qu'enregistré en base : sert uniquement à reconnaître le
-// parcours pour afficher la landing enrichie. Non affiché à l'utilisateur.
-export const QUATRIEME_DAN_PARCOURS_TITRE = 'Préparer le 3e Dan'
+// Titre du parcours en base (= titre affiché) : sert à reconnaître le parcours
+// pour afficher la landing enrichie.
+export const QUATRIEME_DAN_PARCOURS_TITRE = 'Préparer le 4e Dan'
 
 // Libellés affichés (carte de la liste + landing), pilotés par le code afin de
 // présenter le parcours comme « 4e Dan » sans dépendre du contenu en base.

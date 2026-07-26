@@ -1,8 +1,8 @@
 /**
- * Seed du parcours 3e Dan — UV1 Kime-no-kata (leçon complète).
+ * Seed du parcours 4e Dan — UV1 Kime-no-kata (leçon complète).
  *
  * Reconstruit la leçon À PARTIR DE ZÉRO depuis la séquence officielle Kodokan
- * (scripts/data/kime-no-kata.ts, tirée de KodokanKimeNoKata.pdf).
+ * (src/lib/kimeNoKata.ts, tirée de KodokanKimeNoKata.pdf).
  * Réutilise l'architecture existante : parcours -> catalogue_hazumi ->
  * media_sources -> asset_media -> lesson -> lesson_chapters / asset_sections /
  * lesson_quiz. Aucune nouvelle table, aucun nouveau concept.
@@ -19,7 +19,7 @@ import {
 } from '../src/lib/kimeNoKata'
 
 const UNIVERS = 'kyu'
-const NIVEAU = '3e dan'
+const NIVEAU = '4e dan'
 
 const env = Object.fromEntries(
   readFileSync('.env.local', 'utf8').split('\n').filter((l) => l.includes('='))
@@ -27,18 +27,22 @@ const env = Object.fromEntries(
 )
 const sb = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_KEY)
 
-// ── 1. Parcours 3e Dan ──────────────────────────────────────────────────────
-const TITRE_PARCOURS = 'Préparer le 3e Dan'
-const { data: pE } = await sb.from('parcours').select('id').eq('titre', TITRE_PARCOURS).maybeSingle()
+// ── 1. Parcours 4e Dan ──────────────────────────────────────────────────────
+const TITRE_PARCOURS = 'Préparer le 4e Dan'
+const DESCRIPTION_PARCOURS = 'Parcours 4e Dan. UV1 : Kime-no-kata, le kata de la décision — 20 techniques de défense, 8 à genoux (Idori) et 12 debout (Tachiai).'
+// Reconnaît aussi l'ancien intitulé « Préparer le 3e Dan » pour renommer sans doublon.
+const { data: pE } = await sb.from('parcours').select('id').in('titre', [TITRE_PARCOURS, 'Préparer le 3e Dan']).maybeSingle()
 let parcoursId = (pE as { id: string } | null)?.id
 if (!parcoursId) {
   const { data, error } = await sb.from('parcours').insert({
     titre: TITRE_PARCOURS,
-    description: 'Parcours 3e Dan. UV1 : Kime-no-kata, le kata de la décision — 20 techniques de défense, 8 à genoux (Idori) et 12 debout (Tachiai).',
+    description: DESCRIPTION_PARCOURS,
     niveau: NIVEAU, duree_estimee: KIME_NO_KATA_META.dureeEstimee, ordre: 3, publie: true,
   }).select('id').single()
   if (error) { console.error('parcours:', error.message); process.exit(1) }
   parcoursId = (data as { id: string }).id
+} else {
+  await sb.from('parcours').update({ titre: TITRE_PARCOURS, description: DESCRIPTION_PARCOURS, niveau: NIVEAU }).eq('id', parcoursId)
 }
 await sb.from('parcours_univers').upsert({ parcours_id: parcoursId, univers: UNIVERS }, { onConflict: 'parcours_id,univers', ignoreDuplicates: true })
 
@@ -125,4 +129,4 @@ await sb.from('parcours_ressources').upsert(
   { onConflict: 'parcours_id,ressource_id', ignoreDuplicates: true }
 )
 
-console.log(`Seed 3e Dan OK — ${chapitres.length} chapitres macro, 0 section (contenu premium), ${quiz.length} questions.`)
+console.log(`Seed 4e Dan OK — ${chapitres.length} chapitres macro, 0 section (contenu premium), ${quiz.length} questions.`)
