@@ -6,6 +6,18 @@
 // parcours pour afficher la landing enrichie. Non affiché à l'utilisateur.
 export const QUATRIEME_DAN_PARCOURS_TITRE = 'Préparer le 3e Dan'
 
+// Libellés affichés (carte de la liste + landing), pilotés par le code afin de
+// présenter le parcours comme « 4e Dan » sans dépendre du contenu en base.
+export const QUATRIEME_DAN_TITRE = 'Préparer le 4e Dan'
+export const QUATRIEME_DAN_NIVEAU = '4e dan'
+export const QUATRIEME_DAN_CARTE_DESCRIPTION =
+  'Le kata de la décision : 20 techniques de défense, à genoux (Idori) et debout (Tachiai), pour préparer le kata du 4e Dan.'
+
+/** Titre affiché d'un parcours (override « 4e Dan » du parcours Kime, base inchangée). */
+export function titreParcoursAffiche(titre: string): string {
+  return titre === QUATRIEME_DAN_PARCOURS_TITRE ? QUATRIEME_DAN_TITRE : titre
+}
+
 export interface QuatriemeDanHero {
   emoji: string
   titre: string

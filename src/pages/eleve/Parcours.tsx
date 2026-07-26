@@ -8,7 +8,20 @@ import { computeProgress, nextRessourceId, toggleCompleted, type ParcoursRessour
 import PremierDanSections from '../../components/PremierDanSections'
 import { PREMIER_DAN_TITRE } from '../../lib/premierDanContent'
 import QuatriemeDanSections from '../../components/QuatriemeDanSections'
-import { QUATRIEME_DAN_PARCOURS_TITRE } from '../../lib/quatriemeDanContent'
+import {
+  QUATRIEME_DAN_PARCOURS_TITRE,
+  QUATRIEME_DAN_TITRE,
+  QUATRIEME_DAN_NIVEAU,
+  QUATRIEME_DAN_CARTE_DESCRIPTION,
+} from '../../lib/quatriemeDanContent'
+
+// Affichage « 4e Dan » piloté par le code (base inchangée) pour le parcours Kime.
+function parcoursDisplay(p: { titre: string; niveau: string | null; description: string | null }) {
+  if (p.titre === QUATRIEME_DAN_PARCOURS_TITRE) {
+    return { titre: QUATRIEME_DAN_TITRE, niveau: QUATRIEME_DAN_NIVEAU, description: QUATRIEME_DAN_CARTE_DESCRIPTION }
+  }
+  return { titre: p.titre, niveau: p.niveau, description: p.description }
+}
 
 type ContentType = 'video' | 'article' | 'pdf'
 
@@ -499,6 +512,7 @@ export default function Parcours({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {list.map((p) => {
             const percent = progressByParcours[p.id] ?? 0
+            const vue = parcoursDisplay(p)
             return (
               <button
                 key={p.id}
@@ -507,15 +521,15 @@ export default function Parcours({
               >
                 <div className="aspect-[16/9] bg-gradient-to-br from-[#0A0A0A] to-[#3A0A12] flex items-center justify-center">
                   {p.image ? (
-                    <img src={p.image} alt={p.titre} className="w-full h-full object-cover" />
+                    <img src={p.image} alt={vue.titre} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-3xl">🥋</span>
                   )}
                 </div>
                 <div className="p-4 flex-1 flex flex-col">
-                  {p.niveau && <span className="text-[10px] uppercase tracking-widest text-[#999999] mb-1">{p.niveau}</span>}
-                  <h3 className="font-bold text-[#0A0A0A] text-sm leading-snug mb-1">{p.titre}</h3>
-                  {p.description && <p className="text-xs text-[#666666] line-clamp-2 mb-3 flex-1">{p.description}</p>}
+                  {vue.niveau && <span className="text-[10px] uppercase tracking-widest text-[#999999] mb-1">{vue.niveau}</span>}
+                  <h3 className="font-bold text-[#0A0A0A] text-sm leading-snug mb-1">{vue.titre}</h3>
+                  {vue.description && <p className="text-xs text-[#666666] line-clamp-2 mb-3 flex-1">{vue.description}</p>}
                   <div className="mt-auto">
                     <div className="flex items-center justify-between mb-1 text-[10px] text-[#999999]">
                       <span>{lessonCount[p.id] ?? 0} leçon{(lessonCount[p.id] ?? 0) > 1 ? 's' : ''}</span>

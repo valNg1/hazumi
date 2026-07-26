@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { universLabel, type Univers } from '../lib/bibliotheque'
 import { buildDashboard, playlistProgress, type Dashboard, type ElementProgression } from '../lib/progressionDashboard'
+import { titreParcoursAffiche } from '../lib/quatriemeDanContent'
 
 function BarreProgression({ percent }: { percent: number }) {
   return (
@@ -87,7 +88,7 @@ export default function ProgressionDashboard({ judokaId }: { judokaId: string | 
         .filter((a) => titres.has(a.parcours_id))
         .map((a) => ({
           id: a.parcours_id,
-          nom: titres.get(a.parcours_id)!,
+          nom: titreParcoursAffiche(titres.get(a.parcours_id)!),
           done: (a.ressources_terminees ?? []).length,
           total: totalParParcours.get(a.parcours_id) ?? 0,
           derniereActivite: a.updated_at ?? '',
