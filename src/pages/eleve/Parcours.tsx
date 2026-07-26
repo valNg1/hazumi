@@ -7,6 +7,8 @@ import PlaylistCover from '../../components/PlaylistCover'
 import { computeProgress, nextRessourceId, toggleCompleted, type ParcoursRessourceLink } from '../../lib/parcoursProgress'
 import PremierDanSections from '../../components/PremierDanSections'
 import { PREMIER_DAN_TITRE } from '../../lib/premierDanContent'
+import QuatriemeDanSections from '../../components/QuatriemeDanSections'
+import { QUATRIEME_DAN_PARCOURS_TITRE } from '../../lib/quatriemeDanContent'
 
 type ContentType = 'video' | 'article' | 'pdf'
 
@@ -305,6 +307,8 @@ export default function Parcours({
     const prog = computeProgress(links, completedIds)
     const allDone = prog.termine
     const isPremierDan = selected.titre === PREMIER_DAN_TITRE
+    const isQuatriemeDan = selected.titre === QUATRIEME_DAN_PARCOURS_TITRE
+    const richLanding = isPremierDan || isQuatriemeDan
 
     const renderRessourceRow = (r: Ressource, i: number) => {
       const done = completedIds.includes(r.id)
@@ -368,7 +372,7 @@ export default function Parcours({
           {browsingResources ? 'Retour au parcours' : 'Tous les parcours'}
         </button>
 
-        {isPremierDan ? (
+        {richLanding ? (
           browsingResources ? (
             <section>
               <h2 className="text-lg font-bold text-[#0A0A0A] mb-1">Ressources du parcours</h2>
@@ -377,7 +381,11 @@ export default function Parcours({
             </section>
           ) : (
             <>
-              <PremierDanSections progress={prog} onCommencer={reprendre} onBrowseResources={() => setSearchParams({ p: selected.id, vue: 'ressources' })} />
+              {isPremierDan ? (
+                <PremierDanSections progress={prog} onCommencer={reprendre} onBrowseResources={() => setSearchParams({ p: selected.id, vue: 'ressources' })} />
+              ) : (
+                <QuatriemeDanSections progress={prog} onCommencer={reprendre} onBrowseResources={() => setSearchParams({ p: selected.id, vue: 'ressources' })} />
+              )}
 
               <section id="commencer" className="mt-8 bg-white rounded-xl border border-[#E5E5E5] p-6 text-center">
                 <h2 className="text-lg font-bold text-[#0A0A0A] mb-1">Prêt à démarrer ?</h2>
