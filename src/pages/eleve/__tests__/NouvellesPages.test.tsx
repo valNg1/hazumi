@@ -147,31 +147,33 @@ describe('Bibliothèque — vue playlist', () => {
 })
 
 describe('Bibliothèque — création de playlist', () => {
-  it('l’univers n’intervient qu’à la création', async () => {
+  it('ne propose plus de choix d’univers (kyu/shiai/judo-ka) à la création', async () => {
     renderAt(<Bibliotheque />)
     await waitFor(() => expect(screen.getByText('Harai-goshi')).toBeInTheDocument())
-    expect(screen.queryByRole('button', { name: /Judo-Kâ/ })).toBeNull()
 
     await userEvent.click(screen.getByRole('button', { name: /Créer une playlist/i }))
     await userEvent.click(screen.getByText('Harai-goshi'))
     await userEvent.click(screen.getByRole('button', { name: /Continuer/i }))
 
     await waitFor(() => expect(screen.getByRole('heading', { name: /Nouvelle playlist/i })).toBeInTheDocument())
-    expect(screen.getByRole('button', { name: /Judo-Kâ/ })).toBeInTheDocument()
+    expect(screen.getByLabelText(/Nom de la playlist/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Judo-Kâ/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Shiai/ })).toBeNull()
   })
 
-  it('enregistre la playlist avec l’univers choisi', async () => {
+  it('crée la playlist à partir du nom (univers kyu par défaut), sans reredemander le nom', async () => {
     renderAt(<Bibliotheque />)
     await waitFor(() => expect(screen.getByText('Harai-goshi')).toBeInTheDocument())
     await userEvent.click(screen.getByRole('button', { name: /Créer une playlist/i }))
     await userEvent.click(screen.getByText('Harai-goshi'))
     await userEvent.click(screen.getByRole('button', { name: /Continuer/i }))
     await userEvent.type(screen.getByLabelText(/Nom de la playlist/i), 'Mes hanches')
-    await userEvent.click(screen.getByRole('button', { name: /Shiai/ }))
     await userEvent.click(screen.getByRole('button', { name: /Créer la playlist/i }))
 
     await waitFor(() => expect(h.inserted.filter((i) => i.table === 'playlists_collections')).toHaveLength(1))
-    expect(h.inserted[0].row).toMatchObject({ nom: 'Mes hanches', parcours: 'shiai', tags: ['hanche'] })
+    expect(h.inserted[0].row).toMatchObject({ nom: 'Mes hanches', parcours: 'kyu', tags: ['hanche'] })
+    // Le message d'erreur « Donne un nom » ne doit pas s'afficher quand un nom est fourni.
+    expect(screen.queryByText(/Donne un nom/i)).toBeNull()
   })
 })
 

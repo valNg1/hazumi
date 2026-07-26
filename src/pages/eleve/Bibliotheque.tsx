@@ -8,7 +8,6 @@ import {
   searchResources,
   filterBySource,
   playlistResources,
-  UNIVERS_OPTIONS,
   universLabel,
   type Ressource,
   type Source,
@@ -49,7 +48,6 @@ export default function Bibliotheque() {
   const [selection, setSelection] = useState<Set<string>>(new Set())
   const [modaleOuverte, setModaleOuverte] = useState(false)
   const [nomPlaylist, setNomPlaylist] = useState('')
-  const [universChoisi, setUniversChoisi] = useState<Univers>('kyu')
   const [enregistrement, setEnregistrement] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
   const [succes, setSucces] = useState<string | null>(null)
@@ -124,7 +122,7 @@ export default function Bibliotheque() {
     setEnregistrement(true); setErreur(null)
     const { error } = await supabase.from('videos').insert({
       title: form.titre.trim(), video_url: form.url.trim(),
-      tags: form.motsCles.trim() || null, uploaded_by: userId, parcours: universChoisi,
+      tags: form.motsCles.trim() || null, uploaded_by: userId, parcours: 'kyu',
     })
     setEnregistrement(false)
     if (error) { setErreur(`Impossible d’ajouter : ${error.message}`); return }
@@ -134,11 +132,23 @@ export default function Bibliotheque() {
   }
 
   async function creerPlaylist() {
-    if (!judokaId || !nomPlaylist.trim()) { setErreur('Donne un nom à ta playlist.'); return }
-    if (tagsSelection.length === 0) { setErreur('Les ressources choisies ne portent aucun mot-clé exploitable.'); return }
+    if (!nomPlaylist.trim()) { setErreur('Donne un nom à ta playlist.'); return }
+    if (selection.size === 0) { setErreur('Sélectionne au moins une ressource dans la bibliothèque.'); return }
     setEnregistrement(true); setErreur(null)
+
+    // Le profil judoka peut ne pas être encore chargé : on le (re)résout au moment de créer.
+    let jid = judokaId
+    if (!jid) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: j } = await supabase.from('judokas').select('id').eq('user_id', user.id).maybeSingle()
+        if (j) { jid = (j as { id: string }).id; setJudokaId(jid) }
+      }
+    }
+    if (!jid) { setEnregistrement(false); setErreur('Profil judoka introuvable. Reconnecte-toi puis réessaie.'); return }
+
     const { error } = await supabase.from('playlists_collections').insert({
-      judoka_id: judokaId, nom: nomPlaylist.trim(), tags: tagsSelection, parcours: universChoisi,
+      judoka_id: jid, nom: nomPlaylist.trim(), tags: tagsSelection, parcours: 'kyu',
     })
     setEnregistrement(false)
     if (error) { setErreur(`Impossible de créer la playlist : ${error.message}`); return }
@@ -350,19 +360,8 @@ export default function Bibliotheque() {
             <p className="text-xs text-[#999999] mb-4">{selection.size} ressource{selection.size !== 1 ? 's' : ''} sélectionnée{selection.size !== 1 ? 's' : ''}</p>
             <label className="block text-[10px] uppercase tracking-widest text-[#999999] mb-1">Nom</label>
             <input value={nomPlaylist} onChange={(e) => setNomPlaylist(e.target.value)} placeholder="Ex. Mes projections de hanche" aria-label="Nom de la playlist"
+              onKeyDown={(e) => { if (e.key === 'Enter' && !enregistrement) creerPlaylist() }}
               className="w-full mb-4 px-3 py-2 rounded-lg border border-[#E5E5E5] text-sm focus:border-[#C41230] focus:outline-none" />
-            <label className="block text-[10px] uppercase tracking-widest text-[#999999] mb-2">Univers</label>
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              {UNIVERS_OPTIONS.map((u) => (
-                <button key={u.value} onClick={() => setUniversChoisi(u.value)}
-                  className={`rounded-lg border p-3 text-center transition-colors ${
-                    universChoisi === u.value ? 'border-[#C41230] bg-[#C41230]/5' : 'border-[#E5E5E5] hover:border-[#CCCCCC]'
-                  }`}>
-                  <span className="text-lg leading-none block" aria-hidden="true">{u.icone}</span>
-                  <span className="text-xs font-semibold text-[#0A0A0A] mt-1 block">{u.label}</span>
-                </button>
-              ))}
-            </div>
             {erreur && <p className="text-xs text-[#C41230] mb-3">{erreur}</p>}
             <div className="flex gap-2 justify-end">
               <button onClick={() => setModaleOuverte(false)} className="text-xs uppercase tracking-widest px-4 py-2 rounded-lg border border-[#E5E5E5] text-[#666666]">Annuler</button>
