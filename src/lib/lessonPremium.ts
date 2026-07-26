@@ -291,6 +291,46 @@ function ficheTechnique(t: KimeTechnique): TechniqueDetail {
   }
 }
 
+// Cérémonies d'ouverture et de clôture (protocole officiel Kodokan, retranscrit).
+const CEREMONIE_OUVERTURE: SerieCard = {
+  nom: 'Cérémonie d’ouverture',
+  objectif: 'Le salut et la mise en place du sabre et du poignard avant le kata.',
+  apprend: 'Le protocole d’ouverture : saluts debout et à genoux, dépôt et disposition des armes.',
+  techniques: [
+    {
+      nom: 'Le déroulé pas à pas',
+      detail: {
+        fiche: [
+          { label: 'Positions de départ', texte: "Tori se tient du côté gauche, Uke du côté droit, face au Shomen. Uke tient le sabre et le poignard de la main droite, la pointe du sabre vers le bas (environ 45°) : le sabre à l’extérieur, les lames du sabre et du poignard vers le haut, la base de la poignée du poignard posée contre le bas de la garde du sabre. Les deux sont debout à environ 5,4 m (3 ken)." },
+          { label: 'Salut debout', texte: "Tori et Uke font face au Shomen pour effectuer simultanément le salut debout, puis s’agenouillent face à face." },
+          { label: 'Dépôt des armes', texte: "Uke dépose le sabre et le poignard sur son côté droit (le sabre à l’extérieur, le poignard à l’intérieur, la base de la poignée du poignard alignée avec la garde du sabre, les lames tournées vers l’intérieur). Les deux font ensuite le salut à genoux." },
+          { label: 'Mise en place des armes', texte: "Tori reste agenouillé en Seiza. Uke reprend le sabre et le poignard de la main droite (lames vers le haut), les positionne sur son côté droit à hauteur de hanche puis se lève. Il effectue un demi-tour à droite et avance d’environ 1,8 m (1 ken), puis s’agenouille en Seiza. Il place les armes devant lui, met la main gauche sur le côté gauche du sabre et les tourne vers la gauche pour les déposer devant lui : le poignard près de lui, le sabre plus éloigné, les deux poignées en direction du Shomen, les lames tournées vers l’intérieur." },
+          { label: 'Reprise des positions', texte: "Uke se relève. Tori se relève lorsque Uke se lève. Uke fait un demi-tour à gauche et retourne à sa position initiale pour se tenir face à Tori." },
+        ],
+      },
+    },
+  ],
+}
+
+const CEREMONIE_CLOTURE: SerieCard = {
+  nom: 'Cérémonie de clôture',
+  objectif: 'Le rangement des armes et les saluts qui referment le kata.',
+  apprend: 'Le protocole de clôture : retour aux positions initiales, dépôt des armes et saluts.',
+  techniques: [
+    {
+      nom: 'Le déroulé pas à pas',
+      detail: {
+        fiche: [
+          { label: 'Rangement du sabre', texte: "Uke se retourne et se dirige en direction du poignard. Il s’agenouille en Seiza et repose le sabre à sa position initiale." },
+          { label: 'Retour aux positions', texte: "Uke reprend ensemble le poignard et le sabre de la main droite (les deux lames vers le haut), se relève et se retourne pour revenir à sa position de départ (là où a débuté Kiri-oroshi). Au cours de cette séquence, Tori revient également à la même position." },
+          { label: 'Saluts à genoux', texte: "Debout, Tori et Uke font un pas en arrière, s’agenouillent face à face. Uke dépose le poignard et le sabre sur son côté droit, puis les deux se saluent à genoux." },
+          { label: 'Salut final', texte: "Après le salut, Tori et Uke se relèvent, se tournent pour faire face au Shomen et saluent debout simultanément." },
+        ],
+      },
+    },
+  ],
+}
+
 const KIME_NO_KATA: PremiumLessonContent = {
   meta: {
     tempsLecture: KIME_NO_KATA_META.tempsLecture,
@@ -331,15 +371,19 @@ const KIME_NO_KATA: PremiumLessonContent = {
     { titre: 'Les contrôles', icone: '🔒', items: ['Udehishigi-waki / hara / hiza-gatame — clés de coude.', 'Kata-gatame — immobilisation d’épaule.', 'Seoi-nage — projection sur Ushiro-dori.'] },
     { titre: 'La sécurité', icone: '🤝', items: ['Mairi : Uke tape deux fois, Tori relâche aussitôt.', 'Armes d’entraînement, bras armé dirigé à l’écart.', 'Atemi maîtrisés, sans contact réel.'] },
   ],
-  series: GROUPE_ORDRE.map((g) => ({
-    nom: g.nom,
-    objectif: g.objectif,
-    apprend: g.apprend,
-    techniques: KIME_NO_KATA_TECHNIQUES.filter((t) => t.groupe === g.groupe).map((t) => ({
-      nom: `${t.nom} — ${t.titreFr}`,
-      detail: ficheTechnique(t),
+  series: [
+    CEREMONIE_OUVERTURE,
+    ...GROUPE_ORDRE.map((g) => ({
+      nom: g.nom,
+      objectif: g.objectif,
+      apprend: g.apprend,
+      techniques: KIME_NO_KATA_TECHNIQUES.filter((t) => t.groupe === g.groupe).map((t) => ({
+        nom: `${t.nom} — ${t.titreFr}`,
+        detail: ficheTechnique(t),
+      })),
     })),
-  })),
+    CEREMONIE_CLOTURE,
+  ],
   seriesTitre: 'Les séries du kata',
   regardExaminateur: [
     'L’examinateur observe d’abord l’intention : chaque défense doit être décidée, menée jusqu’au contrôle complet.',
