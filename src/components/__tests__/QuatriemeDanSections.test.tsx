@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import QuatriemeDanSections from '../QuatriemeDanSections'
-import { QUATRIEME_DAN_HERO, QUATRIEME_DAN_POURQUOI } from '../../lib/quatriemeDanContent'
+import { QUATRIEME_DAN_HERO, QUATRIEME_DAN_PRESENTATION } from '../../lib/quatriemeDanContent'
 
 const progress = { percent: 0, done: 0, total: 3, termine: false }
 
@@ -11,15 +11,16 @@ describe('QuatriemeDanSections — landing 4e Dan (Kime-no-Kata)', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Préparer le 4e Dan' })).toBeInTheDocument()
   })
 
-  it('affiche la nouvelle introduction (tai-sabaki, combat réel)', () => {
+  it('affiche l\'introduction du 4e dan (Yondan) sous le titre', () => {
     render(<QuatriemeDanSections progress={progress} onCommencer={() => {}} onBrowseResources={() => {}} />)
     expect(screen.getByText(QUATRIEME_DAN_HERO.intro)).toBeInTheDocument()
   })
 
-  it('affiche la section « Pourquoi apprendre le Kime-no-Kata ? »', () => {
+  it('affiche la présentation (contexte examen + UV1) et la liste des katas', () => {
     render(<QuatriemeDanSections progress={progress} onCommencer={() => {}} onBrowseResources={() => {}} />)
-    expect(screen.getByRole('heading', { level: 2, name: QUATRIEME_DAN_POURQUOI.titre })).toBeInTheDocument()
-    QUATRIEME_DAN_POURQUOI.paragraphes.forEach((p) => expect(screen.getByText(p)).toBeInTheDocument())
+    QUATRIEME_DAN_PRESENTATION.paragraphes.forEach((p) => expect(screen.getByText(p)).toBeInTheDocument())
+    expect(screen.getByText(QUATRIEME_DAN_PRESENTATION.uv1Intro)).toBeInTheDocument()
+    QUATRIEME_DAN_PRESENTATION.katas.forEach((k) => expect(screen.getByText(k)).toBeInTheDocument())
   })
 
   it('expose un CTA primaire et un CTA secondaire fonctionnels', () => {

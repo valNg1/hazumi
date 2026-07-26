@@ -30,20 +30,23 @@ export const QUATRIEME_DAN_HERO: QuatriemeDanHero = {
   emoji: '🥋',
   titre: 'Préparer le 4e Dan',
   intro:
-    "Le Kime-no-Kata a été créé pour enseigner les techniques les plus efficaces en situation de combat réel. Le but de sa pratique est de maîtriser naturellement le tai-sabaki et de contrôler l'adversaire en choisissant la réponse la plus efficace dans chaque situation.",
+    "Le 4e dan (Yondan) marque l'accès à un niveau d'expertise où la maîtrise technique s'accompagne d'une capacité à transmettre, analyser et encadrer la pratique.",
   ctaPrimary: '▶ Commencer le parcours',
   ctaSecondary: '📚 Parcourir les ressources',
 }
 
-export interface QuatriemeDanPourquoi {
-  titre: string
+export interface QuatriemeDanPresentation {
   paragraphes: string[]
+  uv1Intro: string
+  katas: string[]
 }
 
-export const QUATRIEME_DAN_POURQUOI: QuatriemeDanPourquoi = {
-  titre: 'Pourquoi apprendre le Kime-no-Kata ?',
+export const QUATRIEME_DAN_PRESENTATION: QuatriemeDanPresentation = {
   paragraphes: [
-    "Le Kime-no-Kata fait partie des exigences techniques de l'examen du 4e Dan français.",
-    "Ce parcours est conçu pour aider les judokas à préparer ce kata progressivement, à en comprendre les principes et à s'entraîner efficacement, en complément de l'enseignement reçu dans leur dojo.",
+    "Le Kime-no-Kata constitue l'une des unités de valeur de cet examen. Son étude requiert une compréhension précise des principes du kata, de la logique des situations de combat et de l'exécution des techniques, conformément au référentiel fédéral.",
+    "Ce parcours a pour objectif de fournir un support structuré consacré au Kime-no-Kata, kata imposé de l'UV1 du 4e dan. Il accompagne le candidat dans l'étude de cette unité de valeur et complète l'enseignement dispensé au dojo.",
   ],
+  uv1Intro:
+    "Pour l'UV1, le candidat présente, dans le rôle de tori, le Kime-no-Kata ainsi qu'un second kata exécuté intégralement, choisi parmi :",
+  katas: ['Nage-no-Kata', 'Katame-no-Kata', 'Kodokan Goshin-jutsu', 'Gonosen-no-Kata'],
 }

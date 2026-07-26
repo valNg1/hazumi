@@ -1,4 +1,4 @@
-import { QUATRIEME_DAN_HERO, QUATRIEME_DAN_POURQUOI } from '../lib/quatriemeDanContent'
+import { QUATRIEME_DAN_HERO, QUATRIEME_DAN_PRESENTATION } from '../lib/quatriemeDanContent'
 
 interface Props {
   progress: { percent: number; done: number; total: number; termine: boolean }
@@ -48,13 +48,20 @@ export default function QuatriemeDanSections({ progress, onCommencer, onBrowseRe
         </div>
       </section>
 
-      {/* ── SECTION 2 — POURQUOI APPRENDRE LE KIME-NO-KATA ─────────────────── */}
+      {/* ── SECTION 2 — PRÉSENTATION (contexte examen 4e Dan + UV1) ─────────── */}
       <section>
-        <h2 className="text-lg font-bold text-[#0A0A0A] mb-3">{QUATRIEME_DAN_POURQUOI.titre}</h2>
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-4 sm:p-6 space-y-3">
-          {QUATRIEME_DAN_POURQUOI.paragraphes.map((p, i) => (
+          {QUATRIEME_DAN_PRESENTATION.paragraphes.map((p, i) => (
             <p key={i} className="text-sm text-[#666666] leading-relaxed">{p}</p>
           ))}
+          <p className="text-sm text-[#666666] leading-relaxed">{QUATRIEME_DAN_PRESENTATION.uv1Intro}</p>
+          <ul className="space-y-1.5 pt-1">
+            {QUATRIEME_DAN_PRESENTATION.katas.map((k) => (
+              <li key={k} className="text-sm text-[#333333] leading-relaxed flex gap-2">
+                <span className="text-[#C41230] flex-shrink-0">›</span><span>{k}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
     </div>
