@@ -476,8 +476,13 @@ export default function Lecon() {
 
       {/* Modale "Comprendre cette technique" — sans quitter la lecon */}
       {techniqueOpen?.detail && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setTechniqueOpen(null)}>
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <>
+          {/* Voile léger : la vidéo (sticky, en haut) reste visible et continue de jouer. */}
+          <div className="fixed inset-0 bg-black/10 z-40" onClick={() => setTechniqueOpen(null)} />
+          {/* Panneau ancré en bas de l'écran : la fiche et la vidéo sont visibles en même temps. */}
+          <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-3 pointer-events-none">
+          <div className="bg-white rounded-2xl shadow-2xl border border-[#E5E5E5] p-6 w-full max-w-2xl max-h-[55vh] overflow-y-auto pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#E5E5E5]" aria-hidden="true" />
             <span className="text-[10px] uppercase tracking-widest text-[#999999]">Comprendre la technique</span>
             <h2 className="text-lg font-bold text-[#0A0A0A] mb-3">{techniqueOpen.nom}</h2>
             <div className="space-y-3">
@@ -517,7 +522,8 @@ export default function Lecon() {
               </button>
             </div>
           </div>
-        </div>
+          </div>
+        </>
       )}
     </div>
   )
