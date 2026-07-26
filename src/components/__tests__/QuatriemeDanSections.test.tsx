@@ -1,7 +1,13 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import QuatriemeDanSections from '../QuatriemeDanSections'
-import { QUATRIEME_DAN_HERO, QUATRIEME_DAN_PRESENTATION } from '../../lib/quatriemeDanContent'
+import {
+  QUATRIEME_DAN_HERO,
+  QUATRIEME_DAN_PRESENTATION,
+  QUATRIEME_DAN_EXAMEN,
+  QUATRIEME_DAN_UV1,
+  QUATRIEME_DAN_AUTRES_UV,
+} from '../../lib/quatriemeDanContent'
 
 const progress = { percent: 0, done: 0, total: 3, termine: false }
 
@@ -33,8 +39,23 @@ describe('QuatriemeDanSections — landing 4e Dan (Kime-no-Kata)', () => {
     expect(onBrowse).toHaveBeenCalledOnce()
   })
 
-  it('ne contient aucune référence au 3e Dan', () => {
+  it('ne présente pas le parcours comme « 3e Dan » (seul le prérequis peut mentionner le 3e Dan)', () => {
     const { container } = render(<QuatriemeDanSections progress={progress} onCommencer={() => {}} onBrowseResources={() => {}} />)
-    expect(container.textContent).not.toMatch(/3e\s*dan/i)
+    expect(container.textContent).not.toMatch(/pr[ée]par\w*\s+(le|du)\s+3e/i)
+  })
+
+  it('affiche « L\'examen en un coup d\'œil » avec ses six cartes', () => {
+    render(<QuatriemeDanSections progress={progress} onCommencer={() => {}} onBrowseResources={() => {}} />)
+    expect(screen.getByRole('heading', { level: 2, name: "L'examen en un coup d'œil" })).toBeInTheDocument()
+    expect(QUATRIEME_DAN_EXAMEN).toHaveLength(6)
+    QUATRIEME_DAN_EXAMEN.forEach((c) => expect(screen.getByRole('heading', { level: 3, name: c.titre })).toBeInTheDocument())
+  })
+
+  it('affiche « Les unités de valeur » avec l\'UV1 mise en avant et le focus exclusif', () => {
+    render(<QuatriemeDanSections progress={progress} onCommencer={() => {}} onBrowseResources={() => {}} />)
+    expect(screen.getByRole('heading', { level: 2, name: 'Les unités de valeur' })).toBeInTheDocument()
+    expect(screen.getByText('Au programme de ce parcours')).toBeInTheDocument()
+    expect(screen.getByText(QUATRIEME_DAN_UV1.resume)).toBeInTheDocument()
+    expect(screen.getByText(QUATRIEME_DAN_AUTRES_UV)).toBeInTheDocument()
   })
 })

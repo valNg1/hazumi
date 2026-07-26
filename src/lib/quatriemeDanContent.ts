@@ -50,3 +50,54 @@ export const QUATRIEME_DAN_PRESENTATION: QuatriemeDanPresentation = {
     "Pour l'UV1, le candidat présente, dans le rôle de tori, le Kime-no-Kata ainsi qu'un second kata exécuté intégralement, choisi parmi :",
   katas: ['Nage-no-Kata', 'Katame-no-Kata', 'Kodokan Goshin-jutsu', 'Gonosen-no-Kata'],
 }
+
+// ── L'examen en un coup d'œil (6 cartes concises, réf. FFJDA) ────────────────
+export interface ExamenCarte {
+  titre: string
+  description: string
+}
+
+export const QUATRIEME_DAN_EXAMEN: ExamenCarte[] = [
+  {
+    titre: 'UV1 — Kime-no-Kata',
+    description: "L'UV1 est l'unité de kata. Le Kime-no-Kata en est le kata imposé : c'est le cœur de ce parcours.",
+  },
+  {
+    titre: 'Prérequis',
+    description: "Être titulaire du 3e Dan, disposer d'une licence FFJDA en cours de validité et remplir les conditions d'âge et d'ancienneté fixées par la commission des grades.",
+  },
+  {
+    titre: "Déroulé de l'épreuve",
+    description: "L'UV1 se présente devant un jury : les katas imposés sont démontrés dans le respect des formes officielles et du protocole (saluts, rythme, distances).",
+  },
+  {
+    titre: 'Rôle du candidat',
+    description: "Le candidat exécute le Kime-no-Kata dans le rôle de Tori ; un partenaire tient le rôle de Uke.",
+  },
+  {
+    titre: 'Second kata',
+    description: "En plus du Kime-no-Kata, le candidat présente intégralement un second kata au choix : Nage-no-Kata, Katame-no-Kata, Kodokan Goshin-jutsu ou Gonosen-no-Kata.",
+  },
+  {
+    titre: 'Attentes du jury',
+    description: "Le jury évalue la fidélité aux formes officielles, la précision des placements, le contrôle et l'attitude, sans exiger de performance en opposition.",
+  },
+]
+
+// ── Les unités de valeur (UV1 mise en avant ; ce parcours ne traite que l'UV1) ─
+export interface UniteValeur {
+  code: string
+  titre: string
+  sousTitre: string
+  resume: string
+}
+
+export const QUATRIEME_DAN_UV1: UniteValeur = {
+  code: 'UV1',
+  titre: 'Kata',
+  sousTitre: 'Kime-no-Kata (imposé) + un second kata',
+  resume: "L'unité de valeur travaillée dans ce parcours. Le candidat présente le Kime-no-Kata dans le rôle de Tori, puis un second kata complet choisi parmi les quatre katas autorisés.",
+}
+
+export const QUATRIEME_DAN_AUTRES_UV =
+  "L'examen du 4e Dan comporte d'autres unités de valeur. Ce parcours se concentre exclusivement sur l'UV1 (kata) ; les autres unités ne sont pas traitées ici."

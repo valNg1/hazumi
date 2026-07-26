@@ -1,4 +1,10 @@
-import { QUATRIEME_DAN_HERO, QUATRIEME_DAN_PRESENTATION } from '../lib/quatriemeDanContent'
+import {
+  QUATRIEME_DAN_HERO,
+  QUATRIEME_DAN_PRESENTATION,
+  QUATRIEME_DAN_EXAMEN,
+  QUATRIEME_DAN_UV1,
+  QUATRIEME_DAN_AUTRES_UV,
+} from '../lib/quatriemeDanContent'
 
 interface Props {
   progress: { percent: number; done: number; total: number; termine: boolean }
@@ -62,6 +68,45 @@ export default function QuatriemeDanSections({ progress, onCommencer, onBrowseRe
               </li>
             ))}
           </ul>
+        </div>
+      </section>
+
+      {/* ── SECTION 3 — L'EXAMEN EN UN COUP D'ŒIL (six cartes) ─────────────── */}
+      <section>
+        <h2 className="text-lg font-bold text-[#0A0A0A] mb-3">L'examen en un coup d'œil</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {QUATRIEME_DAN_EXAMEN.map((c) => (
+            <div key={c.titre} className="bg-white rounded-xl border border-[#E5E5E5] p-4">
+              <h3 className="text-sm font-semibold text-[#0A0A0A] mb-1">{c.titre}</h3>
+              <p className="text-xs text-[#666666] leading-relaxed">{c.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── SECTION 4 — LES UNITÉS DE VALEUR (UV1 mise en avant) ───────────── */}
+      <section id="uv">
+        <h2 className="text-lg font-bold text-[#0A0A0A] mb-3">Les unités de valeur</h2>
+        <div className="space-y-3">
+          <div className="bg-white rounded-xl border border-[#C41230]/30 ring-1 ring-[#C41230]/10 p-4">
+            <div className="flex items-start gap-3">
+              <span className="flex-shrink-0 text-[11px] font-bold text-white bg-[#C41230] rounded px-2 py-1">{QUATRIEME_DAN_UV1.code}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-sm font-semibold text-[#0A0A0A]">{QUATRIEME_DAN_UV1.titre}</h3>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full border font-medium bg-[#C41230]/5 text-[#C41230] border-[#C41230]/20">
+                    Au programme de ce parcours
+                  </span>
+                </div>
+                <p className="text-[11px] uppercase tracking-widest text-[#999999] mt-0.5">{QUATRIEME_DAN_UV1.sousTitre}</p>
+                <p className="text-xs text-[#666666] leading-relaxed mt-2">{QUATRIEME_DAN_UV1.resume}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-[#FAFAFA] rounded-xl border border-[#E5E5E5] p-4">
+            <p className="text-xs text-[#666666] leading-relaxed">{QUATRIEME_DAN_AUTRES_UV}</p>
+          </div>
         </div>
       </section>
     </div>
