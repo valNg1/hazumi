@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+
+const LIEN_EXPIRE = 'Ce lien a expiré ou a déjà été utilisé (souvent consommé par le scanner de votre messagerie). Demandez-en un nouveau ci-dessous.'
 
 export default function ResetPassword() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const location = useLocation()
   const [mode, setMode] = useState<'request' | 'update' | 'done'>('request')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -12,12 +16,36 @@ export default function ResetPassword() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
-  // Si l'utilisateur arrive via le lien de reset (token dans l'URL hash)
+  // Traitement du lien de réinitialisation, tolérant à plusieurs formats :
+  //  - erreur renvoyée par Supabase (lien expiré) → message clair + renvoi
+  //  - token_hash (lien pointant vers l'app) → verifyOtp en JS (résiste aux scanners)
+  //  - flux implicite historique → event PASSWORD_RECOVERY
   useEffect(() => {
-    supabase.auth.onAuthStateChange((event) => {
+    const hashParams = new URLSearchParams(location.hash.replace(/^#/, ''))
+    const errCode = searchParams.get('error_code') ?? hashParams.get('error_code')
+    if (errCode) {
+      setError(errCode === 'otp_expired'
+        ? LIEN_EXPIRE
+        : (searchParams.get('error_description') ?? hashParams.get('error_description') ?? 'Lien invalide.'))
+      setMode('request')
+      return
+    }
+
+    const tokenHash = searchParams.get('token_hash')
+    const type = searchParams.get('type')
+    if (tokenHash && type === 'recovery') {
+      supabase.auth.verifyOtp({ type: 'recovery', token_hash: tokenHash }).then(({ error }) => {
+        if (error) { setError(LIEN_EXPIRE); setMode('request') }
+        else setMode('update')
+      })
+      return
+    }
+
+    const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') setMode('update')
     })
-  }, [])
+    return () => data.subscription.unsubscribe()
+  }, [searchParams, location.hash])
 
   async function handleRequest(e: React.FormEvent) {
     e.preventDefault()
