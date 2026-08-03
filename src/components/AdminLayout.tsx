@@ -6,6 +6,7 @@ const NAV = [
   { to: '/admin/dashboard', label: 'Dashboard' },
   { to: '/admin/messagerie', label: 'Messagerie' },
   { to: '/admin/catalogue', label: 'Catalogues' },
+  { to: '/admin/parcours', label: 'Parcours' },
 ]
 
 export default function AdminLayout() {

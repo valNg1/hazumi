@@ -29,6 +29,7 @@ import AdminDashboard from './pages/admin/Dashboard'
 import AdminMessages from './pages/admin/Messages'
 import AdminMessagesList from './pages/admin/MessagesList'
 import AdminCatalogue from './pages/admin/Catalogue'
+import AdminParcoursPage from './pages/admin/Parcours'
 import Messagerie from './pages/admin/Messagerie'
 import MessagerieThread from './pages/admin/MessagerieThread'
 
@@ -106,6 +107,7 @@ export default function App() {
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/messages" element={<AdminMessagesList />} />
               <Route path="/admin/catalogue" element={<AdminCatalogue />} />
+              <Route path="/admin/parcours" element={<AdminParcoursPage />} />
               <Route path="/admin/messages/:judokaId" element={<AdminMessages />} />
               <Route path="/admin/messagerie" element={<Messagerie />} />
               <Route path="/admin/messagerie/:conversationId" element={<MessagerieThread />} />
