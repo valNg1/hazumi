@@ -11,6 +11,8 @@ import { gradeQuiz, type QuizQuestion } from '../../lib/lessonQuiz'
 import { getPremiumContent, QUIZ_NIVEAUX, type Technique } from '../../lib/lessonPremium'
 import LessonMeta from '../../components/lesson/LessonMeta'
 import PremiumLessonContentView from '../../components/lesson/PremiumLessonContent'
+import MasterclassContentView from '../../components/lesson/MasterclassContent'
+import { getMasterclassContent } from '../../lib/masterclass/lessons'
 
 const NOTES_DEBOUNCE_MS = 800
 
@@ -207,6 +209,7 @@ export default function Lecon() {
   const fin = estSequence && startSeconds === undefined ? segment.end! : undefined
   const embedUrl = videoUrl ? youtubeEmbedUrl(videoUrl, debut, fin) : null
   const premium = getPremiumContent(ressource.id)
+  const masterclass = getMasterclassContent(ressource.id)
 
   const estClip = sections.length > 0
 
@@ -364,8 +367,10 @@ export default function Lecon() {
         </div>
       )}
 
-      {/* 3. FICHE HAZUMI — premium (structuree) ou markdown generique */}
-      {premium ? (
+      {/* 3. CONTENU — masterclass (Demontfaucon) OU premium kata OU markdown generique */}
+      {masterclass ? (
+        <MasterclassContentView content={masterclass} onSeek={setStartSeconds} />
+      ) : premium ? (
         <PremiumLessonContentView content={premium} onOpenTechnique={(t) => {
           const clipId = clipForTechnique(t.nom, clips)
           if (clipId) navigate(`/eleve/lecon/${clipId}`)
