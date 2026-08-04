@@ -7,10 +7,11 @@ import PlaylistCover from '../../components/PlaylistCover'
 import { computeProgress, nextRessourceId, toggleCompleted, type ParcoursRessourceLink } from '../../lib/parcoursProgress'
 import PremierDanSections from '../../components/PremierDanSections'
 import { PREMIER_DAN_TITRE } from '../../lib/premierDanContent'
-import { isParcourActive, toggleParcour } from '../../lib/parcours'
+import { toggleParcour } from '../../lib/parcours'
 
-// Le judoka choisit ses parcours actifs. Stockés dans judokas.parcours (text[]) —
-// colonne héritée réutilisée (son ancien usage « univers » n'est plus monté).
+// Parcours ACTIFS PAR DÉFAUT. judokas.parcours (text[], colonne héritée réutilisée)
+// stocke désormais les ids DÉSACTIVÉS par le judoka : un parcours est actif tant qu'il
+// n'y figure pas. Libre au judoka de le désactiver via le bouton.
 const UNIVERS_LEGACY = ['kyu', 'shiai', 'judo-ka']
 import QuatriemeDanSections from '../../components/QuatriemeDanSections'
 import {
@@ -92,7 +93,7 @@ export default function Parcours({
   const [lessonIds, setLessonIds] = useState<Set<string>>(new Set())
   const [playlists, setPlaylists] = useState<PlaylistRow[]>([])
   const [vignettesParPlaylist, setVignettesParPlaylist] = useState<Record<string, string[]>>({})
-  const [parcoursActifs, setParcoursActifs] = useState<string[]>([])
+  const [parcoursDesactives, setParcoursDesactives] = useState<string[]>([])
 
   const [selected, setSelected] = useState<ParcoursRow | null>(null)
   const [ressources, setRessources] = useState<Ressource[]>([])
@@ -110,8 +111,8 @@ export default function Parcours({
       const { data: judoka } = await supabase.from('judokas').select('id, parcours').eq('user_id', user.id).single()
       if (!judoka) { setLoading(false); return }
       setJudokaId(judoka.id)
-      const actifs = ((judoka.parcours as string[] | null) ?? []).filter((x) => !UNIVERS_LEGACY.includes(x))
-      setParcoursActifs(actifs)
+      const desactives = ((judoka.parcours as string[] | null) ?? []).filter((x) => !UNIVERS_LEGACY.includes(x))
+      setParcoursDesactives(desactives)
       await loadList(judoka.id)
       await loadPlaylists(judoka.id)
       setLoading(false)
@@ -280,8 +281,8 @@ export default function Parcours({
 
   async function toggleParcoursActif(parcoursId: string) {
     if (!judokaId) return
-    const next = toggleParcour(parcoursActifs, parcoursId)
-    setParcoursActifs(next)
+    const next = toggleParcour(parcoursDesactives, parcoursId) // ajoute/retire de la liste des désactivés
+    setParcoursDesactives(next)
     await supabase.from('judokas').update({ parcours: next }).eq('id', judokaId)
   }
 
@@ -528,25 +529,25 @@ export default function Parcours({
           {list.map((p) => {
             const percent = progressByParcours[p.id] ?? 0
             const vue = parcoursDisplay(p)
-            const actif = isParcourActive(parcoursActifs, p.id)
+            const actif = !parcoursDesactives.includes(p.id) // actif par défaut
             return (
               <div key={p.id} className="relative">
               <button
                 onClick={(e) => { e.stopPropagation(); toggleParcoursActif(p.id) }}
                 aria-pressed={actif}
-                title={actif ? 'Retirer de mes parcours' : 'Ajouter à mes parcours'}
+                title={actif ? 'Désactiver ce parcours' : 'Réactiver ce parcours'}
                 className={`absolute top-2 right-2 z-10 text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-1 border transition-colors ${
                   actif
-                    ? 'bg-[#C41230] text-white border-[#C41230] hover:bg-[#9B0E25]'
-                    : 'bg-white/90 text-[#666666] border-[#E5E5E5] hover:border-[#C41230] hover:text-[#C41230]'
+                    ? 'bg-white/90 text-[#666666] border-[#E5E5E5] hover:border-[#C41230] hover:text-[#C41230]'
+                    : 'bg-[#C41230] text-white border-[#C41230] hover:bg-[#9B0E25]'
                 }`}
               >
-                {actif ? '★ Activé' : '☆ Activer'}
+                {actif ? 'Désactiver' : 'Activer'}
               </button>
               <button
                 onClick={() => setSearchParams({ p: p.id })}
                 className={`w-full text-left bg-white rounded-xl border overflow-hidden hover:shadow-sm transition-all flex flex-col ${
-                  actif ? 'border-[#C41230] ring-1 ring-[#C41230]/20' : 'border-[#E5E5E5] hover:border-[#CCCCCC]'
+                  actif ? 'border-[#E5E5E5] hover:border-[#CCCCCC]' : 'border-[#E5E5E5] opacity-50 hover:opacity-80'
                 }`}
               >
                 <div className="aspect-[16/9] bg-gradient-to-br from-[#0A0A0A] to-[#3A0A12] flex items-center justify-center">

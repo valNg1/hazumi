@@ -114,14 +114,16 @@ describe('Parcours (moteur de parcours pedagogiques)', () => {
     })
   })
 
-  it('active puis désactive un parcours (bouton) et persiste dans judokas.parcours', async () => {
+  it('parcours actif par défaut : désactive puis réactive (persiste les désactivés)', async () => {
     renderPage()
     await waitFor(() => screen.getByText(TITRE))
-    await userEvent.click(screen.getByRole('button', { name: /Activer/i }))
-    await waitFor(() => expect(screen.getByRole('button', { name: /Activé/i })).toBeInTheDocument())
-    expect(h.store.judokas[0].parcours).toContain('p1')
-    await userEvent.click(screen.getByRole('button', { name: /Activé/i }))
-    await waitFor(() => expect(screen.getByRole('button', { name: /Activer/i })).toBeInTheDocument())
+    // Actif par défaut → le bouton propose de « Désactiver ».
+    expect(screen.getByRole('button', { name: 'Désactiver' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Désactiver' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Activer' })).toBeInTheDocument())
+    expect(h.store.judokas[0].parcours).toContain('p1') // p1 désormais désactivé
+    await userEvent.click(screen.getByRole('button', { name: 'Activer' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Désactiver' })).toBeInTheDocument())
     expect(h.store.judokas[0].parcours).not.toContain('p1')
   })
 

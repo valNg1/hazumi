@@ -11,7 +11,6 @@ import { gradeQuiz, type QuizQuestion } from '../../lib/lessonQuiz'
 import { getPremiumContent, QUIZ_NIVEAUX, type Technique } from '../../lib/lessonPremium'
 import LessonMeta from '../../components/lesson/LessonMeta'
 import PremiumLessonContentView from '../../components/lesson/PremiumLessonContent'
-import MasterclassContentView from '../../components/lesson/MasterclassContent'
 import { getMasterclassContent } from '../../lib/masterclass/lessons'
 
 const NOTES_DEBOUNCE_MS = 800
@@ -368,10 +367,10 @@ export default function Lecon() {
         </div>
       )}
 
-      {/* 3. CONTENU — masterclass (Demontfaucon) OU premium kata OU markdown generique */}
-      {masterclass ? (
-        <MasterclassContentView content={masterclass} onSeek={setStartSeconds} />
-      ) : premium ? (
+      {/* 3. CONTENU — pour une masterclass, les sections pédagogiques sont MASQUÉES à la
+          demande du PO (données conservées dans le registre). On garde vidéo (sticky),
+          chapitres et notes. Réactivable en re-rendant <MasterclassContentView>. */}
+      {masterclass ? null : premium ? (
         <PremiumLessonContentView content={premium} onOpenTechnique={(t) => {
           const clipId = clipForTechnique(t.nom, clips)
           if (clipId) navigate(`/eleve/lecon/${clipId}`)
