@@ -67,3 +67,25 @@ describe('Collection FD — journey « Gaeshi »', () => {
     expect(getMasterclassContent(gaeshi!.ressourceId)).toBe(gaeshi!.content)
   })
 })
+
+describe('Collection FD — intégrité (8 journeys)', () => {
+  it('compte 8 journeys (Gaeshi + 7 Projet Excellence)', () => {
+    expect(FD_JOURNEYS).toHaveLength(8)
+  })
+
+  it('ids et slugs uniques ; univers judo-ka ; chapitres et vidéo présents', () => {
+    const ids = new Set(FD_JOURNEYS.map((j) => j.ressourceId))
+    const slugs = new Set(FD_JOURNEYS.map((j) => j.slug))
+    expect(ids.size).toBe(8)
+    expect(slugs.size).toBe(8)
+    FD_JOURNEYS.forEach((j) => {
+      expect(j.univers).toBe('judo-ka')
+      expect(j.titre.length).toBeGreaterThan(0)
+      expect(j.video.url).toMatch(/youtube\.com\/watch\?v=/)
+      expect(j.video.dureeSeconds).toBeGreaterThan(0)
+      expect(j.chapitres.length).toBeGreaterThan(0)
+      expect(j.chapitres.every((c) => c.titre.length > 0 && c.timestampSeconds >= 0)).toBe(true)
+      expect(getMasterclassContent(j.ressourceId)).toBe(j.content)
+    })
+  })
+})

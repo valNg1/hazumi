@@ -1,6 +1,7 @@
 import type { MasterclassContent } from '../masterclass/masterclassContent'
 import type { FDJourney } from './fdJourney'
 import { GAESHI_JOURNEY } from './gaeshi'
+import { PROJET_EXCELLENCE_JOURNEYS } from './projetExcellence'
 
 export type { FDJourney } from './fdJourney'
 
@@ -9,7 +10,7 @@ export type { FDJourney } from './fdJourney'
  * 1 vidéo = 1 journey (parcours-first). Ajouter ici chaque journey rempli
  * (copie du template `_template.ts`).
  */
-export const FD_JOURNEYS: FDJourney[] = [GAESHI_JOURNEY]
+export const FD_JOURNEYS: FDJourney[] = [GAESHI_JOURNEY, ...PROJET_EXCELLENCE_JOURNEYS]
 
 /** Map ressourceId -> contenu masterclass, pour enregistrement global. */
 export function fdMasterclassEntries(): Record<string, MasterclassContent> {
