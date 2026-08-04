@@ -7,6 +7,11 @@ import PlaylistCover from '../../components/PlaylistCover'
 import { computeProgress, nextRessourceId, toggleCompleted, type ParcoursRessourceLink } from '../../lib/parcoursProgress'
 import PremierDanSections from '../../components/PremierDanSections'
 import { PREMIER_DAN_TITRE } from '../../lib/premierDanContent'
+import { isParcourActive, toggleParcour } from '../../lib/parcours'
+
+// Le judoka choisit ses parcours actifs. Stockés dans judokas.parcours (text[]) —
+// colonne héritée réutilisée (son ancien usage « univers » n'est plus monté).
+const UNIVERS_LEGACY = ['kyu', 'shiai', 'judo-ka']
 import QuatriemeDanSections from '../../components/QuatriemeDanSections'
 import {
   QUATRIEME_DAN_PARCOURS_TITRE,
@@ -87,6 +92,7 @@ export default function Parcours({
   const [lessonIds, setLessonIds] = useState<Set<string>>(new Set())
   const [playlists, setPlaylists] = useState<PlaylistRow[]>([])
   const [vignettesParPlaylist, setVignettesParPlaylist] = useState<Record<string, string[]>>({})
+  const [parcoursActifs, setParcoursActifs] = useState<string[]>([])
 
   const [selected, setSelected] = useState<ParcoursRow | null>(null)
   const [ressources, setRessources] = useState<Ressource[]>([])
@@ -101,9 +107,11 @@ export default function Parcours({
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setLoading(false); return }
-      const { data: judoka } = await supabase.from('judokas').select('id').eq('user_id', user.id).single()
+      const { data: judoka } = await supabase.from('judokas').select('id, parcours').eq('user_id', user.id).single()
       if (!judoka) { setLoading(false); return }
       setJudokaId(judoka.id)
+      const actifs = ((judoka.parcours as string[] | null) ?? []).filter((x) => !UNIVERS_LEGACY.includes(x))
+      setParcoursActifs(actifs)
       await loadList(judoka.id)
       await loadPlaylists(judoka.id)
       setLoading(false)
@@ -268,6 +276,13 @@ export default function Parcours({
       date_debut: new Date().toISOString(),
     })
     return []
+  }
+
+  async function toggleParcoursActif(parcoursId: string) {
+    if (!judokaId) return
+    const next = toggleParcour(parcoursActifs, parcoursId)
+    setParcoursActifs(next)
+    await supabase.from('judokas').update({ parcours: next }).eq('id', judokaId)
   }
 
   async function toggleRessource(ressourceId: string) {
@@ -513,11 +528,26 @@ export default function Parcours({
           {list.map((p) => {
             const percent = progressByParcours[p.id] ?? 0
             const vue = parcoursDisplay(p)
+            const actif = isParcourActive(parcoursActifs, p.id)
             return (
+              <div key={p.id} className="relative">
               <button
-                key={p.id}
+                onClick={(e) => { e.stopPropagation(); toggleParcoursActif(p.id) }}
+                aria-pressed={actif}
+                title={actif ? 'Retirer de mes parcours' : 'Ajouter à mes parcours'}
+                className={`absolute top-2 right-2 z-10 text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-1 border transition-colors ${
+                  actif
+                    ? 'bg-[#C41230] text-white border-[#C41230] hover:bg-[#9B0E25]'
+                    : 'bg-white/90 text-[#666666] border-[#E5E5E5] hover:border-[#C41230] hover:text-[#C41230]'
+                }`}
+              >
+                {actif ? '★ Activé' : '☆ Activer'}
+              </button>
+              <button
                 onClick={() => setSearchParams({ p: p.id })}
-                className="text-left bg-white rounded-xl border border-[#E5E5E5] overflow-hidden hover:border-[#CCCCCC] hover:shadow-sm transition-all flex flex-col"
+                className={`w-full text-left bg-white rounded-xl border overflow-hidden hover:shadow-sm transition-all flex flex-col ${
+                  actif ? 'border-[#C41230] ring-1 ring-[#C41230]/20' : 'border-[#E5E5E5] hover:border-[#CCCCCC]'
+                }`}
               >
                 <div className="aspect-[16/9] bg-gradient-to-br from-[#0A0A0A] to-[#3A0A12] flex items-center justify-center">
                   {p.image ? (
@@ -547,6 +577,7 @@ export default function Parcours({
                   </div>
                 </div>
               </button>
+              </div>
             )
           })}
         </div>

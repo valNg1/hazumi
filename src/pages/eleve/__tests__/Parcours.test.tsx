@@ -91,6 +91,7 @@ function seed(titre: string) {
   h.store.user_parcours = []
   h.store.parcours_univers = []
   h.store.lesson = []
+  h.store.judokas = [{ id: 'j1', user_id: 'u1' }]
 }
 
 function renderPage() {
@@ -111,6 +112,17 @@ describe('Parcours (moteur de parcours pedagogiques)', () => {
       expect(screen.getByText(TITRE)).toBeInTheDocument()
       expect(screen.getByText('Non commencé')).toBeInTheDocument()
     })
+  })
+
+  it('active puis désactive un parcours (bouton) et persiste dans judokas.parcours', async () => {
+    renderPage()
+    await waitFor(() => screen.getByText(TITRE))
+    await userEvent.click(screen.getByRole('button', { name: /Activer/i }))
+    await waitFor(() => expect(screen.getByRole('button', { name: /Activé/i })).toBeInTheDocument())
+    expect(h.store.judokas[0].parcours).toContain('p1')
+    await userEvent.click(screen.getByRole('button', { name: /Activé/i }))
+    await waitFor(() => expect(screen.getByRole('button', { name: /Activer/i })).toBeInTheDocument())
+    expect(h.store.judokas[0].parcours).not.toContain('p1')
   })
 
   it("ouvre un parcours et affiche ses ressources dans l'ordre avec 0%", async () => {
