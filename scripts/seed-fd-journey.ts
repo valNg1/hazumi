@@ -25,22 +25,26 @@ const env = Object.fromEntries(
 )
 const sb = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_KEY)
 
-const UNIVERS = j.univers // 'judo-ka'
-const TITRE_PARCOURS = 'Masterclass Frédéric Demontfaucon'
+// Parcours-first : 1 vidéo = 1 journey. Le PARCOURS EST le journey (titre = sujet).
+// `LEGACY_UNIVERS` = contrainte technique héritée (colonne catalogue_hazumi.parcours,
+// NOT NULL) : on renseigne la valeur la moins intrusive, mais on N'EXPOSE PAS l'univers
+// comme structure produit → AUCUNE ligne parcours_univers (pas de navigation/catégorisation
+// par univers hérité), et la ressource n'est pas listée dans la bibliothèque par univers.
+const LEGACY_UNIVERS = j.univers
 
-// 1. Parcours de collection (regroupe les journeys FD dans JUDO-KÂ)
-const { data: pE } = await sb.from('parcours').select('id').eq('titre', TITRE_PARCOURS).maybeSingle()
+// 1. Parcours = le journey masterclass
+const { data: pE } = await sb.from('parcours').select('id').eq('titre', j.titre).maybeSingle()
 let parcoursId = (pE as { id: string } | null)?.id
 if (!parcoursId) {
   const { data, error } = await sb.from('parcours').insert({
-    titre: TITRE_PARCOURS,
-    description: 'Masterclasses techniques de Frédéric Demontfaucon.',
-    niveau: null, ordre: 5, publie: true,
+    titre: j.titre, description: j.content.meta.objectif, niveau: null, ordre: 10, publie: true,
   }).select('id').single()
   if (error) { console.error('parcours:', error.message); process.exit(1) }
   parcoursId = (data as { id: string }).id
+} else {
+  await sb.from('parcours').update({ description: j.content.meta.objectif, publie: true }).eq('id', parcoursId)
 }
-await sb.from('parcours_univers').upsert({ parcours_id: parcoursId, univers: UNIVERS }, { onConflict: 'parcours_id,univers', ignoreDuplicates: true })
+// NB : pas de parcours_univers (parcours-first, pas de navigation par univers hérité).
 
 // 2. Source vidéo
 const { data: sE } = await sb.from('media_sources').select('id').eq('url', j.video.url).maybeSingle()
@@ -54,7 +58,7 @@ if (!sourceId) {
 }
 
 // 3. Ressource (catalogue_hazumi) — id figé = ressourceId du journey
-const champs = { id: j.ressourceId, titre: j.titre, type: 'video', parcours: UNIVERS, famille: 'Masterclass', grade: null, visible_bibliotheque: true, ordre: 1 }
+const champs = { id: j.ressourceId, titre: j.titre, type: 'video', parcours: LEGACY_UNIVERS, famille: 'Masterclass', grade: null, visible_bibliotheque: false, ordre: 1 }
 const { data: rE } = await sb.from('catalogue_hazumi').select('id').eq('id', j.ressourceId).maybeSingle()
 if (rE) await sb.from('catalogue_hazumi').update(champs).eq('id', j.ressourceId)
 else {

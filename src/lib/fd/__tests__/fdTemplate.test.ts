@@ -26,12 +26,40 @@ describe('Collection FD — template masterclass', () => {
     expect(c.reperes).toBeUndefined()
   })
 
-  it('registre FD vide par défaut (aucune source encore fournie)', () => {
-    expect(FD_JOURNEYS).toHaveLength(0)
-  })
-
   it('getMasterclassContent renvoie undefined pour un id inconnu', () => {
     expect(getMasterclassContent('inexistant')).toBeUndefined()
     expect(getMasterclassContent(undefined)).toBeUndefined()
+  })
+})
+
+describe('Collection FD — journey « Gaeshi »', () => {
+  const gaeshi = FD_JOURNEYS.find((jj) => jj.slug === 'gaeshi-projet-excellence')
+
+  it('est enregistré (1 vidéo = 1 journey)', () => {
+    expect(gaeshi).toBeDefined()
+    expect(gaeshi!.titre).toBe('Gaeshi — Projet Excellence Judo')
+    expect(gaeshi!.univers).toBe('judo-ka') // contrainte héritée, non exposée
+  })
+
+  it('porte les 15 chapitres validés', () => {
+    expect(gaeshi!.chapitres).toHaveLength(15)
+    expect(gaeshi!.chapitres[0].timestampSeconds).toBe(0)
+    expect(gaeshi!.chapitres.every((c) => c.titre.length > 0)).toBe(true)
+  })
+
+  it('a un contenu masterclass rempli (pas de section kata)', () => {
+    const c = gaeshi!.content
+    expect(c.objectifs.length).toBeGreaterThan(0)
+    expect(c.concepts.length).toBeGreaterThan(0)
+    expect(c.explications.length).toBeGreaterThan(0)
+    expect(c.erreurs.length).toBeGreaterThan(0)
+    expect(c.conseils.length).toBeGreaterThan(0)
+    expect(c.aRetenir.length).toBeGreaterThan(0)
+    expect((c as Record<string, unknown>).jury).toBeUndefined()
+  })
+
+  it('a un quiz et est résolu par le registre masterclass', () => {
+    expect(gaeshi!.quiz.length).toBeGreaterThanOrEqual(5)
+    expect(getMasterclassContent(gaeshi!.ressourceId)).toBe(gaeshi!.content)
   })
 })

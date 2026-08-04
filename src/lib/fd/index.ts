@@ -1,14 +1,15 @@
 import type { MasterclassContent } from '../masterclass/masterclassContent'
 import type { FDJourney } from './fdJourney'
+import { GAESHI_JOURNEY } from './gaeshi'
 
 export type { FDJourney } from './fdJourney'
 
 /**
- * Registre de la collection Frédéric Demontfaucon.
- * Ajouter ici chaque journey rempli (copie du template `_template.ts`).
- * Vide tant qu'aucune source n'est fournie.
+ * Registre des masterclasses Frédéric Demontfaucon.
+ * 1 vidéo = 1 journey (parcours-first). Ajouter ici chaque journey rempli
+ * (copie du template `_template.ts`).
  */
-export const FD_JOURNEYS: FDJourney[] = []
+export const FD_JOURNEYS: FDJourney[] = [GAESHI_JOURNEY]
 
 /** Map ressourceId -> contenu masterclass, pour enregistrement global. */
 export function fdMasterclassEntries(): Record<string, MasterclassContent> {
