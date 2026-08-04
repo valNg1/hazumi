@@ -281,7 +281,8 @@ export default function Lecon() {
 
       {embedUrl && (
         <div className="sticky top-2 z-30 bg-white rounded-xl border border-[#E5E5E5] p-3 shadow-sm">
-          <div className="aspect-video rounded-lg overflow-hidden bg-black">
+          {/* Masterclass : vidéo sticky réduite (~30 %) pour laisser plus de place aux chapitres/contenu. */}
+          <div className={`aspect-video rounded-lg overflow-hidden bg-black${masterclass ? ' w-[70%] mx-auto' : ''}`}>
             <iframe
               key={`${debut ?? 'start'}-${fin ?? 'fin'}`}
               title="Lecteur vidéo"
@@ -397,7 +398,8 @@ export default function Lecon() {
         />
       </div>
 
-      {/* 5. QUIZ */}
+      {/* 5. QUIZ — masqué pour les masterclass techniques (réservé aux journeys kata) */}
+      {!masterclass && (
       <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
         <h2 className="text-lg font-bold text-[#0A0A0A] mb-1 flex items-center gap-2">
           {premium && <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#0A0A0A] text-white text-xs font-bold flex items-center justify-center">8</span>}
@@ -478,6 +480,7 @@ export default function Lecon() {
           </>
         )}
         </div>
+      )}
 
       {/* Modale "Comprendre cette technique" — sans quitter la lecon */}
       {techniqueOpen?.detail && (

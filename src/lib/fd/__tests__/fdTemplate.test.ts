@@ -41,10 +41,14 @@ describe('Collection FD — journey « Gaeshi »', () => {
     expect(gaeshi!.univers).toBe('judo-ka') // contrainte héritée, non exposée
   })
 
-  it('porte les 15 chapitres validés', () => {
-    expect(gaeshi!.chapitres).toHaveLength(15)
-    expect(gaeshi!.chapitres[0].timestampSeconds).toBe(0)
+  it('porte les 17 chapitres validés par le PO', () => {
+    expect(gaeshi!.chapitres).toHaveLength(17)
+    expect(gaeshi!.chapitres[0].titre).toBe('Tsubame-gaeshi')
+    expect(gaeshi!.chapitres[0].timestampSeconds).toBe(17)
     expect(gaeshi!.chapitres.every((c) => c.titre.length > 0)).toBe(true)
+    // horodatages strictement croissants
+    const ts = gaeshi!.chapitres.map((c) => c.timestampSeconds)
+    expect(ts).toEqual([...ts].sort((a, b) => a - b))
   })
 
   it('a un contenu masterclass rempli (pas de section kata)', () => {
