@@ -18,6 +18,14 @@ export interface MasterclassBloc {
   timestampSeconds?: number
 }
 
+// Chapitre exposé à la leçon avec son transcript (section « Comprendre les techniques »).
+// Réutilisable par toutes les masterclasses FD.
+export interface MasterclassChapitre {
+  titre: string
+  timestampSeconds: number
+  transcript?: string
+}
+
 export interface MasterclassContent {
   meta: MasterclassMeta
   objectifs: string[]              // 1. Objectifs d'apprentissage

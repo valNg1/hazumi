@@ -11,7 +11,8 @@ import { gradeQuiz, type QuizQuestion } from '../../lib/lessonQuiz'
 import { getPremiumContent, QUIZ_NIVEAUX, type Technique } from '../../lib/lessonPremium'
 import LessonMeta from '../../components/lesson/LessonMeta'
 import PremiumLessonContentView from '../../components/lesson/PremiumLessonContent'
-import { getMasterclassContent } from '../../lib/masterclass/lessons'
+import { getMasterclassContent, getMasterclassChapitres } from '../../lib/masterclass/lessons'
+import type { MasterclassChapitre } from '../../lib/masterclass/masterclassContent'
 
 const NOTES_DEBOUNCE_MS = 800
 
@@ -47,6 +48,7 @@ export default function Lecon() {
   const [statut, setStatut] = useState<'en_cours' | 'etudiee'>('en_cours')
   const [previousScore, setPreviousScore] = useState<{ score: number; total: number } | null>(null)
   const [techniqueOpen, setTechniqueOpen] = useState<Technique | null>(null)
+  const [chapitreOpen, setChapitreOpen] = useState<MasterclassChapitre | null>(null)
   const [medias, setMedias] = useState<AssetMedia[]>([])
   const [mediaSelId, setMediaSelId] = useState<string | null>(null)
   const [clips, setClips] = useState<ClipRef[]>([])
@@ -209,6 +211,7 @@ export default function Lecon() {
   const embedUrl = videoUrl ? youtubeEmbedUrl(videoUrl, debut, fin) : null
   const premium = getPremiumContent(ressource.id)
   const masterclass = getMasterclassContent(ressource.id)
+  const mcChapitres = getMasterclassChapitres(ressource.id).filter((c) => c.transcript)
 
   const estClip = sections.length > 0
 
@@ -339,6 +342,28 @@ export default function Lecon() {
                 })}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Comprendre les techniques (masterclass) — transcript nettoyé par chapitre.
+          Navigation des chapitres inchangée ; ici, un bloc de texte par chapitre. */}
+      {mcChapitres.length > 0 && (
+        <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
+          <h2 className="text-lg font-bold text-[#0A0A0A] mb-1">Comprendre les techniques</h2>
+          <p className="text-xs text-[#999999] mb-4">Le commentaire de Frédéric Demontfaucon, transcrit par chapitre.</p>
+          <div className="space-y-1.5">
+            {mcChapitres.map((c) => (
+              <div key={c.timestampSeconds} className="flex items-center justify-between gap-2 bg-[#FAFAFA] border border-[#E5E5E5] rounded-lg px-3 py-2">
+                <span className="text-sm text-[#0A0A0A] min-w-0 truncate">{c.titre}</span>
+                <button
+                  onClick={() => setChapitreOpen(c)}
+                  className="flex-shrink-0 text-[11px] font-semibold text-[#C41230] hover:text-[#9B0E25] transition-colors"
+                >
+                  Comprendre cette technique
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -531,6 +556,25 @@ export default function Lecon() {
           </div>
           </div>
         </>
+      )}
+
+      {/* Panneau bas « Comprendre cette technique » (masterclass) — transcript du chapitre.
+          La vidéo (sticky) reste visible et cliquable pendant la lecture. */}
+      {chapitreOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center px-3 pb-3 pointer-events-none">
+          <div className="bg-white rounded-2xl shadow-2xl border border-[#E5E5E5] p-6 w-full max-w-2xl max-h-[55vh] overflow-y-auto pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#E5E5E5]" aria-hidden="true" />
+            <span className="text-[10px] uppercase tracking-widest text-[#999999]">Comprendre la technique</span>
+            <h2 className="text-lg font-bold text-[#0A0A0A] mb-1">{chapitreOpen.titre}</h2>
+            <p className="text-[10px] text-[#999999] mb-3">Transcription du commentaire — les termes incertains sont signalés « [à vérifier] ».</p>
+            <p className="text-sm text-[#333333] leading-relaxed whitespace-pre-line">{chapitreOpen.transcript}</p>
+            <div className="mt-5 flex justify-end">
+              <button onClick={() => setChapitreOpen(null)} className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-4 py-2 rounded-lg transition-colors">
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

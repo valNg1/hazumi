@@ -14,6 +14,10 @@ export interface FDChapter {
   titre: string
   timestampSeconds: number
   description?: string
+  // Transcript nettoyé correspondant à la plage [ce chapitre → chapitre suivant[.
+  // Affiché dans la section « Comprendre les techniques ». Termes ASR douteux
+  // signalés « [à vérifier] ». Facultatif (rempli progressivement par journey).
+  transcript?: string
 }
 
 export interface FDQuizQuestion {

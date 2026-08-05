@@ -1,4 +1,4 @@
-import type { MasterclassContent } from '../masterclass/masterclassContent'
+import type { MasterclassContent, MasterclassChapitre } from '../masterclass/masterclassContent'
 import type { FDJourney } from './fdJourney'
 import { GAESHI_JOURNEY } from './gaeshi'
 import { PROJET_EXCELLENCE_JOURNEYS } from './projetExcellence'
@@ -15,6 +15,16 @@ export const FD_JOURNEYS: FDJourney[] = [GAESHI_JOURNEY, ...PROJET_EXCELLENCE_JO
 /** Map ressourceId -> contenu masterclass, pour enregistrement global. */
 export function fdMasterclassEntries(): Record<string, MasterclassContent> {
   return Object.fromEntries(FD_JOURNEYS.map((j) => [j.ressourceId, j.content]))
+}
+
+/** Map ressourceId -> chapitres (titre, timestamp, transcript), pour la leçon. */
+export function fdChapitreEntries(): Record<string, MasterclassChapitre[]> {
+  return Object.fromEntries(
+    FD_JOURNEYS.map((j) => [
+      j.ressourceId,
+      j.chapitres.map((c) => ({ titre: c.titre, timestampSeconds: c.timestampSeconds, transcript: c.transcript })),
+    ])
+  )
 }
 
 /** Retrouve un journey FD par son slug (utilisé par le seed). */

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { FD_JOURNEY_TEMPLATE } from '../_template'
 import { FD_JOURNEYS } from '../index'
-import { getMasterclassContent } from '../../masterclass/lessons'
+import { getMasterclassContent, getMasterclassChapitres } from '../../masterclass/lessons'
 
 describe('Collection FD — template masterclass', () => {
   it('univers fixé à judo-ka', () => {
@@ -87,5 +87,29 @@ describe('Collection FD — intégrité (8 journeys)', () => {
       expect(j.chapitres.every((c) => c.titre.length > 0 && c.timestampSeconds >= 0)).toBe(true)
       expect(getMasterclassContent(j.ressourceId)).toBe(j.content)
     })
+  })
+})
+
+describe('Comprendre les techniques — transcript par chapitre (pilote)', () => {
+  const PILOTE = 'edc5e596-56d0-4387-af33-9da673a82872' // systeme-attaque-kumikata
+  const chapitres = getMasterclassChapitres(PILOTE)
+
+  it('expose les chapitres avec transcript pour le journey pilote', () => {
+    expect(chapitres).toHaveLength(8)
+    expect(chapitres.every((c) => (c.transcript ?? '').trim().length > 40)).toBe(true)
+  })
+
+  it('les timestamps correspondent aux bornes de chapitres (mêmes que la vidéo)', () => {
+    expect(chapitres.map((c) => c.timestampSeconds)).toEqual([0, 79, 220, 280, 458, 550, 653, 816])
+  })
+
+  it('signale les termes ASR incertains avec « [à vérifier] »', () => {
+    const flags = chapitres.reduce((n, c) => n + ((c.transcript ?? '').match(/\[à vérifier\]/g)?.length ?? 0), 0)
+    expect(flags).toBeGreaterThan(0)
+  })
+
+  it('les autres journeys n’ont pas encore de transcript (pilote uniquement)', () => {
+    const gaeshi = getMasterclassChapitres('bf947eb3-f9e1-4b26-8994-90af73d81eac')
+    expect(gaeshi.some((c) => c.transcript)).toBe(false)
   })
 })
