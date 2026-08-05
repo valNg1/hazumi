@@ -281,7 +281,7 @@ export default function Lecon() {
       {embedUrl && (
         <div className="sticky top-2 z-30 bg-white rounded-xl border border-[#E5E5E5] p-3 shadow-sm">
           {/* Masterclass : vidéo sticky réduite (~30 %) pour laisser plus de place aux chapitres/contenu. */}
-          <div className={`aspect-video rounded-lg overflow-hidden bg-black${masterclass ? ' w-[70%] mx-auto' : ''}`}>
+          <div className={`aspect-video rounded-lg overflow-hidden bg-black${masterclass || premium ? ' w-[70%] mx-auto' : ''}`}>
             <iframe
               key={`${debut ?? 'start'}-${fin ?? 'fin'}`}
               title="Lecteur vidéo"
