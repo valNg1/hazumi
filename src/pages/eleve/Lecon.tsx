@@ -566,7 +566,7 @@ export default function Lecon() {
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#E5E5E5]" aria-hidden="true" />
             <span className="text-[10px] uppercase tracking-widest text-[#999999]">Comprendre la technique</span>
             <h2 className="text-lg font-bold text-[#0A0A0A] mb-1">{chapitreOpen.titre}</h2>
-            <p className="text-[10px] text-[#999999] mb-3">D'après la source documentaire officielle — les termes incertains sont signalés « [à vérifier] ».</p>
+            <p className="text-[10px] text-[#999999] mb-3">D'après la source documentaire officielle.</p>
             <div className="text-sm text-[#333333] leading-relaxed">{renderMarkdown(chapitreOpen.transcript ?? '')}</div>
             <div className="mt-5 flex justify-end">
               <button onClick={() => setChapitreOpen(null)} className="bg-[#C41230] hover:bg-[#9B0E25] text-white text-xs uppercase tracking-widest px-4 py-2 rounded-lg transition-colors">

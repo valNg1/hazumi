@@ -103,9 +103,11 @@ describe('Comprendre les techniques — transcript par chapitre (pilote)', () =>
     expect(chapitres.map((c) => c.timestampSeconds)).toEqual([0, 79, 220, 280, 458, 550, 653, 816])
   })
 
-  it('signale les termes ASR incertains avec « [à vérifier] »', () => {
-    const flags = chapitres.reduce((n, c) => n + ((c.transcript ?? '').match(/\[à vérifier\]/g)?.length ?? 0), 0)
-    expect(flags).toBeGreaterThan(0)
+  it('ne comporte plus de marqueurs « [à vérifier] » ni le terme « intervenant »', () => {
+    const flags = chapitres.reduce((n, c) => n + ((c.transcript ?? '').match(/à\s*vérifier/gi)?.length ?? 0), 0)
+    const interv = chapitres.reduce((n, c) => n + ((c.transcript ?? '').match(/intervenant/gi)?.length ?? 0), 0)
+    expect(flags).toBe(0)
+    expect(interv).toBe(0)
   })
 
   it('les autres journeys n’ont pas encore de transcript (pilote uniquement)', () => {
