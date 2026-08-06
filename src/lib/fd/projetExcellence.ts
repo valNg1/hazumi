@@ -34,7 +34,7 @@ export const PROJET_EXCELLENCE_JOURNEYS: FDJourney[] = [
       { titre: 'Prises de garde et profils d’adversaires', timestampSeconds: 220, transcript: SYSTEME_ATTAQUE_KUMIKATA_LESSON[220] },
       { titre: 'Mise en application', timestampSeconds: 280, transcript: SYSTEME_ATTAQUE_KUMIKATA_LESSON[280] },
       { titre: 'Créer l’ouverture, gagner du temps', timestampSeconds: 458, transcript: SYSTEME_ATTAQUE_KUMIKATA_LESSON[458] },
-      { titre: 'Exercice guidé', timestampSeconds: 550, transcript: SYSTEME_ATTAQUE_KUMIKATA_LESSON[550] },
+      { titre: 'Lâcher de garde', timestampSeconds: 550, transcript: SYSTEME_ATTAQUE_KUMIKATA_LESSON[550] },
       { titre: 'Variantes de contrôle', timestampSeconds: 653, transcript: SYSTEME_ATTAQUE_KUMIKATA_LESSON[653] },
       { titre: 'De l’autre côté (prise pistolet)', timestampSeconds: 816, transcript: SYSTEME_ATTAQUE_KUMIKATA_LESSON[816] },
     ],
