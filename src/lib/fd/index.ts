@@ -36,3 +36,8 @@ export function fdJourneyBySlug(slug: string): FDJourney | undefined {
 export function fdSlugByRessourceId(ressourceId: string | undefined): string | undefined {
   return ressourceId ? FD_JOURNEYS.find((j) => j.ressourceId === ressourceId)?.slug : undefined
 }
+
+/** Vrai si le ressource_id correspond à une masterclass FD (programme Excellence Judo). */
+export function isFdRessourceId(ressourceId: string | undefined): boolean {
+  return ressourceId ? FD_JOURNEYS.some((j) => j.ressourceId === ressourceId) : false
+}

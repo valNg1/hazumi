@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { FD_JOURNEY_TEMPLATE } from '../_template'
-import { FD_JOURNEYS } from '../index'
+import { FD_JOURNEYS, isFdRessourceId } from '../index'
 import { getMasterclassContent, getMasterclassChapitres } from '../../masterclass/lessons'
 
 describe('Collection FD — template masterclass', () => {
@@ -71,6 +71,12 @@ describe('Collection FD — journey « Gaeshi »', () => {
 describe('Collection FD — intégrité (8 journeys)', () => {
   it('compte 8 journeys (Gaeshi + 7 Projet Excellence)', () => {
     expect(FD_JOURNEYS).toHaveLength(8)
+  })
+
+  it('isFdRessourceId reconnaît une masterclass FD et rejette le reste', () => {
+    expect(isFdRessourceId(FD_JOURNEYS[0].ressourceId)).toBe(true)
+    expect(isFdRessourceId('inexistant')).toBe(false)
+    expect(isFdRessourceId(undefined)).toBe(false)
   })
 
   it('ids et slugs uniques ; univers judo-ka ; chapitres et vidéo présents', () => {

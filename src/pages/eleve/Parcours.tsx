@@ -14,6 +14,8 @@ import { toggleParcour } from '../../lib/parcours'
 // n'y figure pas. Libre au judoka de le désactiver via le bouton.
 const UNIVERS_LEGACY = ['kyu', 'shiai', 'judo-ka']
 import QuatriemeDanSections from '../../components/QuatriemeDanSections'
+import AProposExcellence from '../../components/AProposExcellence'
+import { isFdRessourceId } from '../../lib/fd'
 import {
   QUATRIEME_DAN_PARCOURS_TITRE,
   QUATRIEME_DAN_TITRE,
@@ -338,6 +340,7 @@ export default function Parcours({
     const isPremierDan = selected.titre === PREMIER_DAN_TITRE
     const isQuatriemeDan = selected.titre === QUATRIEME_DAN_PARCOURS_TITRE
     const richLanding = isPremierDan || isQuatriemeDan
+    const estParcoursExcellence = ressources.some((r) => isFdRessourceId(r.id))
 
     const renderRessourceRow = (r: Ressource, i: number) => {
       const done = completedIds.includes(r.id)
@@ -459,6 +462,8 @@ export default function Parcours({
                 {selected.duree_estimee && <span className="text-xs text-[#999999]">{selected.duree_estimee}</span>}
               </div>
             </div>
+
+            {estParcoursExcellence && <div className="mb-5"><AProposExcellence /></div>}
 
             <div className="space-y-2">{ressources.map(renderRessourceRow)}</div>
           </>
