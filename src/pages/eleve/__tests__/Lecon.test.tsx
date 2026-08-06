@@ -28,7 +28,7 @@ vi.mock('../../../lib/supabase', () => {
     let mode: 'select' | 'insert' | 'update' = 'select'
     let payload: any = null
     function rows() {
-      return (store as any)[table].filter(
+      return ((store as any)[table] ?? []).filter(
         (r: any) =>
           Object.entries(filters).every(([k, v]) => r[k] === v) &&
           (inFilter ? inFilter.vals.includes(r[inFilter.col]) : true)

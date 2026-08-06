@@ -11,7 +11,8 @@ import { gradeQuiz, type QuizQuestion } from '../../lib/lessonQuiz'
 import { getPremiumContent, QUIZ_NIVEAUX, type Technique } from '../../lib/lessonPremium'
 import LessonMeta from '../../components/lesson/LessonMeta'
 import PremiumLessonContentView from '../../components/lesson/PremiumLessonContent'
-import { getMasterclassContent, getMasterclassChapitres } from '../../lib/masterclass/lessons'
+import { getMasterclassContent, parseMasterclassSections } from '../../lib/masterclass/lessons'
+import { fdSlugByRessourceId } from '../../lib/fd'
 import type { MasterclassChapitre } from '../../lib/masterclass/masterclassContent'
 
 const NOTES_DEBOUNCE_MS = 800
@@ -49,6 +50,7 @@ export default function Lecon() {
   const [previousScore, setPreviousScore] = useState<{ score: number; total: number } | null>(null)
   const [techniqueOpen, setTechniqueOpen] = useState<Technique | null>(null)
   const [chapitreOpen, setChapitreOpen] = useState<MasterclassChapitre | null>(null)
+  const [mcSections, setMcSections] = useState<MasterclassChapitre[]>([])
   const [medias, setMedias] = useState<AssetMedia[]>([])
   const [mediaSelId, setMediaSelId] = useState<string | null>(null)
   const [clips, setClips] = useState<ClipRef[]>([])
@@ -77,18 +79,24 @@ export default function Lecon() {
       if (!active) return
       setLesson(les as Lesson)
 
-      const [{ data: res }, { data: chaps }, { data: qz }, { data: med }, { data: sec }] = await Promise.all([
+      // Section « Approfondir les techniques » : contenu masterclass (data-driven, découpé par chapitre).
+      const mcSlug = fdSlugByRessourceId(ressourceId)
+      const [{ data: res }, { data: chaps }, { data: qz }, { data: med }, { data: sec }, { data: mc }] = await Promise.all([
         supabase.from('catalogue_hazumi').select('id, titre, famille, grade, type').eq('id', ressourceId).single(),
         supabase.from('lesson_chapters').select('*').eq('lesson_id', les.id).order('ordre', { ascending: true }),
         supabase.from('lesson_quiz').select('*').eq('lesson_id', les.id).order('ordre', { ascending: true }),
         supabase.from('asset_media').select('id, role, segment_start_s, segment_end_s, est_principal, ordre, titre, media_sources(url)').eq('asset_id', ressourceId),
         supabase.from('asset_sections').select('id, type, ordre, titre, contenu').eq('asset_id', ressourceId).order('ordre', { ascending: true }),
+        mcSlug
+          ? supabase.from('masterclass').select('contenu').eq('slug', mcSlug).eq('published', true).maybeSingle()
+          : Promise.resolve({ data: null }),
       ])
       if (!active) return
       setRessource(res as Ressource)
       setChapters((chaps as Chapter[]) ?? [])
       setQuiz((qz as QuizRow[]) ?? [])
       setSections((sec as SectionRow[]) ?? [])
+      setMcSections(parseMasterclassSections((mc as { contenu?: string } | null)?.contenu))
       // Le lecteur recoit une collection de medias, plus un media unique.
       const collection: AssetMedia[] = (((med as unknown as MediaRow[]) ?? [])).map((m) => ({
         id: m.id, role: m.role as MediaRole,
@@ -211,7 +219,7 @@ export default function Lecon() {
   const embedUrl = videoUrl ? youtubeEmbedUrl(videoUrl, debut, fin) : null
   const premium = getPremiumContent(ressource.id)
   const masterclass = getMasterclassContent(ressource.id)
-  const mcChapitres = getMasterclassChapitres(ressource.id).filter((c) => c.transcript)
+  const mcChapitres = mcSections
 
   const estClip = sections.length > 0
 
@@ -350,7 +358,7 @@ export default function Lecon() {
           Navigation des chapitres inchangée ; ici, un bloc de texte par chapitre. */}
       {mcChapitres.length > 0 && (
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
-          <h2 className="text-lg font-bold text-[#0A0A0A] mb-1">Comprendre les techniques</h2>
+          <h2 className="text-lg font-bold text-[#0A0A0A] mb-1">Approfondir les techniques</h2>
           <p className="text-xs text-[#999999] mb-4">Le commentaire de Frédéric Demontfaucon, transcrit par chapitre.</p>
           <div className="space-y-1.5">
             {mcChapitres.map((c) => (
@@ -360,7 +368,7 @@ export default function Lecon() {
                   onClick={() => setChapitreOpen(c)}
                   className="flex-shrink-0 text-[11px] font-semibold text-[#C41230] hover:text-[#9B0E25] transition-colors"
                 >
-                  Comprendre cette technique
+                  Approfondir cette technique
                 </button>
               </div>
             ))}
@@ -564,7 +572,7 @@ export default function Lecon() {
         <div className="fixed inset-0 z-50 flex items-end justify-center px-3 pb-3 pointer-events-none">
           <div className="bg-white rounded-2xl shadow-2xl border border-[#E5E5E5] p-6 w-full max-w-2xl max-h-[55vh] overflow-y-auto pointer-events-auto" onClick={(e) => e.stopPropagation()}>
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#E5E5E5]" aria-hidden="true" />
-            <span className="text-[10px] uppercase tracking-widest text-[#999999]">Comprendre la technique</span>
+            <span className="text-[10px] uppercase tracking-widest text-[#999999]">Approfondir la technique</span>
             <h2 className="text-lg font-bold text-[#0A0A0A] mb-1">{chapitreOpen.titre}</h2>
             <p className="text-[10px] text-[#999999] mb-3">D'après la source documentaire officielle.</p>
             <div className="text-sm text-[#333333] leading-relaxed">{renderMarkdown(chapitreOpen.transcript ?? '')}</div>

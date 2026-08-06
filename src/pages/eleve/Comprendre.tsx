@@ -19,7 +19,7 @@ export default function Comprendre() {
         <div className="flex items-center gap-3 mb-1">
           <span className="text-2xl sm:text-3xl font-bold" style={{ color: '#C41230' }}>🎥</span>
           <div>
-            <h1 className="text-3xl font-bold text-[#0A0A0A] tracking-tight">Comprendre les techniques</h1>
+            <h1 className="text-3xl font-bold text-[#0A0A0A] tracking-tight">Approfondir les techniques</h1>
             <p className="text-[#666666] text-sm">Des masterclasses techniques approfondies, commentées pas à pas.</p>
           </div>
         </div>

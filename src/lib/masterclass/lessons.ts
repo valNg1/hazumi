@@ -19,3 +19,30 @@ export function getMasterclassContent(ressourceId: string | undefined): Mastercl
 export function getMasterclassChapitres(ressourceId: string | undefined): MasterclassChapitre[] {
   return ressourceId ? (MASTERCLASS_CHAPITRES[ressourceId] ?? []) : []
 }
+
+// Découpe le markdown d'une masterclass (table Supabase `masterclass`) en chapitres
+// { titre, timestampSeconds, transcript }. Un chapitre commence à un titre
+// « ## MM:SS — Titre » (ou HH:MM:SS) ; son corps s'arrête au chapitre suivant ou à un
+// titre de niveau 1 (« # Metadata », « # Synthèse… »). Source unique de la section
+// « Approfondir les techniques » (rendu par chapitre), commune à toutes les masterclasses.
+const MC_CHAPITRE_RE = /^##\s+(?:(\d{1,2}):)?(\d{1,2}):(\d{2})\s+[—–-]\s+(.+?)\s*$/
+export function parseMasterclassSections(markdown: string | null | undefined): MasterclassChapitre[] {
+  const out: MasterclassChapitre[] = []
+  let cur: MasterclassChapitre | null = null
+  for (const line of (markdown ?? '').split('\n')) {
+    const m = line.match(MC_CHAPITRE_RE)
+    if (m) {
+      if (cur) out.push(cur)
+      const h = m[1] ? parseInt(m[1], 10) : 0
+      cur = { titre: m[4].trim(), timestampSeconds: h * 3600 + parseInt(m[2], 10) * 60 + parseInt(m[3], 10), transcript: '' }
+    } else if (/^#\s/.test(line)) {
+      if (cur) { out.push(cur); cur = null }
+    } else if (cur) {
+      cur.transcript += line + '\n'
+    }
+  }
+  if (cur) out.push(cur)
+  return out
+    .map((c) => ({ ...c, transcript: (c.transcript ?? '').trim() }))
+    .filter((c) => c.transcript.length > 0)
+}

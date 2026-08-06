@@ -31,3 +31,8 @@ export function fdChapitreEntries(): Record<string, MasterclassChapitre[]> {
 export function fdJourneyBySlug(slug: string): FDJourney | undefined {
   return FD_JOURNEYS.find((j) => j.slug === slug)
 }
+
+/** Slug masterclass d'un ressource_id (pour lire la section « Approfondir » en base). */
+export function fdSlugByRessourceId(ressourceId: string | undefined): string | undefined {
+  return ressourceId ? FD_JOURNEYS.find((j) => j.ressourceId === ressourceId)?.slug : undefined
+}

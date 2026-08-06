@@ -13,7 +13,7 @@ export const NAV: Record<'eleve' | 'club', NavItem[]> = {
     // aussi s'allumer sur /eleve/accueil, ou l'utilisateur atterrit ensuite.
     { to: '/', label: 'Accueil', match: ['/eleve/accueil'] },
     { to: '/parcours', label: 'Parcours', match: ['/eleve/parcours'] },
-    { to: '/comprendre', label: 'Comprendre' },
+    { to: '/comprendre', label: 'Approfondir' },
     { to: '/bibliotheque', label: 'Bibliothèque' },
     {
       to: '/mon-espace',

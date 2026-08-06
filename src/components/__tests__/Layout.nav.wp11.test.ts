@@ -5,15 +5,15 @@ import { isNavActive } from '../../lib/navigation'
 // WP 1.1 — la navigation decrit ce que l'utilisateur veut faire, pas la facon
 // dont Hazumi est organise en interne (ADR-001).
 describe('WP 1.1 — navigation principale judoka', () => {
-  it('ACC-01 : expose cinq entrees (dont « Comprendre »)', () => {
+  it('ACC-01 : expose cinq entrees (dont « Approfondir »)', () => {
     expect(NAV.eleve).toHaveLength(5)
   })
 
-  it('ACC-01 : les libelles sont Accueil, Parcours, Comprendre, Bibliotheque, Mon espace', () => {
+  it('ACC-01 : les libelles sont Accueil, Parcours, Approfondir, Bibliotheque, Mon espace', () => {
     expect(NAV.eleve.map((i) => i.label)).toEqual([
       'Accueil',
       'Parcours',
-      'Comprendre',
+      'Approfondir',
       'Bibliothèque',
       'Mon espace',
     ])
