@@ -522,7 +522,50 @@ export default function Parcours({
         </div>
       </div>
 
+      {/* Mes Playlists — remonté au-dessus des parcours officiels pour la visibilité. */}
       <div className="flex items-center gap-2 mb-3">
+        <h2 className="text-sm font-bold text-[#0A0A0A]">Mes Playlists</h2>
+        <span className="text-[9px] uppercase tracking-widest border border-[#CCCCCC] text-[#666666] rounded-full px-2 py-0.5 font-bold">Perso</span>
+      </div>
+
+      {playlists.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-[#E5E5E5] bg-white/60 p-6 text-center">
+          <p className="text-sm text-[#666666] mb-2">Tu n’as pas encore de playlist.</p>
+          <Link to="/bibliotheque" className="text-xs uppercase tracking-widest text-[#C41230] hover:text-[#9B0E25] font-semibold">
+            Créer une playlist depuis la Bibliothèque
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {playlists.map((pl) => (
+            <Link
+              key={pl.id}
+              to={`/bibliotheque?playlist=${pl.id}`}
+              className="text-left bg-white rounded-xl border border-dashed border-[#CCCCCC] overflow-hidden hover:border-[#C41230] hover:shadow-sm transition-all flex flex-col"
+            >
+              <PlaylistCover
+                vignettes={vignettesParPlaylist[pl.id] ?? []}
+                nom={pl.nom}
+                className="aspect-[16/9] border-b border-[#F0F0F0]"
+              />
+              <div className="p-4 flex-1 flex flex-col">
+                <span className="text-[9px] uppercase tracking-widest text-[#999999] mb-1">
+                  Playlist · {universLabel(pl.parcours)}
+                </span>
+                <h3 className="font-bold text-[#0A0A0A] text-sm leading-snug mb-1">{pl.nom}</h3>
+                <p className="text-xs text-[#666666] mb-3 flex-1">
+                  {(pl.tags ?? []).length} tag{(pl.tags ?? []).length !== 1 ? 's' : ''}
+                </p>
+                <span className="mt-auto inline-flex items-center gap-1 text-xs font-semibold text-[#C41230] border border-[#C41230] rounded-lg px-3 py-1.5 w-fit">
+                  ▶ Ouvrir
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 mt-10 mb-3">
         <h2 className="text-sm font-bold text-[#0A0A0A]">Parcours Hazumi</h2>
         <span className="text-[9px] uppercase tracking-widest bg-[#C41230] text-white rounded-full px-2 py-0.5 font-bold">Officiel</span>
       </div>
@@ -589,48 +632,6 @@ export default function Parcours({
         </div>
       )}
 
-      {/* Mes Playlists — contenu personnel, visuellement distinct de l'officiel. */}
-      <div className="flex items-center gap-2 mt-10 mb-3">
-        <h2 className="text-sm font-bold text-[#0A0A0A]">Mes Playlists</h2>
-        <span className="text-[9px] uppercase tracking-widest border border-[#CCCCCC] text-[#666666] rounded-full px-2 py-0.5 font-bold">Perso</span>
-      </div>
-
-      {playlists.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[#E5E5E5] bg-white/60 p-6 text-center">
-          <p className="text-sm text-[#666666] mb-2">Tu n’as pas encore de playlist.</p>
-          <Link to="/bibliotheque" className="text-xs uppercase tracking-widest text-[#C41230] hover:text-[#9B0E25] font-semibold">
-            Créer une playlist depuis la Bibliothèque
-          </Link>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {playlists.map((pl) => (
-            <Link
-              key={pl.id}
-              to={`/bibliotheque?playlist=${pl.id}`}
-              className="text-left bg-white rounded-xl border border-dashed border-[#CCCCCC] overflow-hidden hover:border-[#C41230] hover:shadow-sm transition-all flex flex-col"
-            >
-              <PlaylistCover
-                vignettes={vignettesParPlaylist[pl.id] ?? []}
-                nom={pl.nom}
-                className="aspect-[16/9] border-b border-[#F0F0F0]"
-              />
-              <div className="p-4 flex-1 flex flex-col">
-                <span className="text-[9px] uppercase tracking-widest text-[#999999] mb-1">
-                  Playlist · {universLabel(pl.parcours)}
-                </span>
-                <h3 className="font-bold text-[#0A0A0A] text-sm leading-snug mb-1">{pl.nom}</h3>
-                <p className="text-xs text-[#666666] mb-3 flex-1">
-                  {(pl.tags ?? []).length} tag{(pl.tags ?? []).length !== 1 ? 's' : ''}
-                </p>
-                <span className="mt-auto inline-flex items-center gap-1 text-xs font-semibold text-[#C41230] border border-[#C41230] rounded-lg px-3 py-1.5 w-fit">
-                  ▶ Ouvrir
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
     </div>
   )
 
