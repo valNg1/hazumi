@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { universLabel, normaliserTexte } from '../../lib/bibliotheque'
-import { resolveThumbnail } from '../../lib/thumbnails'
+import { resolveThumbnail, isPlaceholder } from '../../lib/thumbnails'
 import PlaylistCover from '../../components/PlaylistCover'
 import { computeProgress, nextRessourceId, toggleCompleted, type ParcoursRessourceLink } from '../../lib/parcoursProgress'
 import PremierDanSections from '../../components/PremierDanSections'
@@ -92,6 +92,7 @@ export default function Parcours({
   const [list, setList] = useState<ParcoursRow[]>([])
   const [progressByParcours, setProgressByParcours] = useState<Record<string, number>>({})
   const [lessonCount, setLessonCount] = useState<Record<string, number>>({})
+  const [thumbByParcours, setThumbByParcours] = useState<Record<string, string>>({})
   const [lessonIds, setLessonIds] = useState<Set<string>>(new Set())
   const [playlists, setPlaylists] = useState<PlaylistRow[]>([])
   const [vignettesParPlaylist, setVignettesParPlaylist] = useState<Record<string, string[]>>({})
@@ -204,15 +205,45 @@ export default function Parcours({
     const rows = (parcours as ParcoursRow[]) ?? []
     setList(rows)
 
-    // Nombre de lecons par parcours.
+    // Nombre de lecons + vignette de la ressource video (si une vraie image existe).
     const rowIds = rows.map((r) => r.id)
     if (rowIds.length > 0) {
-      const { data: liens } = await supabase.from('parcours_ressources').select('parcours_id').in('parcours_id', rowIds)
+      const { data: liens } = await supabase
+        .from('parcours_ressources')
+        .select('parcours_id, ressource_id, ordre')
+        .in('parcours_id', rowIds)
+        .order('ordre', { ascending: true })
+      const liensArr = (liens as { parcours_id: string; ressource_id: string; ordre: number | null }[]) ?? []
+
       const counts: Record<string, number> = {}
-      for (const l of (liens as { parcours_id: string }[]) ?? []) counts[l.parcours_id] = (counts[l.parcours_id] ?? 0) + 1
+      for (const l of liensArr) counts[l.parcours_id] = (counts[l.parcours_id] ?? 0) + 1
       setLessonCount(counts)
+
+      const ressourceIds = [...new Set(liensArr.map((l) => l.ressource_id))]
+      if (ressourceIds.length > 0) {
+        const [{ data: cat }, { data: les }] = await Promise.all([
+          supabase.from('catalogue_hazumi').select('id, titre, url, thumbnail_url').in('id', ressourceIds),
+          supabase.from('lesson').select('ressource_id, youtube_url').in('ressource_id', ressourceIds),
+        ])
+        const catMap = new Map((((cat as { id: string; titre: string; url: string | null; thumbnail_url: string | null }[]) ?? [])).map((c) => [c.id, c]))
+        const ytMap = new Map((((les as { ressource_id: string; youtube_url: string | null }[]) ?? [])).map((l) => [l.ressource_id, l.youtube_url]))
+        const thumbs: Record<string, string> = {}
+        for (const id of rowIds) {
+          // Première ressource (par ordre) qui fournit une vraie vignette (pas un placeholder).
+          for (const l of liensArr.filter((x) => x.parcours_id === id)) {
+            const c = catMap.get(l.ressource_id)
+            if (!c) continue
+            const t = resolveThumbnail({ titre: c.titre, url: c.url, thumbnailUrl: c.thumbnail_url, lessonVideoUrl: ytMap.get(l.ressource_id) ?? null })
+            if (t && !isPlaceholder(t)) { thumbs[id] = t; break }
+          }
+        }
+        setThumbByParcours(thumbs)
+      } else {
+        setThumbByParcours({})
+      }
     } else {
       setLessonCount({})
+      setThumbByParcours({})
     }
 
     const { data: ups } = await supabase
@@ -599,8 +630,8 @@ export default function Parcours({
                 }`}
               >
                 <div className="aspect-[16/9] bg-gradient-to-br from-[#0A0A0A] to-[#3A0A12] flex items-center justify-center">
-                  {p.image ? (
-                    <img src={p.image} alt={vue.titre} className="w-full h-full object-cover" />
+                  {(p.image ?? thumbByParcours[p.id]) ? (
+                    <img src={p.image ?? thumbByParcours[p.id]} alt={vue.titre} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-3xl">🥋</span>
                   )}
