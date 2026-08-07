@@ -12,8 +12,6 @@ import Shiai from './pages/eleve/Shiai'
 import JudoKa from './pages/eleve/JudoKa'
 import Kyu from './pages/eleve/Kyu'
 import Parcours from './pages/eleve/Parcours'
-import Comprendre from './pages/eleve/Comprendre'
-import ComprendreDetail from './pages/eleve/ComprendreDetail'
 import Bibliotheque from './pages/eleve/Bibliotheque'
 import MonEspace from './pages/eleve/MonEspace'
 import Lecon from './pages/eleve/Lecon'
@@ -125,8 +123,6 @@ export default function App() {
                   a la racine ; les URL /eleve/* historiques restent actives pour
                   ne casser ni les favoris ni les liens directs. */}
               <Route path="/parcours" element={<Parcours />} />
-              <Route path="/comprendre" element={<Comprendre />} />
-              <Route path="/comprendre/:slug" element={<ComprendreDetail />} />
               <Route path="/bibliotheque" element={<Bibliotheque />} />
               <Route path="/mon-espace" element={<MonEspace />} />
               <Route path="/eleve/parcours" element={<Navigate to="/parcours" replace />} />
