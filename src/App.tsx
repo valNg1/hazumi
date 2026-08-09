@@ -32,6 +32,7 @@ import AdminCatalogue from './pages/admin/Catalogue'
 import AdminParcoursPage from './pages/admin/Parcours'
 import Messagerie from './pages/admin/Messagerie'
 import MessagerieThread from './pages/admin/MessagerieThread'
+import Enseignant from './pages/eleve/Enseignant'
 
 function SmartRedirect() {
   const [redirect, setRedirect] = useState<string | null>(null)
@@ -124,6 +125,7 @@ export default function App() {
                   ne casser ni les favoris ni les liens directs. */}
               <Route path="/parcours" element={<Parcours />} />
               <Route path="/bibliotheque" element={<Bibliotheque />} />
+              <Route path="/enseignant" element={<Enseignant />} />
               <Route path="/mon-espace" element={<MonEspace />} />
               <Route path="/eleve/parcours" element={<Navigate to="/parcours" replace />} />
               <Route path="/eleve/bibliotheque" element={<Navigate to="/bibliotheque" replace />} />

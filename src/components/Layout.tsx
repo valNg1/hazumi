@@ -14,7 +14,8 @@ export const NAV: Record<'eleve' | 'club', NavItem[]> = {
     { to: '/', label: 'Accueil', match: ['/eleve/accueil'] },
     { to: '/parcours', label: 'Parcours', match: ['/eleve/parcours'] },
     { to: '/bibliotheque', label: 'Bibliothèque' },
-    {
+     { to: '/enseignant', label: 'Espace Enseignant' },
+     {
       to: '/mon-espace',
       label: 'Mon espace',
       match: ['/eleve/entrainements', '/eleve/agenda', '/eleve/messages', '/eleve/profil', '/eleve/progression'],
