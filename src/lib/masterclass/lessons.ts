@@ -46,3 +46,23 @@ export function parseMasterclassSections(markdown: string | null | undefined): M
     .map((c) => ({ ...c, transcript: (c.transcript ?? '').trim() }))
     .filter((c) => c.transcript.length > 0)
 }
+
+// Approfondissement pédagogique (Espace Enseignant) : chaque item part d'une situation
+// montrée dans la vidéo. Les 3 blocs (propose / construit / enseignant) sont lus DANS
+// L'ORDRE sous chaque « ## Titre », après le marqueur de niveau 1 « # APPROFONDIR ».
+export interface ApprofondirItem { titre: string; propose: string; construit: string; enseignant: string }
+export function parseApprofondir(markdown: string | null | undefined): ApprofondirItem[] {
+  const src = markdown ?? ''
+  const marker = src.search(/^#\s+APPROFONDIR\s*$/m)
+  if (marker < 0) return []
+  const part = src.slice(marker).replace(/^#\s+APPROFONDIR\s*$/m, '')
+  const out: ApprofondirItem[] = []
+  for (const block of part.split(/^##\s+/m).slice(1)) {
+    const nl = block.indexOf('\n')
+    const titre = (nl < 0 ? block : block.slice(0, nl)).trim()
+    const body = nl < 0 ? '' : block.slice(nl + 1)
+    const secs = body.split(/^###\s+.*$/m).slice(1).map((s) => s.trim())
+    out.push({ titre, propose: secs[0] ?? '', construit: secs[1] ?? '', enseignant: secs[2] ?? '' })
+  }
+  return out.filter((x) => x.titre)
+}
