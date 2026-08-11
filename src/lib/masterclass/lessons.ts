@@ -48,9 +48,11 @@ export function parseMasterclassSections(markdown: string | null | undefined): M
 }
 
 // Approfondissement pédagogique (Espace Enseignant) : chaque item part d'une situation
-// montrée dans la vidéo. Les 3 blocs (propose / construit / enseignant) sont lus DANS
-// L'ORDRE sous chaque « ## Titre », après le marqueur de niveau 1 « # APPROFONDIR ».
-export interface ApprofondirItem { titre: string; propose: string; construit: string; enseignant: string }
+// montrée dans la vidéo. Sous chaque « ## Titre » (après le marqueur de niveau 1
+// « # APPROFONDIR »), chaque « ### Label » devient un bloc { label, contenu } ; le contenu
+// est du markdown (le bloc « À retenir » est une liste à puces).
+export interface ApprofondirBloc { label: string; contenu: string }
+export interface ApprofondirItem { titre: string; blocs: ApprofondirBloc[] }
 export function parseApprofondir(markdown: string | null | undefined): ApprofondirItem[] {
   const src = markdown ?? ''
   const marker = src.search(/^#\s+APPROFONDIR\s*$/m)
@@ -61,8 +63,15 @@ export function parseApprofondir(markdown: string | null | undefined): Approfond
     const nl = block.indexOf('\n')
     const titre = (nl < 0 ? block : block.slice(0, nl)).trim()
     const body = nl < 0 ? '' : block.slice(nl + 1)
-    const secs = body.split(/^###\s+.*$/m).slice(1).map((s) => s.trim())
-    out.push({ titre, propose: secs[0] ?? '', construit: secs[1] ?? '', enseignant: secs[2] ?? '' })
+    const heads = [...body.matchAll(/^###\s+(.+?)\s*$/gm)]
+    const blocs: ApprofondirBloc[] = heads
+      .map((h, i) => {
+        const start = (h.index ?? 0) + h[0].length
+        const end = i + 1 < heads.length ? (heads[i + 1].index ?? body.length) : body.length
+        return { label: h[1].trim(), contenu: body.slice(start, end).trim() }
+      })
+      .filter((b) => b.contenu.length > 0)
+    if (titre) out.push({ titre, blocs })
   }
-  return out.filter((x) => x.titre)
+  return out
 }

@@ -20,12 +20,11 @@ const contenu = [
   '# APPROFONDIR',
   '',
   '## Le balayage dans le vide : construire timing et distance',
-  '### Ce que Patrick propose',
+  '### Le point clé de cette technique',
   'Des balayages dans le vide, avec changements de direction.',
-  '### Ce que cela construit',
-  'La coordination et la relation timing / distance.',
-  "### Pour l'enseignant",
-  'Une étape préparatoire au Randori.',
+  '### À retenir',
+  '- Une étape préparatoire au Randori.',
+  '- Construire ses repères avant ceux du partenaire.',
 ].join('\n')
 
 const mc = {
@@ -54,12 +53,12 @@ describe('EnseignantLecon — structure leçon Parcours', () => {
     expect(screen.getByText('0:05')).toBeInTheDocument()
     expect(screen.getByText('1:11')).toBeInTheDocument()
     expect(screen.getByText(/Le projet : rendre le Randori accessible/)).toBeInTheDocument()
-    // approfondissement A/B/C
+    // approfondissement : « Le point clé de cette technique » + « À retenir » (puces)
     expect(screen.getByText('Approfondir les techniques')).toBeInTheDocument()
     expect(screen.getByText(/Le balayage dans le vide/)).toBeInTheDocument()
-    expect(screen.getByText('Ce que Patrick propose')).toBeInTheDocument()
-    expect(screen.getByText('Ce que cela construit')).toBeInTheDocument()
-    expect(screen.getByText("Pour l'enseignant")).toBeInTheDocument()
+    expect(screen.getByText('Le point clé de cette technique')).toBeInTheDocument()
+    expect(screen.getByText('À retenir')).toBeInTheDocument()
+    expect(screen.getByText(/Une étape préparatoire au Randori/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Espace Enseignant/ })).toHaveAttribute('href', '/enseignant')
   })
 

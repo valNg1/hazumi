@@ -43,8 +43,8 @@ export default function EnseignantLecon() {
         <h1 className="text-2xl font-bold text-[#0A0A0A] tracking-tight">{mc.titre}</h1>
       </div>
 
-      {/* Vidéo — non sticky : elle défile normalement et sort du viewport. */}
-      <div className="bg-white rounded-xl border border-[#E5E5E5] p-3 shadow-sm">
+      {/* Vidéo sticky (figée en haut au scroll, comme une leçon Parcours). */}
+      <div className="sticky top-2 z-30 bg-white rounded-xl border border-[#E5E5E5] p-3 shadow-sm">
         <div className="aspect-video rounded-lg overflow-hidden bg-black w-full sm:w-[70%] mx-auto">
           <iframe
             key={startSeconds ?? 'start'}
@@ -97,25 +97,18 @@ export default function EnseignantLecon() {
               <div key={i} className="rounded-xl border border-[#E5E5E5] bg-[#FAFAFA] p-4">
                 <h3 className="font-bold text-[#0A0A0A] mb-3">{a.titre}</h3>
                 <div className="space-y-3">
-                  <ApproBlock label="Ce que Patrick propose" text={a.propose} />
-                  <ApproBlock label="Ce que cela construit" text={a.construit} />
-                  <ApproBlock label="Pour l'enseignant" text={a.enseignant} />
+                  {a.blocs.map((b, j) => (
+                    <div key={j}>
+                      <p className="text-[10px] uppercase tracking-widest text-[#C41230] font-semibold mb-1">{b.label}</p>
+                      <div className="text-sm text-[#333333] leading-relaxed">{renderMarkdown(b.contenu)}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
-function ApproBlock({ label, text }: { label: string; text: string }) {
-  if (!text) return null
-  return (
-    <div>
-      <p className="text-[10px] uppercase tracking-widest text-[#C41230] font-semibold mb-1">{label}</p>
-      <div className="text-sm text-[#333333] leading-relaxed">{renderMarkdown(text)}</div>
     </div>
   )
 }
