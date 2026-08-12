@@ -41,6 +41,18 @@ describe('Page /valery-nguyen', () => {
     expect(screen.getByText(/On développe un judo total en allant à la rencontre des autres/)).toBeInTheDocument()
   })
 
+  it('intègre l’expérience digital learning (Learning Tribes EMEA) sans rubrique CV', () => {
+    renderPage()
+    expect(screen.getByText(/digital learning/)).toBeInTheDocument()
+    expect(screen.getByText(/Learning Tribes en EMEA/)).toBeInTheDocument()
+    // La technologie ne remplace ni le professeur ni le tatami…
+    expect(screen.getByText(/La technologie n.y remplace rien/)).toBeInTheDocument()
+    expect(screen.getByText(/= continuer à construire son judo/)).toBeInTheDocument()
+    // Pas de rubrique « Expérience professionnelle » / « CV »
+    expect(screen.queryByText('Expérience professionnelle')).toBeNull()
+    expect(screen.queryByText('CV')).toBeNull()
+  })
+
   it('ne présente pas les résultats comme une rubrique « Palmarès »', () => {
     renderPage()
     // Pas de libellé/titre autonome « Palmarès » (le mot peut apparaître dans la prose).

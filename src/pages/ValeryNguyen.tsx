@@ -155,6 +155,20 @@ export default function ValeryNguyen() {
           −73 kg). Mais le résultat n'est pas une conclusion : ce qui compte, c'est de continuer à
           s'engager, apprendre et progresser année après année, quel que soit son niveau ou son âge.
         </p>
+        <p>
+          En parallèle du judo, mon métier m'a conduit à travailler pendant de nombreuses années sur la
+          formation et le <strong className="font-semibold text-[#0A0A0A]">digital learning</strong> :
+          comment concevoir un parcours, engager un apprenant, articuler différents formats et utiliser
+          la technologie sans jamais confondre l'outil avec l'apprentissage. J'ai notamment dirigé les
+          activités de Learning Tribes en EMEA et accompagné des transformations et des dispositifs de
+          formation à grande échelle.
+        </p>
+        <p>
+          Lorsque j'ai recommencé à enseigner le judo, ces deux univers ont naturellement commencé à se
+          rejoindre : d'un côté des décennies de pratique, d'autres sports, de compétition et
+          d'enseignement ; de l'autre, une expérience consacrée à la façon dont les personnes apprennent,
+          développent leurs compétences et adoptent de nouveaux usages grâce au numérique.
+        </p>
       </Mouvement>
 
       {/* Pourquoi Hazumi */}
@@ -162,8 +176,9 @@ export default function ValeryNguyen() {
         <span className="text-xs uppercase tracking-widest text-[#999999]">Pourquoi Hazumi</span>
         <div className="space-y-4 text-[15px] leading-relaxed text-[#333333] mt-4">
           <p>
-            Hazumi est né, progressivement, de cette trajectoire : apprendre, pratiquer, explorer,
-            revenir, s'entourer, enseigner, continuer à apprendre, transmettre.
+            Hazumi se situe à la rencontre de ces deux trajectoires. Il est né, progressivement, d'un
+            même mouvement : apprendre, pratiquer, explorer, revenir, s'entourer, enseigner, concevoir
+            des expériences d'apprentissage, continuer à apprendre, transmettre.
           </p>
           <p>
             C'est une manière de structurer et de partager cette démarche. Hazumi ne prétend pas détenir
@@ -171,6 +186,22 @@ export default function ValeryNguyen() {
             différents, des expériences et des parcours de progression — puis aide chacun à construire
             son propre judo.
           </p>
+          <p>
+            La technologie n'y remplace rien : ni le professeur, ni le partenaire, ni le tatami, ni
+            l'expérience du corps. Elle peut en revanche aider le pratiquant à conserver une trace,
+            revoir, comprendre, approfondir, organiser ses ressources et construire son parcours dans le
+            temps. C'est une idée structurante de Hazumi.
+          </p>
+          <div className="rounded-xl border border-[#E5E5E5] bg-[#FAFAFA] p-4">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[#333333]">
+              <span>Pratiquer</span><span className="text-[#C41230] font-bold">+</span>
+              <span>explorer</span><span className="text-[#C41230] font-bold">+</span>
+              <span>apprendre des autres</span><span className="text-[#C41230] font-bold">+</span>
+              <span>enseigner</span><span className="text-[#C41230] font-bold">+</span>
+              <span>concevoir des expériences d'apprentissage</span>
+            </div>
+            <p className="mt-2 text-[#0A0A0A] font-bold">= continuer à construire son judo.</p>
+          </div>
           <blockquote className="border-l-2 border-[#C41230] pl-4 text-[#0A0A0A] font-semibold">
             Je continue à apprendre le judo autant que je l'enseigne.<br />
             Construire son judo tout au long de sa vie.
