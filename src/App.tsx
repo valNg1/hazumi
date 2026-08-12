@@ -6,6 +6,7 @@ import Layout from './components/Layout'
 import AdminLayout from './components/AdminLayout'
 import Login from './pages/Login'
 import Accueil from './pages/eleve/Accueil'
+import ValeryNguyen from './pages/ValeryNguyen'
 import Profil from './pages/eleve/Profil'
 import Progression from './pages/eleve/Progression'
 import Shiai from './pages/eleve/Shiai'
@@ -116,6 +117,7 @@ export default function App() {
             </Route>
             <Route element={<Layout />}>
               <Route path="/eleve/accueil" element={<Accueil />} />
+              <Route path="/valery-nguyen" element={<ValeryNguyen />} />
               <Route path="/eleve/profil" element={<Profil />} />
               <Route path="/eleve/progression" element={<Progression />} />
               <Route path="/eleve/shiai" element={<Shiai />} />

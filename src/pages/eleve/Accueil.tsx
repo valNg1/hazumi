@@ -7,6 +7,7 @@ import { CURRICULUM, getBeltIndex } from '../../lib/curriculum'
 import type { Belt } from '../../types'
 import type { TechniqueStatus } from '../../lib/curriculum'
 import HomeMessagingCard from '../../components/HomeMessagingCard'
+import FounderCard from '../../components/FounderCard'
 
 interface AgendaItem {
   key: string
@@ -507,6 +508,9 @@ export default function Accueil() {
             )
           })()}
         </div>
+
+        {/* Présence éditoriale discrète du fondateur (INC-01) — en bas de page. */}
+        <FounderCard />
 
       </div>
     </div>
