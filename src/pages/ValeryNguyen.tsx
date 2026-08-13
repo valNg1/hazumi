@@ -27,14 +27,14 @@ export default function ValeryNguyen() {
           <p>
             Comme d’autres sports avant lui, ses méthodes d’entraînement et
             d’apprentissage évoluent. La préparation physique et mentale,
-            la vidéo ou l’analyse permettent aujourd’hui de prolonger le
-            travail réalisé sur le tatami.
+            la vidéo ou l’analyse prolongent désormais le travail réalisé
+            sur le tatami.
           </p>
 
           <p>
-            C’est dans ce mouvement que s’inscrit Hazumi : donner à chaque
-            judoka les moyens de progresser avant et après l’entraînement,
-            et de faire évoluer son judo pour pouvoir le pratiquer toute sa vie.
+            Hazumi s’inscrit dans ce mouvement : aider chaque judoka à progresser
+            avant et après l’entraînement, à mieux comprendre sa pratique et à
+            faire évoluer son judo pour pouvoir le pratiquer toute sa vie.
           </p>
 
           <p>
@@ -63,23 +63,83 @@ export default function ValeryNguyen() {
             Judoka, enseignant et fondateur de Hazumi
           </p>
 
-          <div className="space-y-4 text-[#444444] leading-relaxed">
+          <div className="space-y-5 text-[#444444] leading-relaxed">
             <p>
-              Mon parcours dans le judo n’a rien de linéaire. Ma pratique
-              s’est construite et continue de se construire au fil des
-              rencontres, de l’enseignement, de la compétition et
-              d’expériences venues d’autres univers.
+              J’ai commencé le judo au Judo Club de Lagny-sur-Marne, dans un
+              environnement où la recherche du beau judo et du Ippon occupait
+              une place centrale. Très jeune, j’ai eu la chance d’évoluer au
+              contact de judokas de très haut niveau, notamment Christian Dyot.
             </p>
 
             <p>
-              J’en retiens surtout une chose :
-              <strong className="text-[#0A0A0A]">
-                {' '}transmettre permet aussi de continuer à apprendre.
-              </strong>
+              Cette culture du mouvement, du geste juste et de l’adaptation
+              reste encore aujourd’hui un point d’ancrage de ma pratique.
             </p>
 
             <p>
-              C’est cet esprit que je souhaite donner à Hazumi.
+              Mon judo s’est ensuite nourri de nombreuses influences. Des
+              enseignants comme Frédéric Demontfaucon m’ont beaucoup marqué par
+              leur travail sur la sensation, le déplacement et la capacité à
+              créer le déséquilibre plutôt qu’à imposer la force.
+            </p>
+
+            <p>
+              D’autres sports ont aussi nourri ma manière de pratiquer :
+              le rugby, pour le collectif, les schémas de jeu et la place de
+              chacun ; le surf, pour l’adaptation au mouvement et la recherche
+              de relâchement ; plus récemment le Jiu-Jitsu Brésilien, pour
+              continuer à explorer d’autres formes de combat et redevenir
+              volontairement débutant.
+            </p>
+
+            <p className="font-semibold text-[#0A0A0A]">
+              Tout cela nourrit mon judo, sans le remplacer.
+            </p>
+
+            <p>
+              J’aime cette idée d’un judo total : aller à la rencontre d’autres
+              pratiques, d’autres enseignants et d’autres expériences avec
+              suffisamment d’humilité pour enrichir son propre judo.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-10 border-t border-[#E5E5E5] pt-10">
+        <div className="max-w-3xl">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#666666] mb-3">
+            Enseigner et concevoir des expériences d’apprentissage
+          </p>
+
+          <div className="space-y-5 text-[#444444] leading-relaxed">
+            <p>
+              J’enseigne le judo depuis 2023. Cette expérience m’a surtout appris
+              qu’enseigner ne consiste pas simplement à montrer une technique :
+              il faut créer les situations qui permettent à chacun de la
+              comprendre, de la ressentir et de se l’approprier.
+            </p>
+
+            <p>
+              En parallèle, mon métier de directeur de programmes en
+              transformation digitale m’amène depuis de nombreuses années à
+              concevoir et piloter des expériences de transformation :
+              structurer des parcours, articuler différents formats,
+              accompagner l’adoption et aider des publics très différents
+              à progresser dans le temps.
+            </p>
+
+            <p>
+              C’est probablement ce que j’apporte le plus directement à Hazumi :
+              une attention particulière à la manière dont on construit un
+              parcours d’apprentissage, dont on relie les contenus entre eux et
+              dont on prolonge l’expérience au-delà du temps passé sur le tatami.
+            </p>
+
+            <p>
+              Le numérique n’est donc pas une fin en soi. Il devient utile
+              lorsqu’il aide le judoka à revoir, comprendre, approfondir,
+              organiser ses ressources et continuer à progresser entre deux
+              entraînements.
             </p>
           </div>
         </div>
