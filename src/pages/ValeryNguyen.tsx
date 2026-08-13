@@ -50,7 +50,7 @@ export default function ValeryNguyen() {
       </header>
 
       <section className="border-t border-[#E5E5E5] pt-10">
-        <div className="max-w-3xl">
+        <div className="max-w-4xl">
           <p className="text-xs font-semibold uppercase tracking-wide text-[#666666] mb-3">
             Le fondateur
           </p>
@@ -63,7 +63,15 @@ export default function ValeryNguyen() {
             Judoka, enseignant et fondateur de Hazumi
           </p>
 
-          <div className="space-y-5 text-[#444444] leading-relaxed">
+          <div className="overflow-hidden rounded-2xl border border-[#E5E5E5] bg-[#F5F5F5] mb-8">
+            <img
+              src="/images/founder/valery-nguyen-judo.jpg"
+              alt="Valéry Nguyen en compétition de judo"
+              className="w-full aspect-[16/9] object-cover"
+            />
+          </div>
+
+          <div className="max-w-3xl space-y-5 text-[#444444] leading-relaxed">
             <p>
               J’ai commencé le judo au Judo Club de Lagny-sur-Marne, dans un
               environnement où la recherche du beau judo et du Ippon occupait
@@ -105,42 +113,52 @@ export default function ValeryNguyen() {
         </div>
       </section>
 
-      <section className="mt-10 border-t border-[#E5E5E5] pt-10">
-        <div className="max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#666666] mb-3">
-            Enseigner et concevoir des expériences d’apprentissage
-          </p>
-
-          <div className="space-y-5 text-[#444444] leading-relaxed">
-            <p>
-              J’enseigne le judo depuis 2023. Cette expérience m’a surtout appris
-              qu’enseigner ne consiste pas simplement à montrer une technique :
-              il faut créer les situations qui permettent à chacun de la
-              comprendre, de la ressentir et de se l’approprier.
+      <section className="mt-12 border-t border-[#E5E5E5] pt-10">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-8 items-start">
+          <div className="max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#666666] mb-3">
+              Enseigner et concevoir des expériences d’apprentissage
             </p>
 
-            <p>
-              En parallèle, mon métier de directeur de programmes en
-              transformation digitale m’amène depuis de nombreuses années à
-              concevoir et piloter des expériences de transformation :
-              structurer des parcours, articuler différents formats,
-              accompagner l’adoption et aider des publics très différents
-              à progresser dans le temps.
-            </p>
+            <div className="space-y-5 text-[#444444] leading-relaxed">
+              <p>
+                J’enseigne le judo depuis 2023. Cette expérience m’a surtout appris
+                qu’enseigner ne consiste pas simplement à montrer une technique :
+                il faut créer les situations qui permettent à chacun de la
+                comprendre, de la ressentir et de se l’approprier.
+              </p>
 
-            <p>
-              C’est probablement ce que j’apporte le plus directement à Hazumi :
-              une attention particulière à la manière dont on construit un
-              parcours d’apprentissage, dont on relie les contenus entre eux et
-              dont on prolonge l’expérience au-delà du temps passé sur le tatami.
-            </p>
+              <p>
+                En parallèle, mon métier de directeur de programmes en
+                transformation digitale m’amène depuis de nombreuses années à
+                concevoir et piloter des expériences de transformation :
+                structurer des parcours, articuler différents formats,
+                accompagner l’adoption et aider des publics très différents
+                à progresser dans le temps.
+              </p>
 
-            <p>
-              Le numérique n’est donc pas une fin en soi. Il devient utile
-              lorsqu’il aide le judoka à revoir, comprendre, approfondir,
-              organiser ses ressources et continuer à progresser entre deux
-              entraînements.
-            </p>
+              <p>
+                C’est probablement ce que j’apporte le plus directement à Hazumi :
+                une attention particulière à la manière dont on construit un
+                parcours d’apprentissage, dont on relie les contenus entre eux et
+                dont on prolonge l’expérience au-delà du temps passé sur le tatami.
+              </p>
+
+              <p>
+                Le numérique n’est donc pas une fin en soi. Il devient utile
+                lorsqu’il aide le judoka à revoir, comprendre, approfondir,
+                organiser ses ressources et continuer à progresser entre deux
+                entraînements.
+              </p>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-[#E5E5E5] bg-[#F5F5F5]">
+            <img
+              src="/images/founder/valery-nguyen-enseignement.jpg"
+              alt="Valéry Nguyen en situation d’enseignement"
+              className="w-full aspect-[4/5] object-cover"
+            />
           </div>
         </div>
       </section>
