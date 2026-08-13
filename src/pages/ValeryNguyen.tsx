@@ -50,65 +50,67 @@ export default function ValeryNguyen() {
       </header>
 
       <section className="border-t border-[#E5E5E5] pt-10">
-        <div className="max-w-4xl">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#666666] mb-3">
-            Le fondateur
-          </p>
+        <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-8 items-start">
+          <div className="max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#666666] mb-3">
+              Le fondateur
+            </p>
 
-          <h2 className="text-2xl font-bold text-[#0A0A0A] mb-2">
-            Valéry Nguyen
-          </h2>
+            <h2 className="text-2xl font-bold text-[#0A0A0A] mb-2">
+              Valéry Nguyen
+            </h2>
 
-          <p className="text-sm font-semibold text-[#666666] mb-6">
-            Judoka, enseignant et fondateur de Hazumi
-          </p>
+            <p className="text-sm font-semibold text-[#666666] mb-6">
+              Judoka, enseignant et fondateur de Hazumi
+            </p>
 
-          <div className="overflow-hidden rounded-2xl border border-[#E5E5E5] bg-[#F5F5F5] mb-8">
+            <div className="space-y-5 text-[#444444] leading-relaxed">
+              <p>
+                J’ai commencé le judo au Judo Club de Lagny-sur-Marne, dans un
+                environnement où la recherche du beau judo et du Ippon occupait
+                une place centrale. Très jeune, j’ai eu la chance d’évoluer au
+                contact de judokas de très haut niveau, notamment Christian Dyot.
+              </p>
+
+              <p>
+                Cette culture du mouvement, du geste juste et de l’adaptation
+                reste encore aujourd’hui un point d’ancrage de ma pratique.
+              </p>
+
+              <p>
+                Mon judo s’est ensuite nourri de nombreuses influences. Des
+                enseignants comme Frédéric Demontfaucon m’ont beaucoup marqué par
+                leur travail sur la sensation, le déplacement et la capacité à
+                créer le déséquilibre plutôt qu’à imposer la force.
+              </p>
+
+              <p>
+                D’autres sports ont aussi nourri ma manière de pratiquer :
+                le rugby, pour le collectif, les schémas de jeu et la place de
+                chacun ; le surf, pour l’adaptation au mouvement et la recherche
+                de relâchement ; plus récemment le Jiu-Jitsu Brésilien, pour
+                continuer à explorer d’autres formes de combat et redevenir
+                volontairement débutant.
+              </p>
+
+              <p className="font-semibold text-[#0A0A0A]">
+                Tout cela nourrit mon judo, sans le remplacer.
+              </p>
+
+              <p>
+                J’aime cette idée d’un judo total : aller à la rencontre d’autres
+                pratiques, d’autres enseignants et d’autres expériences avec
+                suffisamment d’humilité pour enrichir son propre judo.
+              </p>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-[#E5E5E5] bg-[#F5F5F5]">
             <img
               src="/images/founder/valery-nguyen-judo.jpg"
               alt="Valéry Nguyen en compétition de judo"
-              className="w-full aspect-[16/9] object-cover"
+              className="w-full aspect-[4/5] object-cover"
             />
-          </div>
-
-          <div className="max-w-3xl space-y-5 text-[#444444] leading-relaxed">
-            <p>
-              J’ai commencé le judo au Judo Club de Lagny-sur-Marne, dans un
-              environnement où la recherche du beau judo et du Ippon occupait
-              une place centrale. Très jeune, j’ai eu la chance d’évoluer au
-              contact de judokas de très haut niveau, notamment Christian Dyot.
-            </p>
-
-            <p>
-              Cette culture du mouvement, du geste juste et de l’adaptation
-              reste encore aujourd’hui un point d’ancrage de ma pratique.
-            </p>
-
-            <p>
-              Mon judo s’est ensuite nourri de nombreuses influences. Des
-              enseignants comme Frédéric Demontfaucon m’ont beaucoup marqué par
-              leur travail sur la sensation, le déplacement et la capacité à
-              créer le déséquilibre plutôt qu’à imposer la force.
-            </p>
-
-            <p>
-              D’autres sports ont aussi nourri ma manière de pratiquer :
-              le rugby, pour le collectif, les schémas de jeu et la place de
-              chacun ; le surf, pour l’adaptation au mouvement et la recherche
-              de relâchement ; plus récemment le Jiu-Jitsu Brésilien, pour
-              continuer à explorer d’autres formes de combat et redevenir
-              volontairement débutant.
-            </p>
-
-            <p className="font-semibold text-[#0A0A0A]">
-              Tout cela nourrit mon judo, sans le remplacer.
-            </p>
-
-            <p>
-              J’aime cette idée d’un judo total : aller à la rencontre d’autres
-              pratiques, d’autres enseignants et d’autres expériences avec
-              suffisamment d’humilité pour enrichir son propre judo.
-            </p>
           </div>
         </div>
       </section>
