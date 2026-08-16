@@ -194,14 +194,30 @@ export default function ValeryNguyen() {
           <p className="text-xs font-semibold uppercase tracking-wide text-[#666666] mb-2">
             Compétition
           </p>
+
           <p className="font-bold text-[#0A0A0A]">
             Champion de France vétérans 2026
           </p>
+
           <p className="text-sm text-[#666666] mt-1">
             Vice-champion d’Europe vétérans 2025
           </p>
+
           <p className="text-sm text-[#666666] mt-1">
-            3e au Championnat de France cadets 1988
+            3e au Championnat de France cadets par équipes de club 1988
+            (Lagny-sur-Marne)
+          </p>
+
+          <p className="text-sm text-[#666666] mt-1">
+            3e au Championnat de France cadets 1986
+          </p>
+
+          <p className="text-sm text-[#666666] mt-1">
+            3e au Championnat de France cadets 1985
+          </p>
+
+          <p className="text-sm text-[#666666] mt-1">
+            3e au Championnat de France minimes 1984
           </p>
         </div>
 
