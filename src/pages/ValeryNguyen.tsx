@@ -4,61 +4,22 @@ export default function ValeryNguyen() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <Link
-        to="/"
+        to="/a-propos"
         className="inline-flex items-center text-sm font-semibold text-[#666666] hover:text-[#C41230] mb-8"
       >
-        ← Retour à l’accueil
+        ← À propos
       </Link>
-
-      <header className="mb-12">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[#C41230] mb-3">
-          À propos du fondateur de Hazumi
-        </p>
-
-        <h1 className="text-3xl sm:text-4xl font-bold text-[#0A0A0A] mb-4">
-          Pourquoi Hazumi ?
-        </h1>
-
-        <div className="max-w-3xl space-y-4 text-base sm:text-lg text-[#444444] leading-relaxed">
-          <p>
-            Le judo est à la croisée des chemins.
-          </p>
-
-          <p>
-            Comme d’autres sports avant lui, ses méthodes d’entraînement et
-            d’apprentissage évoluent. La préparation physique et mentale,
-            la vidéo ou l’analyse prolongent désormais le travail réalisé
-            sur le tatami.
-          </p>
-
-          <p>
-            Hazumi s’inscrit dans ce mouvement : aider chaque judoka à progresser
-            avant et après l’entraînement, à mieux comprendre sa pratique et à
-            faire évoluer son judo pour pouvoir le pratiquer toute sa vie.
-          </p>
-
-          <p>
-            Les parcours proposés reflètent un choix assumé : rechercher
-            le geste juste, le mouvement et le timing qui conduisent au Ippon.
-          </p>
-
-          <p className="font-semibold text-[#0A0A0A]">
-            Hazumi ne remplace ni le professeur, ni le partenaire, ni le tatami.
-            Il prolonge leur travail.
-          </p>
-        </div>
-      </header>
 
       <section className="border-t border-[#E5E5E5] pt-10">
         <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-8 items-start">
-          <div className="max-w-3xl">
+          <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-[#666666] mb-3">
               Le fondateur
             </p>
 
-            <h2 className="text-2xl font-bold text-[#0A0A0A] mb-2">
+            <h1 className="text-3xl sm:text-4xl font-bold text-[#0A0A0A] mb-2">
               Valéry Nguyen
-            </h2>
+            </h1>
 
             <p className="text-sm font-semibold text-[#666666] mb-6">
               Judoka, enseignant et fondateur de Hazumi
@@ -86,21 +47,11 @@ export default function ValeryNguyen() {
 
               <p>
                 D’autres sports ont aussi nourri ma manière de pratiquer :
-                le rugby, pour le collectif, les schémas de jeu et la place de
-                chacun ; le surf, pour l’adaptation au mouvement et la recherche
-                de relâchement ; plus récemment le Jiu-Jitsu Brésilien, pour
-                continuer à explorer d’autres formes de combat et redevenir
-                volontairement débutant.
+                le rugby, le surf et plus récemment le Jiu-Jitsu Brésilien.
               </p>
 
               <p className="font-semibold text-[#0A0A0A]">
                 Tout cela nourrit mon judo, sans le remplacer.
-              </p>
-
-              <p>
-                J’aime cette idée d’un judo total : aller à la rencontre d’autres
-                pratiques, d’autres enseignants et d’autres expériences avec
-                suffisamment d’humilité pour enrichir son propre judo.
               </p>
             </div>
           </div>
@@ -117,7 +68,7 @@ export default function ValeryNguyen() {
 
       <section className="mt-12 border-t border-[#E5E5E5] pt-10">
         <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-8 items-start">
-          <div className="max-w-3xl">
+          <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-[#666666] mb-3">
               Enseigner et concevoir des expériences d’apprentissage
             </p>
@@ -132,25 +83,16 @@ export default function ValeryNguyen() {
 
               <p>
                 En parallèle, mon métier de directeur de programmes en
-                transformation digitale m’amène depuis de nombreuses années à
-                concevoir et piloter des expériences de transformation :
-                structurer des parcours, articuler différents formats,
-                accompagner l’adoption et aider des publics très différents
-                à progresser dans le temps.
+                transformation digitale m’amène à structurer des parcours,
+                articuler différents formats et accompagner des publics très
+                différents dans le temps.
               </p>
 
               <p>
                 C’est probablement ce que j’apporte le plus directement à Hazumi :
-                une attention particulière à la manière dont on construit un
-                parcours d’apprentissage, dont on relie les contenus entre eux et
-                dont on prolonge l’expérience au-delà du temps passé sur le tatami.
-              </p>
-
-              <p>
-                Le numérique n’est donc pas une fin en soi. Il devient utile
-                lorsqu’il aide le judoka à revoir, comprendre, approfondir,
-                organiser ses ressources et continuer à progresser entre deux
-                entraînements.
+                une attention particulière à la manière dont on construit une
+                expérience d’apprentissage et dont on prolonge le travail réalisé
+                sur le tatami.
               </p>
             </div>
           </div>
@@ -170,9 +112,7 @@ export default function ValeryNguyen() {
           <p className="text-xs font-semibold uppercase tracking-wide text-[#666666] mb-2">
             Judo
           </p>
-          <p className="font-bold text-[#0A0A0A]">
-            3e dan
-          </p>
+          <p className="font-bold text-[#0A0A0A]">3e dan</p>
           <p className="text-sm text-[#666666] mt-1">
             En préparation du 4e dan
           </p>
@@ -198,24 +138,25 @@ export default function ValeryNguyen() {
           <p className="font-bold text-[#0A0A0A]">
             Champion de France vétérans 2026
           </p>
-
+          <p className="text-sm text-[#666666] mt-1">
+            3e au Championnat de France vétérans 2025
+          </p>
           <p className="text-sm text-[#666666] mt-1">
             Vice-champion d’Europe vétérans 2025
           </p>
-
+          <p className="text-sm text-[#666666] mt-1">
+            Vice-champion de France vétérans 2024
+          </p>
           <p className="text-sm text-[#666666] mt-1">
             3e au Championnat de France cadets par équipes de club 1988
             (Lagny-sur-Marne)
           </p>
-
           <p className="text-sm text-[#666666] mt-1">
             3e au Championnat de France cadets 1986
           </p>
-
           <p className="text-sm text-[#666666] mt-1">
             3e au Championnat de France cadets 1985
           </p>
-
           <p className="text-sm text-[#666666] mt-1">
             3e au Championnat de France minimes 1984
           </p>

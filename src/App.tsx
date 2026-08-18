@@ -2,11 +2,24 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import type { Session } from '@supabase/supabase-js'
+
 import Layout from './components/Layout'
 import AdminLayout from './components/AdminLayout'
+
 import Login from './pages/Login'
-import Accueil from './pages/eleve/Accueil'
+import Confidentialite from './pages/Confidentialite'
+import MentionsLegales from './pages/MentionsLegales'
+import CGU from './pages/CGU'
+import DPA from './pages/DPA'
+import ResetPassword from './pages/ResetPassword'
+
+import APropos from './pages/APropos'
+import PourquoiHazumi from './pages/PourquoiHazumi'
+import BienUtiliserHazumi from './pages/BienUtiliserHazumi'
+import DojoTour from './pages/DojoTour'
 import ValeryNguyen from './pages/ValeryNguyen'
+
+import Accueil from './pages/eleve/Accueil'
 import Profil from './pages/eleve/Profil'
 import Progression from './pages/eleve/Progression'
 import Shiai from './pages/eleve/Shiai'
@@ -21,11 +34,9 @@ import MonAgenda from './pages/eleve/MonAgenda'
 import Messages from './pages/eleve/Messages'
 import ConversationView from './pages/eleve/ConversationView'
 import OnboardingJudoka from './pages/eleve/OnboardingJudoka'
-import Confidentialite from './pages/Confidentialite'
-import MentionsLegales from './pages/MentionsLegales'
-import CGU from './pages/CGU'
-import DPA from './pages/DPA'
-import ResetPassword from './pages/ResetPassword'
+import Enseignant from './pages/eleve/Enseignant'
+import EnseignantLecon from './pages/eleve/EnseignantLecon'
+
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminMessages from './pages/admin/Messages'
 import AdminMessagesList from './pages/admin/MessagesList'
@@ -33,15 +44,16 @@ import AdminCatalogue from './pages/admin/Catalogue'
 import AdminParcoursPage from './pages/admin/Parcours'
 import Messagerie from './pages/admin/Messagerie'
 import MessagerieThread from './pages/admin/MessagerieThread'
-import Enseignant from './pages/eleve/Enseignant'
-import EnseignantLecon from './pages/eleve/EnseignantLecon'
 
 function SmartRedirect() {
   const [redirect, setRedirect] = useState<string | null>(null)
 
   useEffect(() => {
     async function getRedirect() {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
       if (!user) {
         setRedirect('/login')
         return
@@ -78,10 +90,16 @@ export default function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session)
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
     })
+
     return () => subscription.unsubscribe()
   }, [])
 
@@ -96,7 +114,11 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={session ? <Navigate to="/" /> : <Login />} />
+        <Route
+          path="/login"
+          element={session ? <Navigate to="/" /> : <Login />}
+        />
+
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/confidentialite" element={<Confidentialite />} />
         <Route path="/mentions-legales" element={<MentionsLegales />} />
@@ -106,40 +128,83 @@ export default function App() {
         {session ? (
           <>
             <Route path="/eleve/onboarding" element={<OnboardingJudoka />} />
+
             <Route element={<AdminLayout />}>
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/messages" element={<AdminMessagesList />} />
               <Route path="/admin/catalogue" element={<AdminCatalogue />} />
               <Route path="/admin/parcours" element={<AdminParcoursPage />} />
-              <Route path="/admin/messages/:judokaId" element={<AdminMessages />} />
+              <Route
+                path="/admin/messages/:judokaId"
+                element={<AdminMessages />}
+              />
               <Route path="/admin/messagerie" element={<Messagerie />} />
-              <Route path="/admin/messagerie/:conversationId" element={<MessagerieThread />} />
+              <Route
+                path="/admin/messagerie/:conversationId"
+                element={<MessagerieThread />}
+              />
             </Route>
+
             <Route element={<Layout />}>
               <Route path="/eleve/accueil" element={<Accueil />} />
+
+              <Route path="/parcours" element={<Parcours />} />
+              <Route path="/bibliotheque" element={<Bibliotheque />} />
+              <Route path="/enseignant" element={<Enseignant />} />
+              <Route
+                path="/enseignant/:slug"
+                element={<EnseignantLecon />}
+              />
+
+              <Route path="/a-propos" element={<APropos />} />
+              <Route
+                path="/a-propos/pourquoi-hazumi"
+                element={<PourquoiHazumi />}
+              />
+              <Route
+                path="/a-propos/bien-utiliser-hazumi"
+                element={<BienUtiliserHazumi />}
+              />
+              <Route path="/a-propos/dojos" element={<DojoTour />} />
               <Route path="/valery-nguyen" element={<ValeryNguyen />} />
+
+              <Route path="/mon-espace" element={<MonEspace />} />
+
+              <Route
+                path="/eleve/parcours"
+                element={<Navigate to="/parcours" replace />}
+              />
+              <Route
+                path="/eleve/bibliotheque"
+                element={<Navigate to="/bibliotheque" replace />}
+              />
+              <Route
+                path="/eleve/mon-espace"
+                element={<Navigate to="/mon-espace" replace />}
+              />
+
+              <Route
+                path="/eleve/lecon/:ressourceId"
+                element={<Lecon />}
+              />
+              <Route
+                path="/eleve/entrainements"
+                element={<Entrainements />}
+              />
+              <Route path="/eleve/agenda" element={<MonAgenda />} />
+              <Route path="/eleve/messages" element={<Messages />} />
+              <Route
+                path="/messages/:conversationId"
+                element={<ConversationView />}
+              />
+
               <Route path="/eleve/profil" element={<Profil />} />
               <Route path="/eleve/progression" element={<Progression />} />
               <Route path="/eleve/shiai" element={<Shiai />} />
               <Route path="/eleve/judoka-culture" element={<JudoKa />} />
               <Route path="/eleve/kyu" element={<Kyu />} />
-              {/* WP 1.1 — navigation par usage. Les nouvelles destinations vivent
-                  a la racine ; les URL /eleve/* historiques restent actives pour
-                  ne casser ni les favoris ni les liens directs. */}
-              <Route path="/parcours" element={<Parcours />} />
-              <Route path="/bibliotheque" element={<Bibliotheque />} />
-              <Route path="/enseignant" element={<Enseignant />} />
-              <Route path="/enseignant/:slug" element={<EnseignantLecon />} />
-              <Route path="/mon-espace" element={<MonEspace />} />
-              <Route path="/eleve/parcours" element={<Navigate to="/parcours" replace />} />
-              <Route path="/eleve/bibliotheque" element={<Navigate to="/bibliotheque" replace />} />
-              <Route path="/eleve/mon-espace" element={<Navigate to="/mon-espace" replace />} />
-              <Route path="/eleve/lecon/:ressourceId" element={<Lecon />} />
-              <Route path="/eleve/entrainements" element={<Entrainements />} />
-              <Route path="/eleve/agenda" element={<MonAgenda />} />
-              <Route path="/eleve/messages" element={<Messages />} />
-              <Route path="/messages/:conversationId" element={<ConversationView />} />
             </Route>
+
             <Route path="/" element={<SmartRedirect />} />
             <Route path="*" element={<SmartRedirect />} />
           </>
