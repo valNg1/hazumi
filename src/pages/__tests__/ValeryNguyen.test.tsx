@@ -7,55 +7,47 @@ function renderPage() {
   return render(<MemoryRouter><ValeryNguyen /></MemoryRouter>)
 }
 
+// Structure ACTUELLE de la page (refonte À propos / fondateur).
 describe('Page /valery-nguyen', () => {
-  it('affiche le hero et l’idée directrice', () => {
+  it('affiche le hero fondateur et le retour vers /a-propos', () => {
     renderPage()
-    expect(screen.getByRole('heading', { level: 1, name: /Construire son judo tout au long de sa vie/ })).toBeInTheDocument()
-    expect(screen.getByText(/Enseignant · compétiteur · fondateur de Hazumi/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Valéry Nguyen' })).toBeInTheDocument()
+    expect(screen.getByText(/Judoka, enseignant et fondateur de Hazumi/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /À propos/ })).toHaveAttribute('href', '/a-propos')
   })
 
-  it('déroule les quatre mouvements + Pourquoi Hazumi', () => {
+  it('retrace le parcours judo et les influences', () => {
     renderPage()
-    for (const m of ['Apprendre', 'Explorer', 'Revenir', 'Transmettre', 'Pourquoi Hazumi']) {
-      expect(screen.getByText(m)).toBeInTheDocument()
-    }
+    expect(screen.getByText(/Judo Club de Lagny-sur-Marne/)).toBeInTheDocument()
+    expect(screen.getByText(/Christian Dyot/)).toBeInTheDocument()
+    expect(screen.getByText(/Frédéric Demontfaucon/)).toBeInTheDocument()
+    expect(screen.getByText(/le rugby, le surf et plus récemment le Jiu-Jitsu Brésilien/)).toBeInTheDocument()
+    expect(screen.getByText(/Tout cela nourrit mon judo, sans le remplacer/)).toBeInTheDocument()
   })
 
-  it('intègre rugby (Noisy-le-Grand, Afrique du Sud), surf et JJB', () => {
+  it('relie enseignement et expérience de transformation digitale', () => {
     renderPage()
-    expect(screen.getByText(/Noisy-le-Grand/)).toBeInTheDocument()
-    expect(screen.getByText(/Afrique du Sud/)).toBeInTheDocument()
-    expect(screen.getByText(/surf/)).toBeInTheDocument()
-    expect(screen.getByText(/Jiu-Jitsu Brésilien/)).toBeInTheDocument()
+    expect(screen.getByText(/Enseigner et concevoir des expériences/)).toBeInTheDocument()
+    expect(screen.getByText('Directeur de programmes')).toBeInTheDocument()
+    expect(screen.getByText('Transformation digitale')).toBeInTheDocument()
   })
 
-  it('cite les quatre accompagnements experts', () => {
-    renderPage()
-    for (const nom of ['Arthur Clerget', 'Laurent Messeguer', 'Serge Borowski', 'Cyrielle Mingot']) {
-      expect(screen.getByText(nom)).toBeInTheDocument()
-    }
+  it('affiche les deux photos du fondateur', () => {
+    const { container } = renderPage()
+    expect(container.querySelectorAll('img[src^="/images/founder/"]').length).toBe(2)
   })
 
-  it('met en avant le manifeste « judo total »', () => {
+  it('affiche les repères grade / enseignement / compétition / parcours professionnel', () => {
     renderPage()
-    expect(screen.getByText(/On développe un judo total en allant à la rencontre des autres/)).toBeInTheDocument()
+    expect(screen.getByText('3e dan')).toBeInTheDocument()
+    expect(screen.getByText('Enseignement')).toBeInTheDocument()
+    expect(screen.getByText('Compétition')).toBeInTheDocument()
+    expect(screen.getByText('Parcours professionnel')).toBeInTheDocument()
   })
 
-  it('intègre l’expérience digital learning (Learning Tribes EMEA) sans rubrique CV', () => {
+  it('présente un palmarès actualisé (champion de France vétérans 2026)', () => {
     renderPage()
-    expect(screen.getByText(/digital learning/)).toBeInTheDocument()
-    expect(screen.getByText(/Learning Tribes en EMEA/)).toBeInTheDocument()
-    // La technologie ne remplace ni le professeur ni le tatami…
-    expect(screen.getByText(/La technologie n.y remplace rien/)).toBeInTheDocument()
-    expect(screen.getByText(/= continuer à construire son judo/)).toBeInTheDocument()
-    // Pas de rubrique « Expérience professionnelle » / « CV »
-    expect(screen.queryByText('Expérience professionnelle')).toBeNull()
-    expect(screen.queryByText('CV')).toBeNull()
-  })
-
-  it('ne présente pas les résultats comme une rubrique « Palmarès »', () => {
-    renderPage()
-    // Pas de libellé/titre autonome « Palmarès » (le mot peut apparaître dans la prose).
-    expect(screen.queryByText('Palmarès')).toBeNull()
+    expect(screen.getByText('Champion de France vétérans 2026')).toBeInTheDocument()
+    expect(screen.getByText(/Vice-champion d.Europe vétérans 2025/)).toBeInTheDocument()
   })
 })
