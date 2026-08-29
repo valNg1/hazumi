@@ -11,3 +11,25 @@ export async function countPlaylists(judokaId: string): Promise<number> {
     .eq('judoka_id', judokaId)
   return count ?? 0
 }
+
+export interface PlaylistRef {
+  id: string
+  nom: string
+}
+
+// Liste des playlists du judoka (pour l'affichage + les liens d'ouverture).
+export async function fetchPlaylists(judokaId: string): Promise<PlaylistRef[]> {
+  const { data, error } = await supabase
+    .from('playlists_collections')
+    .select('id, nom')
+    .eq('judoka_id', judokaId)
+    .order('created_at', { ascending: false })
+  if (error) return []
+  return (data as PlaylistRef[]) ?? []
+}
+
+// Route canonique pour ouvrir une playlist (comme Parcours « Mes Playlists » et la
+// progression). NB : PAS « /eleve/progression » — cf. issue #2 (2e volet).
+export function playlistPath(id: string): string {
+  return `/bibliotheque?playlist=${id}`
+}

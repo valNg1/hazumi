@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts'
 import { supabase } from '../../lib/supabase'
-import { countPlaylists } from '../../lib/playlists'
+import { fetchPlaylists, type PlaylistRef } from '../../lib/playlists'
+import AccueilPlaylists from '../../components/AccueilPlaylists'
 import { toStr } from '../../lib/training'
 import { CURRICULUM, getBeltIndex } from '../../lib/curriculum'
 import type { Belt } from '../../types'
@@ -104,7 +105,7 @@ export default function Accueil() {
   const [pctGrade, setPctGrade] = useState(0)
   const [acquis, setAcquis] = useState(0)
   const [total, setTotal] = useState(0)
-  const [playlistCount, setPlaylistCount] = useState(0)
+  const [playlists, setPlaylists] = useState<PlaylistRef[]>([])
   const [chartData, setChartData] = useState<{ label: string; possible: number; realise: number }[]>([])
   const [chartView, setChartView] = useState<ChartView>('mois')
   const [rawData, setRawData] = useState<RawData | null>(null)
@@ -143,7 +144,7 @@ export default function Accueil() {
       }
 
       // Playlists (issue #2 : elles vivent dans playlists_collections, pas playlists)
-      setPlaylistCount(await countPlaylists(j.id))
+      setPlaylists(await fetchPlaylists(j.id))
 
       // Entraînements
       const today = new Date()
@@ -336,26 +337,14 @@ export default function Accueil() {
 
         {/* 4 blocs stats en grille */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {/* Mes playlists */}
-          <div
-            className="bg-white rounded-xl border border-[#E5E5E5] p-5 cursor-pointer hover:border-[#CCCCCC] transition-all group"
-            onClick={() => navigate('/eleve/progression?mode=playlist')}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs uppercase tracking-widest text-[#999999]">Mes playlists</span>
-              <svg className="w-3.5 h-3.5 text-[#CCCCCC] group-hover:text-[#C41230] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-            <p className="text-3xl font-bold text-[#0A0A0A]">{playlistCount}</p>
-            <p className="text-xs text-[#999999] mt-1">playlist{playlistCount !== 1 ? 's' : ''}</p>
-          </div>
+          {/* Mes playlists — chaque playlist ouvre SA playlist (issue #2, 2e volet) */}
+          <AccueilPlaylists playlists={playlists} />
 
 
           {/* Mon catalogue */}
           <div
             className="bg-white rounded-xl border border-[#E5E5E5] p-5 cursor-pointer hover:border-[#CCCCCC] transition-all group"
-            onClick={() => navigate('/eleve/progression?mode=playlist')}
+            onClick={() => navigate('/bibliotheque')}
           >
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs uppercase tracking-widest text-[#999999]">Mon catalogue</span>
