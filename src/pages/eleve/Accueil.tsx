@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts'
 import { supabase } from '../../lib/supabase'
+import { countPlaylists } from '../../lib/playlists'
 import { toStr } from '../../lib/training'
 import { CURRICULUM, getBeltIndex } from '../../lib/curriculum'
 import type { Belt } from '../../types'
@@ -141,9 +142,8 @@ export default function Accueil() {
         setPctGrade(t > 0 ? Math.round((a / t) * 100) : 0)
       }
 
-      // Playlists
-      const { count: plCount } = await supabase.from('playlists').select('*', { count: 'exact', head: true }).eq('judoka_id', j.id)
-      setPlaylistCount(plCount ?? 0)
+      // Playlists (issue #2 : elles vivent dans playlists_collections, pas playlists)
+      setPlaylistCount(await countPlaylists(j.id))
 
       // Entraînements
       const today = new Date()
