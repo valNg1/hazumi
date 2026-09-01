@@ -1,5 +1,23 @@
 import { describe, it, expect } from 'vitest'
-import { parseMasterclassSections } from '../lessons'
+import { parseMasterclassSections, estMasterclass } from '../lessons'
+
+// Une leçon est traitée comme masterclass (vidéo + chapitres + notes ; quiz et sections
+// pédagogiques masqués) soit parce qu'un contenu est enregistré en code (collection FD),
+// soit — de façon data-driven, sans code par vidéo — parce que la ressource est de la
+// famille « Masterclass » dans le catalogue.
+describe('estMasterclass', () => {
+  it('vrai quand un contenu masterclass est enregistré en code (ex. collection FD)', () => {
+    expect(estMasterclass(null, { objectifs: [] })).toBe(true)
+  })
+  it('vrai quand la ressource est de la famille « Masterclass » (data-only, sans code)', () => {
+    expect(estMasterclass('Masterclass', undefined)).toBe(true)
+  })
+  it('faux pour une leçon kata/standard sans contenu enregistré', () => {
+    expect(estMasterclass('Kata', undefined)).toBe(false)
+    expect(estMasterclass(null, undefined)).toBe(false)
+    expect(estMasterclass(undefined, undefined)).toBe(false)
+  })
+})
 
 // Section « Approfondir les techniques » — le contenu masterclass (table Supabase) est
 // découpé par chapitre côté client. Source unique, aucune duplication en code.

@@ -11,7 +11,7 @@ import { gradeQuiz, type QuizQuestion } from '../../lib/lessonQuiz'
 import { getPremiumContent, QUIZ_NIVEAUX, type Technique } from '../../lib/lessonPremium'
 import LessonMeta from '../../components/lesson/LessonMeta'
 import PremiumLessonContentView from '../../components/lesson/PremiumLessonContent'
-import { getMasterclassContent, parseMasterclassSections } from '../../lib/masterclass/lessons'
+import { getMasterclassContent, parseMasterclassSections, estMasterclass } from '../../lib/masterclass/lessons'
 import { fdSlugByRessourceId } from '../../lib/fd'
 import type { MasterclassChapitre } from '../../lib/masterclass/masterclassContent'
 
@@ -218,7 +218,7 @@ export default function Lecon() {
   const fin = estSequence && startSeconds === undefined ? segment.end! : undefined
   const embedUrl = videoUrl ? youtubeEmbedUrl(videoUrl, debut, fin) : null
   const premium = getPremiumContent(ressource.id)
-  const masterclass = getMasterclassContent(ressource.id)
+  const masterclass = estMasterclass(ressource.famille, getMasterclassContent(ressource.id))
   const mcChapitres = mcSections
 
   const estClip = sections.length > 0

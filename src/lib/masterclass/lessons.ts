@@ -16,6 +16,20 @@ export function getMasterclassContent(ressourceId: string | undefined): Mastercl
   return ressourceId ? MASTERCLASS_LESSONS[ressourceId] : undefined
 }
 
+/**
+ * Une leçon est une masterclass (vidéo + chapitres + notes ; quiz et sections
+ * pédagogiques kata masqués) si un contenu est enregistré en code (collections comme
+ * Frédéric Demontfaucon) OU, de façon data-driven, si la ressource est de la famille
+ * « Masterclass » dans le catalogue — ce qui permet d'ajouter une masterclass par la
+ * seule donnée, sans code par vidéo.
+ */
+export function estMasterclass(
+  famille: string | null | undefined,
+  contenuEnregistre?: MasterclassContent | undefined,
+): boolean {
+  return !!contenuEnregistre || famille === 'Masterclass'
+}
+
 export function getMasterclassChapitres(ressourceId: string | undefined): MasterclassChapitre[] {
   return ressourceId ? (MASTERCLASS_CHAPITRES[ressourceId] ?? []) : []
 }
