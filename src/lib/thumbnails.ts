@@ -72,6 +72,55 @@ export function isPlaceholder(url: string): boolean {
   return url.startsWith(PLACEHOLDER_PREFIX)
 }
 
+const LABELS_PLATEFORME: Record<string, string> = {
+  youtube: 'YouTube',
+  vimeo: 'Vimeo',
+  instagram: 'Instagram',
+  gdrive: 'Google Drive',
+  facebook: 'Facebook',
+  tiktok: 'TikTok',
+}
+
+/**
+ * Nom de la plateforme source, deduit du domaine de l'URL : plateformes connues
+ * (Facebook, Instagram, TikTok, YouTube, Vimeo, Google Drive) ou, a defaut, le nom
+ * de domaine nu. Sert au repli visuel quand aucune image n'est recuperable.
+ */
+export function sourceLabel(url: string): string | null {
+  if (!url || !/^https?:\/\//i.test(url)) return null
+  const connu = LABELS_PLATEFORME[detectVideoType(url)]
+  if (connu) return connu
+  const host = url.match(/^https?:\/\/([^/?#]+)/i)?.[1]
+  return host ? host.replace(/^www\./i, '') : null
+}
+
+function escapeXml(s: string): string {
+  return s.replace(/[&<>]/g, (c) => (c === '&' ? '&amp;' : c === '<' ? '&lt;' : '&gt;'))
+}
+
+/**
+ * Repli soigne quand la source ne fournit aucune image (Facebook bloque le
+ * scraping externe, etc.) : fond aux couleurs Hazumi (degrade sombre + liseré
+ * rouge) portant la plateforme source. Bien plus lisible qu'un carre vide.
+ */
+function vignettePlateforme(label: string): string {
+  const texte = escapeXml(label.length > 22 ? `${label.slice(0, 21)}…` : label)
+  const taille = label.length > 12 ? 12 : 15
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 90">` +
+    `<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">` +
+    `<stop offset="0" stop-color="#1A1A1A"/><stop offset="1" stop-color="#0A0A0A"/>` +
+    `</linearGradient></defs>` +
+    `<rect width="160" height="90" fill="url(#g)"/>` +
+    `<rect width="160" height="3" fill="#C41230"/>` +
+    `<text x="80" y="38" font-family="system-ui,sans-serif" font-size="9" font-weight="600" ` +
+    `letter-spacing="2" fill="#C41230" text-anchor="middle">SOURCE</text>` +
+    `<text x="80" y="60" font-family="system-ui,sans-serif" font-size="${taille}" font-weight="700" ` +
+    `fill="rgba(255,255,255,0.9)" text-anchor="middle" dominant-baseline="central">${texte}</text>` +
+    `</svg>`
+  return PLACEHOLDER_PREFIX + encodeURIComponent(svg)
+}
+
 function depuisUrl(url: string): string | null {
   if (!url || !/^https?:\/\//.test(url)) return null
 
@@ -123,6 +172,11 @@ export function resolveThumbnail(input: ThumbnailInput): string {
 
   const depuisLecon = input.lessonVideoUrl ? depuisUrl(input.lessonVideoUrl) : null
   if (depuisLecon) return depuisLecon
+
+  // Aucune image recuperable (Facebook bloque le scraping externe, etc.) : repli
+  // soigne indiquant la plateforme source, plutot qu'un carre vide.
+  const label = input.url ? sourceLabel(input.url) : null
+  if (label) return vignettePlateforme(label)
 
   return vignetteGeneree(input.titre)
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveThumbnail, buildPlaylistCover, isPlaceholder } from '../thumbnails'
+import { resolveThumbnail, buildPlaylistCover, isPlaceholder, sourceLabel } from '../thumbnails'
 
 const YT = 'https://youtu.be/wUGhhF8d8W4?si=abc'
 const YT2 = 'https://www.youtube.com/watch?v=bkhBZzE2HpM'
@@ -65,6 +65,67 @@ describe('resolveThumbnail — chaine de secours', () => {
 
   it('isPlaceholder distingue une vraie vignette', () => {
     expect(isPlaceholder('https://img.youtube.com/vi/abc/mqdefault.jpg')).toBe(false)
+  })
+})
+
+// Issue #4 : Facebook (et les sources qui bloquent le scraping) n'exposent aucune
+// image récupérable. Plutôt qu'un carré vide ou des initiales anonymes, on affiche
+// un repli soigné aux couleurs Hazumi portant la plateforme source, détectée depuis
+// le domaine de l'URL. Générique : vaut pour n'importe quelle URL sans image.
+const FB = 'https://www.facebook.com/watch/?v=1234567890'
+const FBWATCH = 'https://fb.watch/aBcDeF/'
+const IG = 'https://www.instagram.com/reel/CxYz123/'
+const TT = 'https://www.tiktok.com/@judo/video/7300000000000000000'
+const SITE = 'https://www.exemple-judo.fr/technique/uchi-mata'
+
+describe('sourceLabel — plateforme depuis le domaine', () => {
+  it('reconnait Facebook (facebook.com et fb.watch)', () => {
+    expect(sourceLabel(FB)).toBe('Facebook')
+    expect(sourceLabel(FBWATCH)).toBe('Facebook')
+  })
+  it('reconnait Instagram, TikTok, YouTube, Vimeo, Google Drive', () => {
+    expect(sourceLabel(IG)).toBe('Instagram')
+    expect(sourceLabel(TT)).toBe('TikTok')
+    expect(sourceLabel('https://youtu.be/abc')).toBe('YouTube')
+    expect(sourceLabel('https://vimeo.com/1')).toBe('Vimeo')
+    expect(sourceLabel('https://drive.google.com/file/d/1/view')).toBe('Google Drive')
+  })
+  it('retombe sur le nom de domaine (sans www) pour une source inconnue', () => {
+    expect(sourceLabel(SITE)).toBe('exemple-judo.fr')
+  })
+  it('renvoie null pour une URL vide ou invalide', () => {
+    expect(sourceLabel('')).toBeNull()
+    expect(sourceLabel('pas-une-url')).toBeNull()
+  })
+})
+
+describe('resolveThumbnail — repli plateforme (issue #4)', () => {
+  it('donne une vignette de repli portant « Facebook » pour un lien Facebook', () => {
+    const t = resolveThumbnail({ titre: 'Combat spectaculaire', url: FB })
+    expect(isPlaceholder(t)).toBe(true)
+    expect(decodeURIComponent(t)).toContain('Facebook')
+  })
+
+  it('le repli plateforme diffère des initiales génériques (le fix est bien pris)', () => {
+    const avecUrl = resolveThumbnail({ titre: 'Combat spectaculaire', url: FB })
+    const sansUrl = resolveThumbnail({ titre: 'Combat spectaculaire', url: null })
+    expect(avecUrl).not.toBe(sansUrl)
+  })
+
+  it('générique : porte le domaine pour une source quelconque sans image', () => {
+    const t = resolveThumbnail({ titre: 'Fiche', url: SITE })
+    expect(isPlaceholder(t)).toBe(true)
+    expect(decodeURIComponent(t)).toContain('exemple-judo.fr')
+  })
+
+  it('n’altère pas les sources à vraie image (YouTube reste une image réelle)', () => {
+    expect(resolveThumbnail({ titre: 'X', url: YT })).toBe('https://img.youtube.com/vi/wUGhhF8d8W4/mqdefault.jpg')
+  })
+
+  it('sans URL, conserve les initiales du titre (pas de repli plateforme)', () => {
+    const t = resolveThumbnail({ titre: 'Une fiche sans URL', url: null })
+    expect(isPlaceholder(t)).toBe(true)
+    expect(decodeURIComponent(t)).not.toContain('SOURCE')
   })
 })
 
