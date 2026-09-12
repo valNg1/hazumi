@@ -264,7 +264,7 @@ const NAGE_NO_KATA: PremiumLessonContent = {
   ],
 }
 
-// ── Kime-no-kata (UV1, 4e Dan) ───────────────────────────────────────────────
+// ── Kime-no-kata (5e Dan, réglementation 2026-2027) ──────────────────────────
 // Même structure que Nage-no-kata. Les 20 techniques officielles (src/lib/kimeNoKata.ts)
 // alimentent les 5 séries ; chaque « Comprendre cette technique » ouvre la fiche.
 
@@ -335,7 +335,7 @@ const KIME_NO_KATA: PremiumLessonContent = {
   meta: {
     tempsLecture: KIME_NO_KATA_META.tempsLecture,
     objectif: 'Comprendre la logique du Kime-no-kata — le kata de la décision — avant d’en apprendre les 20 techniques.',
-    niveau: 'Préparation du 4e Dan',
+    niveau: 'Préparation du 5e Dan',
     difficulte: KIME_NO_KATA_META.difficulte,
   },
   objectifIntro:

@@ -1,11 +1,19 @@
 /**
- * Seed du parcours 4e Dan — UV1 Kime-no-kata (leçon complète).
+ * Seed du parcours 5e Dan — Kime-no-kata (leçon complète).
+ *
+ * Réglementation kata 2026-2027 : le Kime-no-kata est rattaché au 5e Dan
+ * (auparavant 4e Dan). Ce seed reconnaît l'ancien intitulé « Préparer le 4e Dan »
+ * (et « Préparer le 3e Dan ») pour renommer le parcours existant SANS doublon —
+ * les IDs, chapitres et progressions sont ainsi préservés sur une base déjà seedée.
  *
  * Reconstruit la leçon À PARTIR DE ZÉRO depuis la séquence officielle Kodokan
  * (src/lib/kimeNoKata.ts, tirée de KodokanKimeNoKata.pdf).
  * Réutilise l'architecture existante : parcours -> catalogue_hazumi ->
  * media_sources -> asset_media -> lesson -> lesson_chapters / asset_sections /
  * lesson_quiz. Aucune nouvelle table, aucun nouveau concept.
+ *
+ * NB : pour un déplacement sur une base EXISTANTE sans reconstruire les chapitres
+ * (préservation des IDs), préférer scripts/move-kime-to-5e-dan.ts.
  *
  * Idempotent.
  */
@@ -19,7 +27,7 @@ import {
 } from '../src/lib/kimeNoKata'
 
 const UNIVERS = 'kyu'
-const NIVEAU = '4e dan'
+const NIVEAU = '5e dan'
 
 const env = Object.fromEntries(
   readFileSync('.env.local', 'utf8').split('\n').filter((l) => l.includes('='))
@@ -28,10 +36,11 @@ const env = Object.fromEntries(
 const sb = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_KEY)
 
 // ── 1. Parcours 4e Dan ──────────────────────────────────────────────────────
-const TITRE_PARCOURS = 'Préparer le 4e Dan'
-const DESCRIPTION_PARCOURS = 'Parcours 4e Dan. UV1 : Kime-no-kata, le kata de la décision — 20 techniques de défense, 8 à genoux (Idori) et 12 debout (Tachiai).'
-// Reconnaît aussi l'ancien intitulé « Préparer le 3e Dan » pour renommer sans doublon.
-const { data: pE } = await sb.from('parcours').select('id').in('titre', [TITRE_PARCOURS, 'Préparer le 3e Dan']).maybeSingle()
+const TITRE_PARCOURS = 'Préparer le 5e Dan'
+const DESCRIPTION_PARCOURS = 'Parcours 5e Dan. Kime-no-kata, le kata de la décision — 20 techniques de défense, 8 à genoux (Idori) et 12 debout (Tachiai).'
+// Reconnaît les anciens intitulés (« Préparer le 4e Dan », « Préparer le 3e Dan »)
+// pour renommer le parcours existant sans doublon (préserve id + progressions).
+const { data: pE } = await sb.from('parcours').select('id').in('titre', [TITRE_PARCOURS, 'Préparer le 4e Dan', 'Préparer le 3e Dan']).maybeSingle()
 let parcoursId = (pE as { id: string } | null)?.id
 if (!parcoursId) {
   const { data, error } = await sb.from('parcours').insert({
